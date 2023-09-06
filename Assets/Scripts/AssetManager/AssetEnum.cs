@@ -1,6 +1,7 @@
 //auto generated from AssetNameEnumGenerator
 public enum AssetEnum 
 {
+      PartyMemberEntryPanel,
       TutorialModuleConfig,
       AuthEssentialsAssetConfig,
       CloudSaveEssentialsAssetConfig,
@@ -54,6 +55,7 @@ public enum AssetEnum
       CreateMatchMenuCanvas,
       CreateMatchMenuCanvas_Starter,
       MatchSessionItem,
+      PartyMenuCanvas,
       SessionEssentialsMenuCanvas,
       SessionEssentialsMenuCanvas_Starter,
       SinglePlatformAuth,
