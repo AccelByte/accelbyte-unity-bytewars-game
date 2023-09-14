@@ -116,9 +116,9 @@ GameObject:
   - component: {fileID: 2169716256886031664}
   - component: {fileID: 2169716256886031671}
   - component: {fileID: 2169716256886031670}
-  - component: {fileID: 5229087888638738446}
+  - component: {fileID: 4699425663576930667}
   m_Layer: 5
-  m_Name: PartyMenuCanvas
+  m_Name: PartyMenuCanvas_Starter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -206,7 +206,7 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
---- !u!114 &5229087888638738446
+--- !u!114 &4699425663576930667
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -215,7 +215,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 2169716256886031669}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0a99ec2796e94cd46854ac1756b2c5fb, type: 3}
+  m_Script: {fileID: 11500000, guid: cf6fb9fcb79450d41935f6e6c6e969ae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   mainButtonsContainer: {fileID: 0}

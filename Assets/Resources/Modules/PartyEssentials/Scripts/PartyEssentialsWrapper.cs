@@ -10,6 +10,8 @@ public class PartyEssentialsWrapper : MonoBehaviour
     private Session session;
     private Lobby lobby;
 
+    public string partyId;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -99,6 +101,7 @@ public class PartyEssentialsWrapper : MonoBehaviour
         if (!result.IsError)
         {
             Debug.Log("Successfully created a party session!");
+            partyId = result.Value.id;
         }
         else
         {
@@ -183,6 +186,7 @@ public class PartyEssentialsWrapper : MonoBehaviour
         if (!result.IsError)
         {
             Debug.Log("Successfully left the party session");
+            partyId = null;
         }
         else
         {
