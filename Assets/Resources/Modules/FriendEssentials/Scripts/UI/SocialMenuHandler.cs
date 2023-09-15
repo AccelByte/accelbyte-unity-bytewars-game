@@ -7,6 +7,7 @@ public class SocialMenuHandler : MenuCanvas
     [SerializeField] private Button friendsButton;
     [SerializeField] private Button friendRequestsButton;
     [SerializeField] private Button sendFriendRequestsButton;
+    [SerializeField] private Button partyButton;
     [SerializeField] private Button blockedPlayersButton;
     [SerializeField] private Button backButton;
 
@@ -15,11 +16,13 @@ public class SocialMenuHandler : MenuCanvas
     void Start()
     {
         EnableButton(blockedPlayersButton, TutorialType.ManagingFriends);
+        EnableButton(partyButton, TutorialType.PartyEssentials);
 
         findFriendsButton.onClick.AddListener(OnFindFriendButtonClicked);
         friendsButton.onClick.AddListener(OnFriendsButtonClicked);
         friendRequestsButton.onClick.AddListener(OnFriendRequestClicked);
         sendFriendRequestsButton.onClick.AddListener(OnSentFriendRequestClicked);
+        partyButton.onClick.AddListener(OnPartyButtonClicked);
         blockedPlayersButton.onClick.AddListener(OnBlockedPlayersClicked);
         backButton.onClick.AddListener(OnBackButtonClicked);
     }
@@ -58,6 +61,11 @@ public class SocialMenuHandler : MenuCanvas
     private void OnFriendsButtonClicked()
     {
         MenuManager.Instance.ChangeToMenu(AssetEnum.FriendMenuCanvas);
+    }
+    
+    private void OnPartyButtonClicked()
+    {
+        MenuManager.Instance.ChangeToMenu(AssetEnum.PartyMenuCanvas);
     }
     
     private void OnBlockedPlayersClicked()

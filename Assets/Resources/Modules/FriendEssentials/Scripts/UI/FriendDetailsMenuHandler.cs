@@ -10,6 +10,9 @@ public class FriendDetailsMenuHandler : MenuCanvas
 {
     public RectTransform friendDetailsPanel;
     [SerializeField] private Button backButton;
+    [SerializeField] private Button promoteToLeaderButton;
+    [SerializeField] private Button kickButton;
+    [SerializeField] private Button inviteToPartyButton;
     [SerializeField] private Button blockButton;
     [SerializeField] private Button unfriendButton;
 
@@ -27,11 +30,28 @@ public class FriendDetailsMenuHandler : MenuCanvas
     {
         EnableButton(blockButton, TutorialType.ManagingFriends);
         EnableButton(unfriendButton, TutorialType.ManagingFriends);
+        EnableButton(promoteToLeaderButton, TutorialType.PartyEssentials);
+        EnableButton(kickButton, TutorialType.PartyEssentials);
+        EnableButton(inviteToPartyButton, TutorialType.PartyEssentials);
         
         _managingFriendsWrapper = TutorialModuleManager.Instance.GetModuleClass<ManagingFriendsWrapper>();
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
         blockButton.onClick.AddListener(OnBlockCliked);
         unfriendButton.onClick.AddListener(OnUnfriendClicked);
+        
+        PartyEssentialsWrapper partyWrapper = TutorialModuleManager.Instance.GetModuleClass<PartyEssentialsWrapper>();
+        promoteToLeaderButton.onClick.AddListener(() =>
+        {
+            partyWrapper.PromoteMemberToPartyLeader(partyWrapper.partyId, UserID, null);
+        });
+        kickButton.onClick.AddListener(() =>
+        {
+            partyWrapper.KickMemberFromParty(partyWrapper.partyId, UserID, null);
+        });
+        inviteToPartyButton.onClick.AddListener(() =>
+        {
+            partyWrapper.SendPartyInvitation(partyWrapper.partyId, UserID, null);
+        });
     }
     
     private void EnableButton(Button button, TutorialType tutorialType)
