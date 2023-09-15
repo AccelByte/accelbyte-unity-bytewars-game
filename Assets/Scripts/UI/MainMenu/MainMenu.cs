@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -27,6 +28,7 @@ public class MainMenu : MenuCanvas
         socialButton.onClick.AddListener(OnSocialButtonPressed);
         helpAndOptionsButton.onClick.AddListener(OnHelpAndOptionsButtonPressed);
         quitButton.onClick.AddListener(OnQuitButtonPressed);
+        //FixLayout();
     }
 
     private void OnSocialButtonPressed()
@@ -102,5 +104,13 @@ public class MainMenu : MenuCanvas
 
         bool isLeaderboarModuleActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.LeaderboardEssentials);
         leaderboardButton.gameObject.SetActive(isLeaderboarModuleActive);
+    }
+
+    private async void FixLayout()
+    {
+        await Task.Delay(30);
+        layoutGroup.enabled = false;
+        await Task.Delay(50);
+        layoutGroup.enabled = true;
     }
 }

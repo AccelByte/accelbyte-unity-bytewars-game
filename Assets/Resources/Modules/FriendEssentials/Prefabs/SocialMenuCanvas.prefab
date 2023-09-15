@@ -222,6 +222,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5884091ee119134395867f3d72e851d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mainButtonsContainer: {fileID: 0}
   findFriendsButton: {fileID: 7614937716666002539}
   friendsButton: {fileID: 5342909045212289077}
   friendRequestsButton: {fileID: 5443916101866706545}

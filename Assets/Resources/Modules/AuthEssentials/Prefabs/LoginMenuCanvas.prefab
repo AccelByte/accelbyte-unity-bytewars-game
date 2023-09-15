@@ -19,7 +19,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &73831450050943438
 RectTransform:
   m_ObjectHideFlags: 0
@@ -114,6 +114,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2036be16c9058343bfa65a34a474df3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mainButtonsContainer: {fileID: 0}
   loginStatePanel: {fileID: 5293826100510745257}
   loginLoadingPanel: {fileID: 6177024764363268879}
   loginFailedPanel: {fileID: 8134482063983268061}

@@ -69,15 +69,13 @@ public class LoginHandler : MenuCanvas
     {
         // get auth's subsystem
         _authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
+        loginWithDeviceIdButton.onClick.AddListener(OnLoginWithDeviceIdButtonClicked);
+        retryLoginButton.onClick.AddListener(onRetryLoginClicked);
+        quitGameButton.onClick.AddListener(OnQuitGameButtonClicked);
     }
 
     private void OnEnable()
     {
-        // UI initialization
-        loginWithDeviceIdButton.onClick.AddListener(OnLoginWithDeviceIdButtonClicked);
-        retryLoginButton.onClick.AddListener(onRetryLoginClicked);
-        quitGameButton.onClick.AddListener(OnQuitGameButtonClicked);
-
         CurrentView = LoginView.LoginState;
     }
 

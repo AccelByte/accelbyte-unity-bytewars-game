@@ -88,6 +88,8 @@ public class FriendRequestMenuHandler : MenuCanvas
     
     private void OnEnable()
     {
+        if(_friendEssentialsWrapper==null)
+            _friendEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<FriendEssentialsWrapper>();
         GetFriendRequest();
     }
     
@@ -199,6 +201,7 @@ public class FriendRequestMenuHandler : MenuCanvas
 
     private void GetFriendRequest()
     {
+        if (_friendEssentialsWrapper == null) return;
         _friendEssentialsWrapper.LoadIncomingFriendRequests(OnLoadIncomingFriendRequestsCompleted);
     }
 

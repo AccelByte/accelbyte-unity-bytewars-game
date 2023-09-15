@@ -86,6 +86,8 @@ public class FriendMenuHandler : MenuCanvas
 
     private void OnEnable()
     {
+        if (_friendEssentialsWrapper == null)
+            _friendEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<FriendEssentialsWrapper>();
         GetFriendList();
     }
 
@@ -197,6 +199,7 @@ public class FriendMenuHandler : MenuCanvas
     private void GetFriendList()
     {
         CurrentView = FriendsView.Default;
+        if (_friendEssentialsWrapper == null) return;
         _friendEssentialsWrapper.GetFriendList(OnFriendListCompleted);
     }
     
