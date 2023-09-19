@@ -16,7 +16,10 @@ public class PartyHandler : MenuCanvas
 
     private PartyEssentialsWrapper _partyWrapper;
     private Lobby _lobby;
-    
+
+    private const string DEFUSERNAME = "Player-";
+    private Color _leaderPanelColor = Color.blue;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -25,7 +28,23 @@ public class PartyHandler : MenuCanvas
 
         _partyWrapper = TutorialModuleManager.Instance.GetModuleClass<PartyEssentialsWrapper>();
 
+        UpdateCurrentPlayerInfo();
         CheckPartyStatus();
+    }
+
+    private void UpdateCurrentPlayerInfo()
+    {
+        AuthEssentialsWrapper auth = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
+        if (auth.userData.display_name == "")
+        {
+            partyMemberEntryPanels[0].UpdateMemberInfoUIs(DEFUSERNAME + auth.userData.user_id.Substring(0, 5));
+        }
+        else
+        {
+            partyMemberEntryPanels[0].UpdateMemberInfoUIs(auth.userData.display_name);
+        }
+
+        partyMemberEntryPanels[0].ChangePanelColor(_leaderPanelColor);
     }
 
     private void CheckPartyStatus()
