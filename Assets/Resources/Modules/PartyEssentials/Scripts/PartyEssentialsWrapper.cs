@@ -27,6 +27,11 @@ public class PartyEssentialsWrapper : MonoBehaviour
 
     #region AB Service Functions
 
+    public void GetUserParties(ResultCallback<PaginatedResponse<SessionV2PartySession>> resultCallback)
+    {
+        session.GetUserParties(result => OnGetUserPartiesCompleted(result, resultCallback));
+    }
+
     public void CreateParty(string SessionTemplateName, ResultCallback<SessionV2PartySession> resultCallback)
     {
         SessionV2PartySessionCreateRequest request = new SessionV2PartySessionCreateRequest()
@@ -96,6 +101,20 @@ public class PartyEssentialsWrapper : MonoBehaviour
 
     #region Callback Functions
     
+    private void OnGetUserPartiesCompleted(Result<PaginatedResponse<SessionV2PartySession>> result, ResultCallback<PaginatedResponse<SessionV2PartySession>> customCallback)
+    {
+        if (!result.IsError)
+        {
+            Debug.Log("Successfully get the current player's parties!");
+        }
+        else
+        {
+            Debug.Log($"Failed to get the current player's parties. Message: {result.Error.Message}");
+        }
+        
+        customCallback?.Invoke(result);
+    }
+    
     private void OnCreatePartyCompleted(Result<SessionV2PartySession> result, ResultCallback<SessionV2PartySession> customCallback = null)
     {
         if (!result.IsError)
@@ -130,6 +149,7 @@ public class PartyEssentialsWrapper : MonoBehaviour
         if (!result.IsError)
         {
             Debug.Log("Successfully joined the party session");
+            partyId = result.Value.id;
         }
         else
         {

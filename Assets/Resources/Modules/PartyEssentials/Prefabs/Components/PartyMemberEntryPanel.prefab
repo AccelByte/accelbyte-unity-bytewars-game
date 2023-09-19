@@ -147,7 +147,7 @@ GameObject:
   - component: {fileID: 8975164936099996341}
   - component: {fileID: 5831138413054819630}
   m_Layer: 5
-  m_Name: shipAvatar
+  m_Name: PlayerAvatarPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -330,8 +330,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b28386c7912e7642a472e1b13c0d3a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerEntry: {fileID: 2569071054037897824}
   addMemberButton: {fileID: 2646071348760820287}
+  memberInfoPanel: {fileID: 2569071054037897824}
+  playerAvatarPanelImage: {fileID: 5831138413054819630}
+  avatarImage: {fileID: 4791825128917425088}
+  playerNameText: {fileID: 8808336506357575686}
 --- !u!1 &3850859258168563517
 GameObject:
   m_ObjectHideFlags: 0
@@ -571,7 +574,7 @@ GameObject:
   - component: {fileID: 7324975432620526292}
   - component: {fileID: 8808336506357575686}
   m_Layer: 5
-  m_Name: shipName
+  m_Name: PlayerNameText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -625,7 +628,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Player Username
+  m_text: PLAYER NAME
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: ac880de93cb4d4943b7d8bbce1c1644b, type: 2}
   m_sharedMaterial: {fileID: -689041902876210438, guid: ac880de93cb4d4943b7d8bbce1c1644b,
@@ -661,7 +664,7 @@ MonoBehaviour:
   m_fontSizeMax: 16
   m_fontStyle: 0
   m_HorizontalAlignment: 2
-  m_VerticalAlignment: 4096
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -707,7 +710,7 @@ GameObject:
   - component: {fileID: 6702983785783520082}
   - component: {fileID: 4791825128917425088}
   m_Layer: 5
-  m_Name: PlayerAvatar
+  m_Name: AvatarImage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

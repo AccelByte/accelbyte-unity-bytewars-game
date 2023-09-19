@@ -9,10 +9,10 @@ using UnityEngine.UI;
 
 public class PartyHandler : MenuCanvas
 {
-    [SerializeField] private Transform[] partyMemberEntryPanels;
+    [SerializeField] private PartyMemberEntryPanel[] partyMemberEntryPanels;
     [SerializeField] private Button leaveButton;
     [SerializeField] private Button backButton;
-    [SerializeField] private GameObject partyInvitationPrefab;
+    public static GameObject partyInvitationPrefab;
 
     private PartyEssentialsWrapper _partyWrapper;
     private Lobby _lobby;
@@ -24,10 +24,24 @@ public class PartyHandler : MenuCanvas
         backButton.onClick.AddListener(OnBackButtonClicked);
 
         _partyWrapper = TutorialModuleManager.Instance.GetModuleClass<PartyEssentialsWrapper>();
-        
-        _lobby = MultiRegistry.GetApiClient().GetLobby();
-        _lobby.SessionV2InvitedUserToParty += ReceivePartyInvitation;
-        _lobby.SessionV2UserJoinedParty += OnUserJoinedParty;
+
+        CheckPartyStatus();
+    }
+
+    private void CheckPartyStatus()
+    {
+        _partyWrapper.GetUserParties(OnGetUserPartiesCompleted);
+    }
+
+    private void OnGetUserPartiesCompleted(Result<PaginatedResponse<SessionV2PartySession>> result)
+    {
+        if (!result.IsError)
+        {
+            foreach (SessionV2PartySession partySession in result.Value.data)
+            {
+                _partyWrapper.LeaveParty(partySession.id, null);
+            }
+        }
     }
 
     private void OnLeaveButtonClicked()
@@ -35,18 +49,22 @@ public class PartyHandler : MenuCanvas
         _partyWrapper.LeaveParty(_partyWrapper.partyId, null);
     }
 
-    private void ReceivePartyInvitation(Result<SessionV2PartyInvitationNotification> invitation)
+    public static void ReceivePartyInvitation(Result<SessionV2PartyInvitationNotification> invitation)
     {
+        partyInvitationPrefab = AssetManager.Singleton.GetAsset(AssetEnum.PartyInvitationEntryPanel) as GameObject;
         PushNotificationHandler notificationHandler = MenuManager.Instance.GetChildComponent<PushNotificationHandler>();
         PartyInvitationEntryPanel invitationEntryPanel = notificationHandler.AddNotificationItem<PartyInvitationEntryPanel>(partyInvitationPrefab);
         invitationEntryPanel.UpdatePartyInvitationInfo(invitation.Value.partyId, invitation.Value.senderId);
     }
     
-    private void OnUserJoinedParty(Result<SessionV2PartyJoinedNotification> result)
+    public void OnPartyUpdated(Result<SessionV2PartySessionUpdatedNotification> result)
     {
-        int memberIndex = result.Value.members.Length - 1;
-        PartyMemberEntryPanel partyMemberEntryPanel = partyMemberEntryPanels[memberIndex].GetComponent<PartyMemberEntryPanel>();
-        partyMemberEntryPanel.SwitchView(PartyMemberEntryPanel.PartyEntryView.MemberInfo);
+        for(int index = 0; index < result.Value.members.Length; index++)
+        {
+            PartyMemberEntryPanel partyMemberEntryPanel = partyMemberEntryPanels[index].GetComponent<PartyMemberEntryPanel>();
+            partyMemberEntryPanel.SwitchView(PartyMemberEntryPanel.PartyEntryView.MemberInfo);
+            partyMemberEntryPanel.UpdateMemberInfoUIs(result.Value.members[index].id);
+        }
     }
 
     private void OnBackButtonClicked()

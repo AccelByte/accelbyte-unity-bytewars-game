@@ -2,6 +2,7 @@
 public enum AssetEnum 
 {
       PartyMemberEntryPanel,
+      PartyInvitationEntryPanel,
       TutorialModuleConfig,
       AuthEssentialsAssetConfig,
       CloudSaveEssentialsAssetConfig,

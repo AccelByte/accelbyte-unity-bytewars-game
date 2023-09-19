@@ -19,9 +19,10 @@ MonoBehaviour:
     type: 3}
   type: 15
   isActive: 1
-  additionalScripts: 0
+  additionalScripts: 1
   additionalPrefab: 0
-  defaultHelperScripts: []
+  defaultHelperScripts:
+  - {fileID: 11500000, guid: 28074e45f9a341c680620aad9fb58ec2, type: 3}
   starterHelperScripts: []
   starterScript: {fileID: 11500000, guid: 50c4fded74caa624cbb26acde8da4a96, type: 3}
   starterMenuUIPrefab: {fileID: 4699425663576930667, guid: df4cb37075b6a36459034ebaeba84d03,
@@ -30,12 +31,12 @@ MonoBehaviour:
   isStarterActive: 0
   moduleDependencies:
   - {fileID: 11400000, guid: 04ca20375bb050249b26b1082a299a25, type: 2}
-  instantiatedPrefabType: 0
-  instantiatedGameObjectName: 
+  instantiatedPrefabType: 1
+  instantiatedGameObjectName: InviteToPartyButton
   prefabClassType: 0
   associateDefaultPrefabClass: 0
   associateStarterPrefabClass: 0
-  otherTutorialModule: 0
+  otherTutorialModule: 8
   genericPrefabClass: 0
   buttonText: 
   targetParentGameObjectPath: 
