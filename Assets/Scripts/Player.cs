@@ -25,14 +25,10 @@ public class Player : GameEntityAbs
     public float FirePowerLevel { get; private set; } = 0.5f;
 
     private Dictionary<int, Missile> _firedMissiles = new Dictionary<int, Missile>();
-    public Dictionary<int, Missile> FiredMissiles
-    {
-        get { return _firedMissiles; }
-    }
     List<MissileTrail> m_missileTrails = new List<MissileTrail>();
     
     private  PlayerState _playerState;
-    UnityEngine.Color _colour;
+    private  Color _colour;
 
     void Start()
     {       
@@ -103,21 +99,11 @@ public class Player : GameEntityAbs
         m_powerBarUI.Init();
         _maxMissilesInFlight = maxMissilesInFlight;
         m_powerBarUI.SetPosition(transform.position);
-        /*if (IsServer)
-        {
-            SetPowerBarUILocationClientRpc(transform.position);
-        }*/
         SetShipColour(_colour);
         m_powerBarUI.SetPercentageFraction(FirePowerLevel,false);
-        /*if (NetworkManager.Singleton.IsListening && !NetworkObject.IsSpawned)
-        {
-            NetworkObject.Spawn();
-        }
-        else*/
-        {
-            gameObject.SetActive(true);
-        }
+        gameObject.SetActive(true);
         isShowPowerBarUI = IsShowPowerBarUI();
+        _firedMissileInt = 0;
     }
 
     private bool IsShowPowerBarUI()
@@ -146,18 +132,18 @@ public class Player : GameEntityAbs
         {
             _firedMissiles.Remove(kvp.Key);
         }
-        if (_firedMissiles.Count >= _maxMissilesInFlight)
-        {
+        if (_firedMissileInt >= _maxMissilesInFlight)
             return null;
-        }
-
         Transform t = transform;
         Vector3 missileSpawnPosition = t.position + t.up * 0.25f;
         Missile missile = GameManager.Instance.Pool.Get(m_missilePrefab) as Missile;
         Quaternion rotation = t.rotation;
         var velocity = t.up * Mathf.Lerp(m_minMissileSpeed, m_maxMissileSpeed, FirePowerLevel);
         missile.Init(_playerState, missileSpawnPosition, rotation, velocity, _colour);
+        missile.OnMissileDestroyed -= OnMissileDestroyed;
+        missile.OnMissileDestroyed += OnMissileDestroyed;
         _firedMissiles.Add(missile.GetId(), missile);
+        _firedMissileInt++;
         #if !UNITY_SERVER
         AddMissileTrail(missile.gameObject, missileSpawnPosition);
         #endif
@@ -180,16 +166,6 @@ public class Player : GameEntityAbs
         _firedMissiles.TryAdd(missile.GetId(), missile);
         AddMissileTrail(missile.gameObject,  missileFireState.spawnPosition);
     }
-    
-    
-    /*
-    [ClientRpc]
-    private void AddMissileTrailClientRpc(ulong missileNetworkObjectId, Vector3 position)
-    {
-        var go = GetNetworkObject(missileNetworkObjectId).gameObject;
-        AddMissileTrail(go, position);
-    }*/
-
     private void AddMissileTrail(GameObject missileGameObject, Vector3 position)
     {
         var newTrail = GameManager.Instance.Pool.Get(m_missileTrailPrefab) as MissileTrail;
@@ -319,15 +295,6 @@ public class Player : GameEntityAbs
         gameObject.SetActive(false);
         
     }
-    
-    /*
-    public override void OnNetworkSpawn()
-    {
-        var o = gameObject;
-        o.name = InGameFactory.PlayerInstancePrefix + o.name;
-        base.OnNetworkSpawn();
-    }*/
-
     private int _id = -1;
     public override void SetId(int id)
     {
@@ -338,7 +305,6 @@ public class Player : GameEntityAbs
     {
         return _id;
     }
-
     public void ExplodeMissile(int missileId, Vector3 pos, Quaternion rot)
     {
         if (_firedMissiles.TryGetValue(missileId, out var missile))
@@ -389,4 +355,10 @@ public class Player : GameEntityAbs
         }
     }
 
+    private int _firedMissileInt = 0;
+    private void OnMissileDestroyed(ulong owningPlayerNetworkClientId)
+    {
+        if(_playerState.clientNetworkId==owningPlayerNetworkClientId)
+            _firedMissileInt--;
+    }
 }

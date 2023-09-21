@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -270,6 +269,7 @@ public class Missile : GameEntityAbs
         #if !UNITY_SERVER
         ShowMissileExplosion(pos, rot, mColour);
         #endif
+        OnMissileDestroyed?.Invoke(mOwningPlayerState.clientNetworkId);
         Reset();
     }
 
@@ -381,4 +381,8 @@ public class Missile : GameEntityAbs
     {
         mOwningPlayerState = newPlayerState;
     }
+    /// <summary>
+    /// event with owning player client network id parameter
+    /// </summary>
+    public event Action<ulong> OnMissileDestroyed;
 }
