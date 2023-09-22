@@ -113,10 +113,13 @@ public class FriendMenuHandler : MenuCanvas
         var friendComponent = loadingSuccessPanel.GetChild(0);
         foreach (var baseUserInfo in friends.data)
         {
+            var displayName = !String.IsNullOrEmpty(baseUserInfo.displayName)
+                ? baseUserInfo.displayName
+                : $"bytewars player {baseUserInfo.userId.Substring(0, baseUserInfo.userId.Length - 10)}";
             var friendPanelObject = Instantiate(friendComponent, Vector3.zero, Quaternion.identity, loadingSuccessPanel);
             friendPanelObject.gameObject.SetActive(true);
             friendPanelObject.gameObject.name = baseUserInfo.userId;
-            friendPanelObject.GetComponent<FriendEntryComponentHandler>().displayName.text = baseUserInfo.displayName;
+            friendPanelObject.GetComponent<FriendEntryComponentHandler>().displayName.text = displayName;
             _friendEntries.TryAdd(baseUserInfo.userId, (RectTransform)friendPanelObject);
             RetrieveAvatar(baseUserInfo.userId);
         }
@@ -128,12 +131,18 @@ public class FriendMenuHandler : MenuCanvas
     private void SetupFriendComponent(string userId, Result<Texture2D> result)
     {
         _friendEntries.TryGetValue(userId, out var friendEntryComponent);
-        var avatar = Sprite.Create(result.Value,
-            new Rect(0f, 0f, result.Value.width, result.Value.height), Vector2.zero);
+
+        Sprite avatar = null;
+        
         if (friendEntryComponent != null)
         {
             var friendEntry = friendEntryComponent.GetComponent<FriendEntryComponentHandler>();
-            friendEntry.friendImage.sprite = avatar;
+            if (result != null)
+            {
+                avatar = Sprite.Create(result.Value,
+                    new Rect(0f, 0f, result.Value.width, result.Value.height), Vector2.zero);
+                friendEntry.friendImage.sprite = avatar;
+            }
             var friendButton = friendEntryComponent.GetComponent<Button>();
             friendButton.onClick.AddListener(() => OnFriendClicked(userId, friendEntry.displayName.text, avatar));
         }
@@ -193,6 +202,10 @@ public class FriendMenuHandler : MenuCanvas
         if (!result.IsError)
         {
             SetupFriendComponent(userId, result);
+        }
+        else
+        {
+            SetupFriendComponent(userId, null);
         }
     }
     

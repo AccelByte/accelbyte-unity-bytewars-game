@@ -40,4 +40,15 @@ MonoBehaviour:
   - {fileID: 4800193711860913446, guid: 3bdfa38c310992e4a858654dd94ad3ae, type: 3}
   - {fileID: 3805653382591207828, guid: 75620238520a95143a416c1bb029bc31, type: 3}
   isStarterActive: 0
-  moduleDependencies: []
+  moduleDependencies:
+  - {fileID: 11400000, guid: b4c868ff7e72cc840963d5a37178f14d, type: 2}
+  instantiatedPrefabType: 0
+  instantiatedGameObjectName: 
+  prefabClassType: 0
+  associateDefaultPrefabClass: 0
+  associateStarterPrefabClass: 0
+  otherTutorialModule: 0
+  genericPrefabClass: 0
+  buttonText: 
+  targetParentGameObjectPath: 
+  spawnOrder: 0
