@@ -32,6 +32,9 @@ public class TutorialModuleDataEditor : Editor
     private SerializedProperty _hasAdditionalPrefab;
     private SerializedProperty _defaultAdditionalMenuUIPrefabs;
     private SerializedProperty _starterAdditionalMenuUIPrefabs;
+    
+    private SerializedProperty _isBaseModule;
+    private SerializedProperty _disableUI;
 
     private bool _defaultFold = true;
     private bool _starterFold = true;
@@ -112,6 +115,9 @@ public class TutorialModuleDataEditor : Editor
         _spawnOrder = serializedObject.FindProperty("spawnOrder");
         _buttonText = serializedObject.FindProperty("buttonText");
 
+        _isBaseModule = serializedObject.FindProperty("isBaseModule");
+        _disableUI = serializedObject.FindProperty("disableUI");
+
         // if (_tutorialModuleData.isActive)
         // {
         //     if (!CheckGeneratedPrefabExists(_tutorialModuleData.instantiatedGameObjectName, _targetDefaultParentPrefab))
@@ -134,108 +140,131 @@ public class TutorialModuleDataEditor : Editor
     {
         serializedObject.UpdateIfRequiredOrScript();
 
-        _defaultFold = EditorGUILayout.BeginFoldoutHeaderGroup(_defaultFold, "Tutorial Module");
-        if (_defaultFold)
+        EditorGUILayout.PropertyField(_isBaseModule);
+        if (!_isBaseModule.boolValue)
         {
+            AddSeparatorLine();
 
-            EditorGUILayout.PropertyField(_defaultMenuUIPrefab);
+            _defaultFold = EditorGUILayout.BeginFoldoutHeaderGroup(_defaultFold, "Tutorial Module");
+            if (_defaultFold)
+            {
+
+                EditorGUI.BeginDisabledGroup(_disableUI.boolValue);
+                EditorGUILayout.PropertyField(_defaultMenuUIPrefab);
+                EditorGUI.EndDisabledGroup();
+
+                EditorGUILayout.PropertyField(_defaultModuleScript);
+            
+                EditorGUILayout.PropertyField(_type);
+                EditorGUI.BeginDisabledGroup(_forceEnableStatus || _isDependencyModule || _forceDisableStatus);
+                EditorGUILayout.PropertyField(_isActive);
+                EditorGUI.EndDisabledGroup();
+                EditorGUILayout.Space();
+            }
+            EditorGUILayout.EndFoldoutHeaderGroup();
+            
+            _starterFold = EditorGUILayout.BeginFoldoutHeaderGroup(_starterFold, "Tutorial Module Starter");
+            if (_starterFold)
+            {
+                EditorGUI.BeginDisabledGroup(_disableUI.boolValue);
+                EditorGUILayout.PropertyField(_starterMenuUIPrefab);
+                EditorGUI.EndDisabledGroup();
+
+                EditorGUILayout.PropertyField(_starterScript);
+                EditorGUILayout.PropertyField(_isStarterActive);
+                EditorGUILayout.Space();
+
+            }
+            EditorGUILayout.EndFoldoutHeaderGroup();
+            
+            EditorGUI.BeginDisabledGroup(_forceEnableStatus || _isDependencyModule);
+            EditorGUILayout.PropertyField(_moduleDependencies, true);
+            EditorGUI.EndDisabledGroup();
+            AddSeparatorLine();
+
+            EditorGUILayout.PropertyField(_hasAdditionalScripts);
+            EditorGUI.BeginDisabledGroup(_disableUI.boolValue);
+            EditorGUILayout.PropertyField(_hasAdditionalPrefab);
+            EditorGUI.EndDisabledGroup();
+
+            EditorGUILayout.PropertyField(_disableUI);
+
+            toolbarInt = GUILayout.Toolbar(toolbarInt, toolbarStrings);
+
+            if (toolbarInt >= 0)
+            {
+                switch (toolbarStrings[toolbarInt])
+                {
+                    case "Default":
+                        DefaultHelperScripts();
+                        break;
+                    case "Starter":
+                        StarterHelperScripts();
+                        break;
+                }
+            }
+            AddSeparatorLine();
+        
+            // Tutorial Module Generated Prefabs
+            _generationConfigFold = EditorGUILayout.BeginFoldoutHeaderGroup(_generationConfigFold, "Tutorial Module Generated Prefabs");
+            if (_generationConfigFold)
+            {
+                if (GUILayout.Button(_editGenerationConfigDisabled? "Enable Editing" : "Disable Editing"))
+                {
+                    _editGenerationConfigDisabled = !_editGenerationConfigDisabled;
+                }
+
+                EditorGUI.BeginDisabledGroup(_editGenerationConfigDisabled);
+                EditorGUILayout.PropertyField(_instantiatedPrefabType, new GUIContent("Prefab Type"));
+                EditorGUILayout.PropertyField(_instantiatedGameObjectName, new GUIContent("Prefab Id"));
+
+                PrefabObjectType chosenPrefabType = _instantiatedPrefabType.GetEnumValue<PrefabObjectType>();
+                if (chosenPrefabType == PrefabObjectType.OtherTutorialModuleEntryButton)
+                {
+                    EditorGUILayout.PropertyField(_otherTutorialModule);
+                }
+                
+                EditorGUILayout.PropertyField(_prefabClassType, new GUIContent("Tutorial Module Prefab Class Type"));
+                
+                PrefabClassType chosenPrefabClassType = _prefabClassType.GetEnumValue<PrefabClassType>();
+                if (chosenPrefabClassType == PrefabClassType.AssociatePrefabClass)
+                {
+                    _tutorialModuleData.associateDefaultPrefabClass = EditorGUILayout.Popup("Default Associate Prefab Class", _tutorialModuleData.associateDefaultPrefabClass, _defaultAdditionalMenusKeys);
+                    _tutorialModuleData.associateStarterPrefabClass = EditorGUILayout.Popup("Starter Associate Prefab Class", _tutorialModuleData.associateStarterPrefabClass, _starterAdditionalMenusKeys);
+                }
+                
+                // Target's Game Object Structure Path. Example: "Child/GrandChild/TargetGameObject"
+                EditorGUILayout.PropertyField(_targetParentGameObjectPath, new GUIContent("Target Prefab Container Path"));
+                EditorGUILayout.PropertyField(_spawnOrder);
+                
+                if (_instantiatedPrefabType.GetEnumName<PrefabObjectType>().Contains("Button"))
+                {
+                    EditorGUILayout.PropertyField(_buttonText);
+                }
+                
+                if (GUILayout.Button("Generate"))
+                {
+                    SaveGenerationConfig();
+                    GeneratePrefab(_targetDefaultParentPrefab);
+                }
+
+                EditorGUI.EndDisabledGroup();
+            }
+            EditorGUILayout.EndFoldoutHeaderGroup();
+            AddSeparatorLine();
+            
+            EditorGUILayout.PropertyField(_autoGeneratedButtonModel);
+            EditorGUILayout.PropertyField(_autoGeneratedButtonModelStarter);
+            AddSeparatorLine();
+        }
+        else
+        {
             EditorGUILayout.PropertyField(_defaultModuleScript);
-            
-            EditorGUILayout.PropertyField(_type);
-            EditorGUI.BeginDisabledGroup(_forceEnableStatus || _isDependencyModule || _forceDisableStatus);
-            EditorGUILayout.PropertyField(_isActive);
-            EditorGUI.EndDisabledGroup();
-            EditorGUILayout.Space();
-        }
-        EditorGUILayout.EndFoldoutHeaderGroup();
-
-
-        _starterFold = EditorGUILayout.BeginFoldoutHeaderGroup(_starterFold, "Tutorial Module Starter");
-        if (_starterFold)
-        {
-            EditorGUILayout.PropertyField(_starterMenuUIPrefab);
-            EditorGUILayout.PropertyField(_starterScript);
-            EditorGUILayout.PropertyField(_isStarterActive);
-            EditorGUILayout.Space();
-
-        }
-        EditorGUILayout.EndFoldoutHeaderGroup();
-        
-        EditorGUI.BeginDisabledGroup(_forceEnableStatus || _isDependencyModule);
-        EditorGUILayout.PropertyField(_moduleDependencies, true);
-        EditorGUI.EndDisabledGroup();
-
-        AddSeparatorLine();
-
-        EditorGUILayout.PropertyField(_hasAdditionalScripts);
-        EditorGUILayout.PropertyField(_hasAdditionalPrefab);
-        toolbarInt = GUILayout.Toolbar(toolbarInt, toolbarStrings);
-
-        if (toolbarInt >= 0)
-        {
-            switch (toolbarStrings[toolbarInt])
-            {
-                case "Default":
-                    DefaultHelperScripts();
-                    break;
-                case "Starter":
-                    StarterHelperScripts();
-                    break;
-            }
+            AddSeparatorLine();
         }
 
-        AddSeparatorLine();
-        
-        // Tutorial Module Generated Prefabs
-        _generationConfigFold = EditorGUILayout.BeginFoldoutHeaderGroup(_generationConfigFold, "Tutorial Module Generated Prefabs");
-        if (_generationConfigFold)
-        {
-            if (GUILayout.Button(_editGenerationConfigDisabled? "Enable Editing" : "Disable Editing"))
-            {
-                _editGenerationConfigDisabled = !_editGenerationConfigDisabled;
-            }
 
-            EditorGUI.BeginDisabledGroup(_editGenerationConfigDisabled);
-            EditorGUILayout.PropertyField(_instantiatedPrefabType, new GUIContent("Prefab Type"));
-            EditorGUILayout.PropertyField(_instantiatedGameObjectName, new GUIContent("Prefab Id"));
 
-            PrefabObjectType chosenPrefabType = _instantiatedPrefabType.GetEnumValue<PrefabObjectType>();
-            if (chosenPrefabType == PrefabObjectType.OtherTutorialModuleEntryButton)
-            {
-                EditorGUILayout.PropertyField(_otherTutorialModule);
-            }
-            
-            EditorGUILayout.PropertyField(_prefabClassType, new GUIContent("Tutorial Module Prefab Class Type"));
-            
-            PrefabClassType chosenPrefabClassType = _prefabClassType.GetEnumValue<PrefabClassType>();
-            if (chosenPrefabClassType == PrefabClassType.AssociatePrefabClass)
-            {
-                _tutorialModuleData.associateDefaultPrefabClass = EditorGUILayout.Popup("Default Associate Prefab Class", _tutorialModuleData.associateDefaultPrefabClass, _defaultAdditionalMenusKeys);
-                _tutorialModuleData.associateStarterPrefabClass = EditorGUILayout.Popup("Starter Associate Prefab Class", _tutorialModuleData.associateStarterPrefabClass, _starterAdditionalMenusKeys);
-            }
-            
-            // Target's Game Object Structure Path. Example: "Child/GrandChild/TargetGameObject"
-            EditorGUILayout.PropertyField(_targetParentGameObjectPath, new GUIContent("Target Prefab Container Path"));
-            EditorGUILayout.PropertyField(_spawnOrder);
-            
-            if (_instantiatedPrefabType.GetEnumName<PrefabObjectType>().Contains("Button"))
-            {
-                EditorGUILayout.PropertyField(_buttonText);
-            }
-            
-            if (GUILayout.Button("Generate"))
-            {
-                SaveGenerationConfig();
-                GeneratePrefab(_targetDefaultParentPrefab);
-            }
-
-            EditorGUI.EndDisabledGroup();
-        }
-        EditorGUILayout.EndFoldoutHeaderGroup();
-        AddSeparatorLine();
-        EditorGUILayout.PropertyField(_autoGeneratedButtonModel);
-        EditorGUILayout.PropertyField(_autoGeneratedButtonModelStarter);
-        AddSeparatorLine();
         serializedObject.ApplyModifiedProperties();
     }
 
