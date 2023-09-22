@@ -12,12 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c946b292dbcfa2418ef1a2b2e60b8b7, type: 3}
   m_Name: PartyEssentialsAssetConfig
   m_EditorClassIdentifier: 
+  isBaseModule: 0
+  disableUI: 0
   defaultMenuUIPrefab: {fileID: 5229087888638738446, guid: 653d2e086b0a5d44b9e359b6848543ba,
     type: 3}
   defaultAdditionalMenuUIPrefabs: []
   defaultModuleScript: {fileID: 11500000, guid: 0e3bc0a681194d24095e97f4fe2ada8b,
     type: 3}
-  type: 15
+  type: 16
   isActive: 1
   additionalScripts: 1
   additionalPrefab: 0

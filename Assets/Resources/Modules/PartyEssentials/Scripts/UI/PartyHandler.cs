@@ -5,6 +5,7 @@ using System.Linq;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
@@ -19,8 +20,8 @@ public class PartyHandler : MenuCanvas
     private PartyEssentialsWrapper _partyWrapper;
     private AuthEssentialsWrapper _authWrapper;
 
-    public string currentPartyId = "";
-    public string currentLeaderUserId = "";
+    [HideInInspector] public string currentPartyId = "";
+    [HideInInspector] public string currentLeaderUserId = "";
     private string[] membersUserId;
     private Dictionary<string, string> memberDatas;
     
@@ -45,6 +46,10 @@ public class PartyHandler : MenuCanvas
         {
             DisplayPartyMembersData();
         }
+        else
+        {
+            ResetPartyMemberEntryUI();
+        }
     }
     
     public void ResetPartyMemberEntryUI()
@@ -52,6 +57,7 @@ public class PartyHandler : MenuCanvas
         foreach (PartyMemberEntryPanel entryPanel in partyMemberEntryPanels)
         {
             entryPanel.SwitchView(PartyEntryView.Empty);
+            entryPanel.ChangePanelColor(Color.white);
         }
         DisplayOnlyCurrentPlayer();
     }
@@ -64,7 +70,9 @@ public class PartyHandler : MenuCanvas
             displayName = DEFUSERNAME + _authWrapper.userData.user_id.Substring(0, 5);
         }
 
+        partyMemberEntryPanels[0].SwitchView(PartyEntryView.MemberInfo);
         partyMemberEntryPanels[0].UpdateMemberInfoUIs(displayName);
+        SetLeaveButtonInteractable(false);
     }
 
     public void UpdatePartyMembersData(SessionV2MemberData[] members, string leaderId = null)
@@ -133,6 +141,8 @@ public class PartyHandler : MenuCanvas
         {
             _partyWrapper.LeaveParty(_partyWrapper.partyId, result =>
             {
+                currentPartyId = "";
+                currentLeaderUserId = "";
                 ResetPartyMemberEntryUI();
             });
         }
@@ -141,6 +151,13 @@ public class PartyHandler : MenuCanvas
     private void OnBackButtonClicked()
     {
         MenuManager.Instance.OnBackPressed();
+    }
+
+    public void SetLeaveButtonInteractable(bool isInteractable)
+    {
+        leaveButton.interactable = isInteractable;
+        TMP_Text leaveButtonText = leaveButton.GetComponentInChildren<TMP_Text>();
+        leaveButtonText.color = isInteractable ? Color.white : Color.grey;
     }
     
     public override GameObject GetFirstButton()

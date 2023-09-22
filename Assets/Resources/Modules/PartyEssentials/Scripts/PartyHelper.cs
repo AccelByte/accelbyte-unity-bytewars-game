@@ -24,36 +24,7 @@ public class PartyHelper : MonoBehaviour
         LoginHandler.onLoginCompleted += data =>
         {
             CheckPartyStatus();
-            
-            Lobby lobby = MultiRegistry.GetApiClient().GetLobby();
-            if (!lobby.IsConnected) lobby.Connect();
-
-            // current user related notification
-            lobby.SessionV2InvitedUserToParty += OnReceivePartyInvitation;
-            lobby.SessionV2UserKickedFromParty += OnKickedFromParty;
-            
-            // other users related notification
-            lobby.SessionV2PartyUpdated += result =>
-            {
-                Debug.Log($"[PartyNotif] SessionV2PartyUpdated - {result.Value.members.Length}");
-                _partyHandler.UpdatePartyMembersData(result.Value.members, result.Value.leaderId);
-            };
-            lobby.SessionV2PartyMemberChanged += result =>
-            {
-                Debug.Log($"[PartyNotif] SessionV2PartyMemberChanged - {result.Value.session.members.Length}");
-                foreach (SessionV2MemberData member in result.Value.session.members)
-                {
-                    Debug.Log($"[PartyNotif] Looping.. => {member.id} - {member.status}");
-                    if (member.id == result.Value.joinerId)
-                    {
-                        if (member.status == SessionV2MemberStatus.JOINED || member.status == SessionV2MemberStatus.KICKED)
-                        {
-                            _partyHandler.UpdatePartyMembersData(result.Value.session.members, result.Value.leaderId);
-                        }
-                    }
-                    break;
-                }
-            };
+            SubscribeLobbyNotifications();
         };
     }
 
@@ -63,14 +34,26 @@ public class PartyHelper : MonoBehaviour
         MessageNotificationEntryPanel messageNotificationPanel = notificationHandler.AddNotificationItem<MessageNotificationEntryPanel>(messageNotificationPrefab);
         messageNotificationPanel.ChangeMessageText(messageText);
     }
-    
-    private void CheckPartyStatus()
-    {
-        _partyWrapper.GetUserParties(OnGetUserPartiesCompleted);
-    }
 
 
     #region Lobby Notification Callback Functions
+
+    private void SubscribeLobbyNotifications()
+    {
+        Lobby lobby = MultiRegistry.GetApiClient().GetLobby();
+        if (!lobby.IsConnected)
+        {
+            lobby.Connect();
+        }
+
+        // current user related notification
+        lobby.SessionV2InvitedUserToParty += OnReceivePartyInvitation;
+        lobby.SessionV2UserKickedFromParty += OnKickedFromParty;
+            
+        // other users related notification
+        lobby.SessionV2PartyUpdated += OnPartyUpdated;
+        lobby.SessionV2PartyMemberChanged += OnPartyMemberChanged;
+    }
 
     private void OnReceivePartyInvitation(Result<SessionV2PartyInvitationNotification> invitation)
     {
@@ -87,11 +70,39 @@ public class PartyHelper : MonoBehaviour
         _partyHandler.currentPartyId = "";
         _partyHandler.currentLeaderUserId = "";
     }
+    
+    private void OnPartyUpdated(Result<SessionV2PartySessionUpdatedNotification> result)
+    {
+        Debug.Log($"[PartyNotif] SessionV2PartyUpdated - {result.Value.members.Length}");
+        _partyHandler.UpdatePartyMembersData(result.Value.members, result.Value.leaderId);
+    }
+    
+    private void OnPartyMemberChanged(Result<SessionV2PartyMembersChangedNotification> result)
+    {
+        Debug.Log($"[PartyNotif] SessionV2PartyMemberChanged - {result.Value.session.members.Length}");
+        foreach (SessionV2MemberData member in result.Value.session.members)
+        {
+            Debug.Log($"[PartyNotif] Looping.. => {member.id} - {member.status}");
+            if (member.id == result.Value.joinerId)
+            {
+                if (member.status == SessionV2MemberStatus.JOINED || member.status == SessionV2MemberStatus.KICKED)
+                {
+                    _partyHandler.UpdatePartyMembersData(result.Value.session.members, result.Value.leaderId);
+                }
+            }
+            break;
+        }
+    }
 
     #endregion
 
     #region Party Service Helper Functions
 
+    private void CheckPartyStatus()
+    {
+        _partyWrapper.GetUserParties(OnGetUserPartiesCompleted);
+    }
+    
     public void JoinedParty(SessionV2PartySession partySession)
     {
         _partyHandler.currentPartyId = partySession.id;
@@ -155,6 +166,7 @@ public class PartyHelper : MonoBehaviour
 
         // update party data
         PartyHandler partyHandler = MenuManager.Instance.GetChildComponent<PartyHandler>();
+        partyHandler.SetLeaveButtonInteractable(true);
         partyHandler.currentPartyId = result.Value.id;
         partyHandler.currentLeaderUserId = result.Value.leaderId;
         partyHandler.UpdatePartyMembersData(result.Value.members, result.Value.leaderId);

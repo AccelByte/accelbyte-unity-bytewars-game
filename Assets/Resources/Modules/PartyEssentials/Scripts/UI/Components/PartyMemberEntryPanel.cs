@@ -40,6 +40,7 @@ public class PartyMemberEntryPanel : MonoBehaviour
 
     public void UpdateMemberInfoUIs(string playerName, Result<Texture2D> avatar = null)
     {
+        Debug.Log("Updated?");
         playerNameText.text = playerName;
         if (avatar != null)
         {
