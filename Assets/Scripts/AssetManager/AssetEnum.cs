@@ -1,8 +1,6 @@
 //auto generated from AssetNameEnumGenerator
 public enum AssetEnum 
 {
-      PartyMemberEntryPanel,
-      PartyInvitationEntryPanel,
       TutorialModuleConfig,
       AuthEssentialsAssetConfig,
       CloudSaveEssentialsAssetConfig,
@@ -17,6 +15,7 @@ public enum AssetEnum
       MatchmakingSessionAssetConfig,
       MatchmakingWithDSAssetConfig,
       MatchSessionAssetConfig,
+      PartyEssentialsAssetConfig,
       PeriodicLeaderboardEssentialsAssetConfig,
       MatchSessionWithDSAssetConfig,
       SessionEssentialsAssetConfig,
@@ -57,6 +56,7 @@ public enum AssetEnum
       CreateMatchMenuCanvas_Starter,
       MatchSessionItem,
       PartyMenuCanvas,
+      PartyMenuCanvas_Starter,
       SessionEssentialsMenuCanvas,
       SessionEssentialsMenuCanvas_Starter,
       SinglePlatformAuth,
@@ -101,6 +101,9 @@ public enum AssetEnum
       JoiningMatchPanel,
       QuickPlayMenuCanvas,
       QuickPlayMenuCanvas_Starter,
+      MessageNotificationEntryPanel,
+      PartyInvitationEntryPanel,
+      PartyMemberEntryPanel,
       StatItemPanel,
       MemberNameText,
       RoleGroupPanel,

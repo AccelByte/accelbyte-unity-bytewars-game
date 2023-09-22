@@ -39,18 +39,18 @@ public class FriendDetailsMenuHandler : MenuCanvas
         blockButton.onClick.AddListener(OnBlockCliked);
         unfriendButton.onClick.AddListener(OnUnfriendClicked);
         
-        PartyEssentialsWrapper partyWrapper = TutorialModuleManager.Instance.GetModuleClass<PartyEssentialsWrapper>();
+        PartyHelper partyHelper = TutorialModuleManager.Instance.GetComponentInChildren<PartyHelper>();
         promoteToLeaderButton.onClick.AddListener(() =>
         {
-            partyWrapper.PromoteMemberToPartyLeader(partyWrapper.partyId, UserID, null);
+            partyHelper.PromoteToPartyLeader(UserID);
         });
         kickButton.onClick.AddListener(() =>
         {
-            partyWrapper.KickMemberFromParty(partyWrapper.partyId, UserID, null);
+            partyHelper.KickFromParty(UserID);
         });
         inviteToPartyButton.onClick.AddListener(() =>
         {
-            partyWrapper.SendPartyInvitation(partyWrapper.partyId, UserID, null);
+            partyHelper.InviteToParty(UserID);
         });
     }
     

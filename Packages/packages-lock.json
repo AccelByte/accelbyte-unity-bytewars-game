@@ -1,13 +1,20 @@
 {
   "dependencies": {
     "com.accelbyte.unitysdk": {
-      "version": "https://github.com/AccelByte/accelbyte-unity-sdk.git#16.1.0",
+      "version": "https://github.com/AccelByte/accelbyte-unity-sdk.git#16.7.0",
       "depth": 0,
       "source": "git",
       "dependencies": {
         "com.unity.nuget.newtonsoft-json": "3.0.1"
       },
-      "hash": "a9a3451d59403093f734fd77f24a64d35adff10e"
+      "hash": "040777fd32487330b56740434822884aa27e9c04"
+    },
+    "com.rlabrecque.steamworks.net": {
+      "version": "https://github.com/rlabrecque/Steamworks.NET.git?path=/com.rlabrecque.steamworks.net#20.2.0",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "a3fe8091f7237eef3f38becc3faa29b2dc6f9ce9"
     },
     "com.unity.burst": {
       "version": "1.8.2",
@@ -45,7 +52,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.visualstudio": {
-      "version": "2.0.17",
+      "version": "2.0.21",
       "depth": 0,
       "source": "registry",
       "dependencies": {

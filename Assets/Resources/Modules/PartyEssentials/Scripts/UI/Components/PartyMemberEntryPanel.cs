@@ -10,11 +10,6 @@ using Image = UnityEngine.UI.Image;
 
 public class PartyMemberEntryPanel : MonoBehaviour
 {
-    public enum PartyEntryView
-    {
-        Empty,
-        MemberInfo
-    }
     private PartyEntryView _displayEntryView = PartyEntryView.Empty;
     
     [SerializeField] private Button addMemberButton;
@@ -23,16 +18,10 @@ public class PartyMemberEntryPanel : MonoBehaviour
     [SerializeField] private Image avatarImage;
     [SerializeField] private TMP_Text playerNameText;
 
-    private PartyEssentialsWrapper _partyWrapper;
-
-    private const string PARTY_SESSION_TEMPLATE_NAME = "unity-party";
-    
     // Start is called before the first frame update
     void Start()
     {
-        _partyWrapper = TutorialModuleManager.Instance.GetModuleClass<PartyEssentialsWrapper>();
-        
-        addMemberButton.onClick.AddListener(InviteFriendsToParty);
+        addMemberButton.onClick.AddListener(OnAddMemberButtonClicked);
     }
 
     public void SwitchView(PartyEntryView partyEntryView)
@@ -65,23 +54,8 @@ public class PartyMemberEntryPanel : MonoBehaviour
 
         playerAvatarPanelImage.color = color;
     }
-    
-    private void InviteFriendsToParty()
-    {
-        if (string.IsNullOrEmpty(_partyWrapper.partyId))
-        {
-            _partyWrapper.CreateParty(PARTY_SESSION_TEMPLATE_NAME, OnCreatePartyCompleted);
-        }
-    }
 
-    private void OnCreatePartyCompleted(Result<SessionV2PartySession> result)
-    {
-        Debug.Log("Successfully create a new party!");
-        
-        ChangeToFriendListMenu();
-    }
-
-    private void ChangeToFriendListMenu()
+    private void OnAddMemberButtonClicked()
     {
         MenuManager.Instance.ChangeToMenu(AssetEnum.FriendMenuCanvas);
     }

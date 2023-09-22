@@ -14,6 +14,7 @@ public class PartyInvitationEntryPanel : MonoBehaviour
     [SerializeField] private Button rejectButton;
 
     private PartyEssentialsWrapper _partyWrapper;
+    private PartyHelper _partyHelper;
 
     private string _partyId;
     
@@ -21,6 +22,7 @@ public class PartyInvitationEntryPanel : MonoBehaviour
     void Start()
     {
         _partyWrapper = TutorialModuleManager.Instance.GetModuleClass<PartyEssentialsWrapper>();
+        _partyHelper = TutorialModuleManager.Instance.GetComponentInChildren<PartyHelper>();
         
         acceptButton.onClick.AddListener(AcceptPartyInvitation);
         rejectButton.onClick.AddListener(RejectPartyInvitation);
@@ -52,6 +54,7 @@ public class PartyInvitationEntryPanel : MonoBehaviour
 
     private void OnJoinPartyCompleted(Result<SessionV2PartySession> result)
     {
+        _partyHelper.JoinedParty(result.Value);
         Destroy(this.gameObject);
     }
 

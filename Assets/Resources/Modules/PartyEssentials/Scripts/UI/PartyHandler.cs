@@ -1,91 +1,143 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.UI;
+using WebSocketSharp;
 
 public class PartyHandler : MenuCanvas
 {
     [SerializeField] private PartyMemberEntryPanel[] partyMemberEntryPanels;
     [SerializeField] private Button leaveButton;
     [SerializeField] private Button backButton;
-    public static GameObject partyInvitationPrefab;
 
     private PartyEssentialsWrapper _partyWrapper;
-    private Lobby _lobby;
+    private AuthEssentialsWrapper _authWrapper;
 
+    public string currentPartyId = "";
+    public string currentLeaderUserId = "";
+    private string[] membersUserId;
+    private Dictionary<string, string> memberDatas;
+    
     private const string DEFUSERNAME = "Player-";
     private Color _leaderPanelColor = Color.blue;
 
     // Start is called before the first frame update
     void Start()
     {
+        _partyWrapper = TutorialModuleManager.Instance.GetModuleClass<PartyEssentialsWrapper>();
+        _authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
+
         leaveButton.onClick.AddListener(OnLeaveButtonClicked);
         backButton.onClick.AddListener(OnBackButtonClicked);
-
-        _partyWrapper = TutorialModuleManager.Instance.GetModuleClass<PartyEssentialsWrapper>();
-
-        UpdateCurrentPlayerInfo();
-        CheckPartyStatus();
+        
+        DisplayOnlyCurrentPlayer();
     }
 
-    private void UpdateCurrentPlayerInfo()
+    private void OnEnable()
     {
-        AuthEssentialsWrapper auth = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
-        if (auth.userData.display_name == "")
+        if (!currentPartyId.IsNullOrEmpty())
         {
-            partyMemberEntryPanels[0].UpdateMemberInfoUIs(DEFUSERNAME + auth.userData.user_id.Substring(0, 5));
+            DisplayPartyMembersData();
         }
-        else
+    }
+    
+    public void ResetPartyMemberEntryUI()
+    {
+        foreach (PartyMemberEntryPanel entryPanel in partyMemberEntryPanels)
         {
-            partyMemberEntryPanels[0].UpdateMemberInfoUIs(auth.userData.display_name);
+            entryPanel.SwitchView(PartyEntryView.Empty);
+        }
+        DisplayOnlyCurrentPlayer();
+    }
+    
+    private void DisplayOnlyCurrentPlayer()
+    {
+        string displayName = _authWrapper.userData.display_name;
+        if (displayName.IsNullOrEmpty())
+        {
+            displayName = DEFUSERNAME + _authWrapper.userData.user_id.Substring(0, 5);
         }
 
-        partyMemberEntryPanels[0].ChangePanelColor(_leaderPanelColor);
+        partyMemberEntryPanels[0].UpdateMemberInfoUIs(displayName);
     }
 
-    private void CheckPartyStatus()
+    public void UpdatePartyMembersData(SessionV2MemberData[] members, string leaderId = null)
     {
-        _partyWrapper.GetUserParties(OnGetUserPartiesCompleted);
-    }
-
-    private void OnGetUserPartiesCompleted(Result<PaginatedResponse<SessionV2PartySession>> result)
-    {
-        if (!result.IsError)
+        Debug.Log($"[PARTY] UpdatePartyMembersData {members.Length} + {leaderId}");
+        // set current party's leader id
+        if (currentLeaderUserId == "" && leaderId != "")
         {
-            foreach (SessionV2PartySession partySession in result.Value.data)
+            currentLeaderUserId = leaderId;
+        }
+        
+        // get members' user info data
+        membersUserId = members.Select(member => member.id).ToArray();
+        _authWrapper.BulkGetUserInfo(membersUserId, result =>
+        {
+            if (!result.IsError)
             {
-                _partyWrapper.LeaveParty(partySession.id, null);
+                memberDatas = new Dictionary<string, string>();
+                foreach (BaseUserInfo userData in result.Value.data)
+                {
+                    string displayName = userData.displayName == "" ? DEFUSERNAME + userData.userId.Substring(0, 5) : userData.displayName;
+                    memberDatas.Add(userData.userId, displayName);
+                }
+
+                if (gameObject.activeSelf)
+                {
+                    DisplayPartyMembersData();
+                }
             }
+        });
+    }
+
+    public void DisplayPartyMembersData()
+    {
+        Debug.Log($"[PARTY] DisplayPartyMembersData {membersUserId.Length} + {currentLeaderUserId}");
+        for (int index = 0; index < membersUserId.Length; index++)
+        {
+            string userId = membersUserId[index];
+            var currentIndex = index;
+            Debug.Log($"[PARTY] Looping 1.. {userId} | {memberDatas[userId]}");
+            
+            _authWrapper.GetUserAvatar(userId, avatarResult =>
+            {
+                Debug.Log($"[PARTY] Looping 2.. {userId} || {memberDatas[userId]}");
+                if (!avatarResult.IsError)
+                {
+                    partyMemberEntryPanels[currentIndex].UpdateMemberInfoUIs(memberDatas[userId], avatarResult);
+                }
+                else
+                {
+                    partyMemberEntryPanels[currentIndex].UpdateMemberInfoUIs(memberDatas[userId]);
+                }
+
+                // change panel color if leader
+                if (userId == currentLeaderUserId)
+                {
+                    partyMemberEntryPanels[currentIndex].ChangePanelColor(_leaderPanelColor);
+                } 
+            });
         }
     }
 
     private void OnLeaveButtonClicked()
     {
-        _partyWrapper.LeaveParty(_partyWrapper.partyId, null);
-    }
-
-    public static void ReceivePartyInvitation(Result<SessionV2PartyInvitationNotification> invitation)
-    {
-        partyInvitationPrefab = AssetManager.Singleton.GetAsset(AssetEnum.PartyInvitationEntryPanel) as GameObject;
-        PushNotificationHandler notificationHandler = MenuManager.Instance.GetChildComponent<PushNotificationHandler>();
-        PartyInvitationEntryPanel invitationEntryPanel = notificationHandler.AddNotificationItem<PartyInvitationEntryPanel>(partyInvitationPrefab);
-        invitationEntryPanel.UpdatePartyInvitationInfo(invitation.Value.partyId, invitation.Value.senderId);
-    }
-    
-    public void OnPartyUpdated(Result<SessionV2PartySessionUpdatedNotification> result)
-    {
-        for(int index = 0; index < result.Value.members.Length; index++)
+        if (!_partyWrapper.partyId.IsNullOrEmpty())
         {
-            PartyMemberEntryPanel partyMemberEntryPanel = partyMemberEntryPanels[index].GetComponent<PartyMemberEntryPanel>();
-            partyMemberEntryPanel.SwitchView(PartyMemberEntryPanel.PartyEntryView.MemberInfo);
-            partyMemberEntryPanel.UpdateMemberInfoUIs(result.Value.members[index].id);
+            _partyWrapper.LeaveParty(_partyWrapper.partyId, result =>
+            {
+                ResetPartyMemberEntryUI();
+            });
         }
     }
-
+    
     private void OnBackButtonClicked()
     {
         MenuManager.Instance.OnBackPressed();
