@@ -12,24 +12,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c946b292dbcfa2418ef1a2b2e60b8b7, type: 3}
   m_Name: MatchSessionAssetConfig
   m_EditorClassIdentifier: 
-  defaultMenuUIPrefab: {fileID: 4222609567832102627, guid: b7e590571230804449582827c043ea61,
+  isBaseModule: 1
+  defaultMenuUIPrefab: {fileID: 0}
+  defaultAdditionalMenuUIPrefabs: []
+  defaultModuleScript: {fileID: 11500000, guid: f98a2470a539f6a4faa618f01edee248,
     type: 3}
-  defaultAdditionalMenuUIPrefabs:
-  - {fileID: 7180269693339378356, guid: ef7e9d654d458e04aaa448561a8c84d4, type: 3}
-  defaultModuleScript: {fileID: 11500000, guid: 6dfe0d90de69f4e45abc5884855da8f1,
-    type: 3}
-  type: 11
-  isActive: 1
-  additionalScripts: 1
-  additionalPrefab: 1
-  defaultHelperScripts:
-  - {fileID: 11500000, guid: 51fdceffd2205bb43a9745bb44b6b73e, type: 3}
+  type: 0
+  isActive: 0
+  additionalScripts: 0
+  additionalPrefab: 0
+  defaultHelperScripts: []
   starterHelperScripts: []
-  starterScript: {fileID: 11500000, guid: f7244aac12180624586678c0151fb4eb, type: 3}
-  starterMenuUIPrefab: {fileID: -2065480600365305935, guid: c89dd735fc96d2741b9536b88b864193,
-    type: 3}
-  starterAdditionalMenuUIPrefabs:
-  - {fileID: 6978800506033015114, guid: a0f44daee85c86c44a35a44a5e6f501d, type: 3}
+  starterScript: {fileID: 0}
+  starterMenuUIPrefab: {fileID: 0}
+  starterAdditionalMenuUIPrefabs: []
   isStarterActive: 0
-  moduleDependencies:
-  - {fileID: 11400000, guid: b4c868ff7e72cc840963d5a37178f14d, type: 2}
+  moduleDependencies: []
+  instantiatedPrefabType: 0
+  instantiatedGameObjectName: 
+  prefabClassType: 0
+  associateDefaultPrefabClass: 0
+  associateStarterPrefabClass: 0
+  otherTutorialModule: 0
+  genericPrefabClass: 0
+  buttonText: 
+  targetParentGameObjectPath: 
+  spawnOrder: 0

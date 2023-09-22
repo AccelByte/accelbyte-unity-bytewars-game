@@ -342,6 +342,10 @@ public class MenuManager : MonoBehaviour
 
     private void InitMenuByModules(ModuleModel moduleData)
     {
+        if (moduleData.isUIDisable)
+        {
+            return;
+        }
         var modulePrefab = moduleData.mainPrefab;
         var menubyModule = Instantiate(modulePrefab, Vector3.zero, Quaternion.identity, _instance.transform);
         menubyModule.gameObject.SetActive(false);

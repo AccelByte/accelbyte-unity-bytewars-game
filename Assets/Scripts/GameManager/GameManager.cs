@@ -663,6 +663,9 @@ public class GameManager : NetworkBehaviour
             case InGameState.None:
                 _hud.gameObject.SetActive(false);
                 ResetLevel();
+                #if !UNITY_SERVER
+                OnGameStateIsNone?.Invoke();
+                #endif
                 break;
             case InGameState.Initializing:
                 if(_hud)
@@ -961,6 +964,7 @@ public class GameManager : NetworkBehaviour
     public event Action OnDeregisterServer;
     public event Action OnRegisterServer;
     public event Action OnRejectBackfill; 
+    public event Action OnGameStateIsNone; 
     private async void DeregisterServer()
     {
 #if UNITY_SERVER

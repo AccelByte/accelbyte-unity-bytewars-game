@@ -25,7 +25,6 @@ public class FriendEssentialsWrapper : MonoBehaviour
         _lobby = MultiRegistry.GetApiClient().GetLobby();
         LoginHandler.onLoginCompleted += tokenData =>
         {
-            Debug.LogWarning(tokenData.user_id);
             PlayerUserId = tokenData.user_id;
         };
         LoginHandler.onLoginCompleted += tokenData => LoginToLobby();

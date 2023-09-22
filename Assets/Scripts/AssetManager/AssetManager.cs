@@ -124,6 +124,10 @@ public class AssetManager : MonoBehaviour
         foreach (var keyValuePair in tutorialGameObjects)
         {
             var tmd = keyValuePair.Value as TutorialModuleData;
+            if (tmd.isBaseModule)
+            {
+                continue;
+            }
             tutorialModules.TryAdd(tmd.type, tmd);
         }
         return tutorialModules;

@@ -91,8 +91,7 @@ public class MainMenu : MenuCanvas
     private void CheckModulesButtons()
     {
         #if !BYTEWARS_DEBUG
-            bool isOnlineBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingEssentials)
-                || TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSession);
+            bool isOnlineBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.SessionEssentials);
             playOnlineBtn.gameObject.SetActive(isOnlineBtnActive);
         #endif
 

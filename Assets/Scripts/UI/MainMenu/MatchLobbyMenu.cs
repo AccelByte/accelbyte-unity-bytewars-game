@@ -25,6 +25,13 @@ public class MatchLobbyMenu : MenuCanvas
     {
         startButton.onClick.AddListener(StartGame);
         quitButton.onClick.AddListener(ClickQuitBtn);
+        GameManager.Instance.OnGameStateIsNone += ResetStartButton;
+
+    }
+
+    private void ResetStartButton()
+    {
+        startButton.gameObject.SetActive(true);
     }
 
     private void ClickQuitBtn()

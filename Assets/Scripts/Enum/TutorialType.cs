@@ -4,13 +4,16 @@
 public enum TutorialType
 {
     AuthEssentials=2,
-    MatchmakingEssentials=3,
+    MatchmakingWithDS=3,
     StatsEssentials=4,
     CloudSaveEssentials=5,
     LeaderboardEssentials=6,
     SinglePlatformAuth=7,
     FriendEssentials=8,
-    MatchSession=11,
+    MatchSessionWithDS=11,
     ManagingFriends=12,
-	PeriodicLeaderboardEssentials=13
+    PeriodicLeaderboardEssentials=13,
+    SessionEssentials=14,
+    MultiplayerDSEssentials=15
+
 }

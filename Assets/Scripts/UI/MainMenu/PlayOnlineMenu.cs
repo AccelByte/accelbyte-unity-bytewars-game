@@ -7,6 +7,7 @@ public class PlayOnlineMenu : MenuCanvas
     public Button browseMatchButton;
     public Button createMatchButton;
     public Button quickPlayButton;
+    public Button createSessionButton;
 
 
     // Start is called before the first frame update
@@ -17,14 +18,18 @@ public class PlayOnlineMenu : MenuCanvas
         createMatchButton.onClick.AddListener(OnCreateMatchButtonPressed);
         quickPlayButton.onClick.AddListener(OnQuickPlayButtonPressed);
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
+        createSessionButton.onClick.AddListener(OnCreateSessionPressed);
     }
 
     private void SetModuleButtonVisibility()
     {
         #if !BYTEWARS_DEBUG
-        var isQuickPlayBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingEssentials);
+        var isCreateSessionBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.SessionEssentials);
+        var isQuickPlayBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithDS);
+        var isCreateBrowseMatchBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithDS);
+        
+        createSessionButton.gameObject.SetActive(isCreateSessionBtnActive);
         quickPlayButton.gameObject.SetActive(isQuickPlayBtnActive);
-        var isCreateBrowseMatchBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSession);
         createMatchButton.gameObject.SetActive(isCreateBrowseMatchBtnActive);
         browseMatchButton.gameObject.SetActive(isCreateBrowseMatchBtnActive);
         #endif
@@ -39,15 +44,19 @@ public class PlayOnlineMenu : MenuCanvas
         MenuManager.Instance.ChangeToMenu(AssetEnum.QuickPlayMenuCanvas);
     }
 
-    public void OnCreateMatchButtonPressed()
+    private void OnCreateMatchButtonPressed()
     {
        MenuManager.Instance.ChangeToMenu(AssetEnum.CreateMatchMenuCanvas);
-
     }
 
-    public void OnBrowserMatchButtonPressed()
+    private void OnBrowserMatchButtonPressed()
     {
         MenuManager.Instance.ChangeToMenu(AssetEnum.BrowseMatchMenuCanvas);
+    }
+    
+    private void OnCreateSessionPressed()
+    {
+        MenuManager.Instance.ChangeToMenu(AssetEnum.SessionEssentialsMenuCanvas);
     }
 
     public override GameObject GetFirstButton()

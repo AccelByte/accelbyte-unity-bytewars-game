@@ -355,6 +355,7 @@ public class TutorialModuleConfig
     public string[] forceEnabledModules;
     public bool forceDisabledOtherModules;
     public SteamConfiguration steamConfiguration;
+    public MultiplayerDSConfiguration multiplayerDSConfiguration;
 }
 
 [Serializable]
@@ -362,4 +363,10 @@ public class SteamConfiguration
 {
     public string steamAppId;
     public bool autoLogin;
+}
+
+[Serializable]
+public class MultiplayerDSConfiguration
+{
+    public bool isServerUseAMS ;
 }

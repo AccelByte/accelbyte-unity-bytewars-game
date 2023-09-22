@@ -3,6 +3,8 @@ using UnityEngine;
 [CreateAssetMenu]
 public class TutorialModuleData : ScriptableObject
 {
+    public bool isBaseModule;
+    public bool disableUI;
     public MenuCanvas defaultMenuUIPrefab;
     public MenuCanvas[] defaultAdditionalMenuUIPrefabs;
     public TextAsset defaultModuleScript;

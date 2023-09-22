@@ -10,7 +10,8 @@ public static class ConnectionHandler
 {
     public static string LocalServerName;
     public static string LocalServerIP;
-    public static ushort LocalPort = 7778;
+    public const ushort DefaultPort = 7778;
+
     public static bool GetArgument()
     {
         var args = GetCommandlineArgs();

@@ -6,5 +6,9 @@
   {
     "steamAppId": "replace with your steam app id",
     "autoLogin": false
+  },
+  "multiplayerDSConfiguration":
+  {
+    "isServerUseAMS": false
   }
 }
