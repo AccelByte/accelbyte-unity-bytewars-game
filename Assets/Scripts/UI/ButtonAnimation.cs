@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -16,6 +17,11 @@ public class ButtonAnimation : MonoBehaviour, IPointerEnterHandler, IDeselectHan
     void Start()
     {
       button.onClick.AddListener(OnClickAnimation);
+    }
+
+    private void Update()
+    {
+        text.color = button.IsInteractable() ? Color.white : Color.gray;
     }
 
     void OnClickAnimation()
