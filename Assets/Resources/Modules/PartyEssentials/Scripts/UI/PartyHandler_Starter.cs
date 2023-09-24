@@ -12,14 +12,13 @@ public class PartyHandler_Starter : MenuCanvas
     [SerializeField] private Transform[] partyMemberEntryPanels;
     [SerializeField] private Button leaveButton;
     [SerializeField] private Button backButton;
-    [SerializeField] private GameObject partyInvitationPrefab;
 
     // put your code here
     
     
     void Start()
     {
-        // put your code here
+        backButton.onClick.AddListener(OnBackButtonClicked);
     }
     
     // put your code here

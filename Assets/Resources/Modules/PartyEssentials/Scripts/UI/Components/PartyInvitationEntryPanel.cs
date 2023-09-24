@@ -54,7 +54,7 @@ public class PartyInvitationEntryPanel : MonoBehaviour
 
     private void OnJoinPartyCompleted(Result<SessionV2PartySession> result)
     {
-        _partyHelper.JoinedParty(result.Value);
+        _partyHelper.OnJoinedParty(result.Value);
         Destroy(this.gameObject);
     }
 

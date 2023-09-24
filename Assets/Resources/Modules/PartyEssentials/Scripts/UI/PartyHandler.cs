@@ -22,11 +22,11 @@ public class PartyHandler : MenuCanvas
 
     [HideInInspector] public string currentPartyId = "";
     [HideInInspector] public string currentLeaderUserId = "";
-    private string[] membersUserId;
-    private Dictionary<string, string> memberDatas;
+    public List<PartyMemberData> membersUserInfo = new List<PartyMemberData>();
     
     private const string DEFUSERNAME = "Player-";
     private Color _leaderPanelColor = Color.blue;
+    private Color _memberPanelColor = Color.white;
 
     // Start is called before the first frame update
     void Start()
@@ -36,19 +36,18 @@ public class PartyHandler : MenuCanvas
 
         leaveButton.onClick.AddListener(OnLeaveButtonClicked);
         backButton.onClick.AddListener(OnBackButtonClicked);
-        
-        DisplayOnlyCurrentPlayer();
+
+        if (currentPartyId == "")
+        {
+            DisplayOnlyCurrentPlayer();
+        }
     }
 
     private void OnEnable()
     {
-        if (!currentPartyId.IsNullOrEmpty())
+        if (!currentPartyId.IsNullOrEmpty() && membersUserInfo.Count > 0)
         {
-            DisplayPartyMembersData();
-        }
-        else
-        {
-            ResetPartyMemberEntryUI();
+            DisplayPartyMembersInfo();
         }
     }
     
@@ -57,12 +56,11 @@ public class PartyHandler : MenuCanvas
         foreach (PartyMemberEntryPanel entryPanel in partyMemberEntryPanels)
         {
             entryPanel.SwitchView(PartyEntryView.Empty);
-            entryPanel.ChangePanelColor(Color.white);
+            entryPanel.ChangePanelColor(_memberPanelColor);
         }
-        DisplayOnlyCurrentPlayer();
     }
     
-    private void DisplayOnlyCurrentPlayer()
+    public void DisplayOnlyCurrentPlayer()
     {
         string displayName = _authWrapper.userData.display_name;
         if (displayName.IsNullOrEmpty())
@@ -75,63 +73,19 @@ public class PartyHandler : MenuCanvas
         SetLeaveButtonInteractable(false);
     }
 
-    public void UpdatePartyMembersData(SessionV2MemberData[] members, string leaderId = null)
+    public void DisplayPartyMembersInfo()
     {
-        Debug.Log($"[PARTY] UpdatePartyMembersData {members.Length} + {leaderId}");
-        // set current party's leader id
-        if (currentLeaderUserId == "" && leaderId != "")
+        ResetPartyMemberEntryUI();
+        for (int index = 0; index < membersUserInfo.Count; index++)
         {
-            currentLeaderUserId = leaderId;
-        }
-        
-        // get members' user info data
-        membersUserId = members.Select(member => member.id).ToArray();
-        _authWrapper.BulkGetUserInfo(membersUserId, result =>
-        {
-            if (!result.IsError)
-            {
-                memberDatas = new Dictionary<string, string>();
-                foreach (BaseUserInfo userData in result.Value.data)
-                {
-                    string displayName = userData.displayName == "" ? DEFUSERNAME + userData.userId.Substring(0, 5) : userData.displayName;
-                    memberDatas.Add(userData.userId, displayName);
-                }
-
-                if (gameObject.activeSelf)
-                {
-                    DisplayPartyMembersData();
-                }
-            }
-        });
-    }
-
-    public void DisplayPartyMembersData()
-    {
-        Debug.Log($"[PARTY] DisplayPartyMembersData {membersUserId.Length} + {currentLeaderUserId}");
-        for (int index = 0; index < membersUserId.Length; index++)
-        {
-            string userId = membersUserId[index];
-            var currentIndex = index;
-            Debug.Log($"[PARTY] Looping 1.. {userId} | {memberDatas[userId]}");
+            PartyMemberData partyMemberData = membersUserInfo[index];
+            partyMemberEntryPanels[index].SwitchView(PartyEntryView.MemberInfo);
+            partyMemberEntryPanels[index].UpdateMemberInfoUI(partyMemberData.DisplayName, partyMemberData.Avatar);
             
-            _authWrapper.GetUserAvatar(userId, avatarResult =>
+            if (partyMemberData.UserId == currentLeaderUserId)
             {
-                Debug.Log($"[PARTY] Looping 2.. {userId} || {memberDatas[userId]}");
-                if (!avatarResult.IsError)
-                {
-                    partyMemberEntryPanels[currentIndex].UpdateMemberInfoUIs(memberDatas[userId], avatarResult);
-                }
-                else
-                {
-                    partyMemberEntryPanels[currentIndex].UpdateMemberInfoUIs(memberDatas[userId]);
-                }
-
-                // change panel color if leader
-                if (userId == currentLeaderUserId)
-                {
-                    partyMemberEntryPanels[currentIndex].ChangePanelColor(_leaderPanelColor);
-                } 
-            });
+                partyMemberEntryPanels[index].ChangePanelColor(_leaderPanelColor);
+            }
         }
     }
 
@@ -144,6 +98,7 @@ public class PartyHandler : MenuCanvas
                 currentPartyId = "";
                 currentLeaderUserId = "";
                 ResetPartyMemberEntryUI();
+                DisplayOnlyCurrentPlayer();
             });
         }
     }
@@ -155,9 +110,8 @@ public class PartyHandler : MenuCanvas
 
     public void SetLeaveButtonInteractable(bool isInteractable)
     {
+        Debug.Log($"[Party] SetLeaveButtonInteractable: {isInteractable}");
         leaveButton.interactable = isInteractable;
-        TMP_Text leaveButtonText = leaveButton.GetComponentInChildren<TMP_Text>();
-        leaveButtonText.color = isInteractable ? Color.white : Color.grey;
     }
     
     public override GameObject GetFirstButton()

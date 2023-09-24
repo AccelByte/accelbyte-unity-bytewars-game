@@ -26,26 +26,30 @@ public class PartyMemberEntryPanel : MonoBehaviour
 
     public void SwitchView(PartyEntryView partyEntryView)
     {
-        if (partyEntryView == PartyEntryView.Empty)
-        {
-            addMemberButton.gameObject.SetActive(true);
-            memberInfoPanel.gameObject.SetActive(false);
-        }
-        else if (partyEntryView == PartyEntryView.MemberInfo)
-        {
-            memberInfoPanel.gameObject.SetActive(true);
-            addMemberButton.gameObject.SetActive(false);
-        }
+        addMemberButton.gameObject.SetActive(partyEntryView == PartyEntryView.Empty);
+        memberInfoPanel.gameObject.SetActive(partyEntryView == PartyEntryView.MemberInfo);
     }
 
     public void UpdateMemberInfoUIs(string playerName, Result<Texture2D> avatar = null)
     {
-        Debug.Log("Updated?");
         playerNameText.text = playerName;
         if (avatar != null)
         {
             avatarImage.sprite = Sprite.Create(avatar.Value, new Rect(0f, 0f, avatar.Value.width, avatar.Value.height), Vector2.zero);
         }
+        
+        SwitchView(PartyEntryView.MemberInfo);
+    }
+    
+    public void UpdateMemberInfoUI(string playerName, Texture2D avatar = null)
+    {
+        playerNameText.text = playerName;
+        if (avatar != null)
+        {
+            avatarImage.sprite = Sprite.Create(avatar, new Rect(0f, 0f, avatar.width, avatar.height), Vector2.zero);
+        }
+        
+        SwitchView(PartyEntryView.MemberInfo);
     }
 
     public void ChangePanelColor(Color color)

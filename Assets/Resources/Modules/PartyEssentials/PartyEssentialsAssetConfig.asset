@@ -25,7 +25,8 @@ MonoBehaviour:
   additionalPrefab: 0
   defaultHelperScripts:
   - {fileID: 11500000, guid: 28074e45f9a341c680620aad9fb58ec2, type: 3}
-  starterHelperScripts: []
+  starterHelperScripts:
+  - {fileID: 11500000, guid: 8da38f0f2ec64c8a81a5fc00f99ff268, type: 3}
   starterScript: {fileID: 11500000, guid: 50c4fded74caa624cbb26acde8da4a96, type: 3}
   starterMenuUIPrefab: {fileID: 4699425663576930667, guid: df4cb37075b6a36459034ebaeba84d03,
     type: 3}

@@ -2,13 +2,15 @@
 
 public struct PartyMemberData
 {
+    public readonly string UserId;
     public readonly string DisplayName;
-    public readonly Texture2D AvatarUrl;
+    public readonly Texture2D Avatar;
     
-    public PartyMemberData(string playerDisplayName, Texture2D playerAvatarUrl)
+    public PartyMemberData(string userId, string displayName, Texture2D avatar)
     {
-        DisplayName = playerDisplayName;
-        AvatarUrl = playerAvatarUrl;
+        this.UserId = userId;
+        this.DisplayName = displayName;
+        this.Avatar = avatar;
     }
 }
 
