@@ -5,7 +5,7 @@ using WebSocketSharp;
 
 public class PartyHandler_Starter : MenuCanvas
 {
-    [SerializeField] private Transform[] partyMemberEntryPanels;
+    [SerializeField] private PartyMemberEntryPanel[] partyMemberEntryPanels;
     [SerializeField] private Button leaveButton;
     [SerializeField] private Button backButton;
 
@@ -19,12 +19,20 @@ public class PartyHandler_Starter : MenuCanvas
     
     // put your code here
     
+    
+    public void SetLeaveButtonInteractable(bool isInteractable)
+    {
+        leaveButton.interactable = isInteractable;
+    }
+    
+    // put your code here
+    
 
     private void OnBackButtonClicked()
     {
         MenuManager.Instance.OnBackPressed();
     }
-    
+
     public override GameObject GetFirstButton()
     {
         return leaveButton.gameObject;

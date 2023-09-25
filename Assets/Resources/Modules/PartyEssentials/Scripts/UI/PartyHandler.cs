@@ -16,7 +16,7 @@ public class PartyHandler : MenuCanvas
     [HideInInspector] public string currentLeaderUserId = "";
     public List<PartyMemberData> MembersUserInfo = new List<PartyMemberData>();
     
-    private const string DEFUSERNAME = "Player-";
+    private const string DEFAULT_DISPLAY_NAME = "Player-";
     private Color _leaderPanelColor = Color.blue;
     private Color _memberPanelColor = Color.white;
 
@@ -43,12 +43,19 @@ public class PartyHandler : MenuCanvas
         }
     }
     
+    public void SetLeaveButtonInteractable(bool isInteractable)
+    {
+        leaveButton.interactable = isInteractable;
+    }
+    
     public void ResetPartyMemberEntryUI()
     {
         foreach (PartyMemberEntryPanel entryPanel in partyMemberEntryPanels)
         {
             entryPanel.SwitchView(PartyEntryView.Empty);
             entryPanel.ChangePanelColor(_memberPanelColor);
+            entryPanel.UpdateCurrentUserId("");
+            entryPanel.SetMemberInfoPanelInteractable(false);
         }
     }
     
@@ -57,11 +64,11 @@ public class PartyHandler : MenuCanvas
         string displayName = _authWrapper.userData.display_name;
         if (displayName.IsNullOrEmpty())
         {
-            displayName = DEFUSERNAME + _authWrapper.userData.user_id.Substring(0, 5);
+            displayName = DEFAULT_DISPLAY_NAME + _authWrapper.userData.user_id.Substring(0, 5);
         }
 
         partyMemberEntryPanels[0].SwitchView(PartyEntryView.MemberInfo);
-        partyMemberEntryPanels[0].UpdateMemberInfoUIs(displayName);
+        partyMemberEntryPanels[0].UpdateMemberInfoUI(displayName);
         SetLeaveButtonInteractable(false);
     }
 
@@ -72,12 +79,18 @@ public class PartyHandler : MenuCanvas
         {
             PartyMemberData partyMemberData = MembersUserInfo[index];
             partyMemberEntryPanels[index].SwitchView(PartyEntryView.MemberInfo);
+            partyMemberEntryPanels[index].UpdateCurrentUserId(partyMemberData.UserId);
             partyMemberEntryPanels[index].UpdateMemberInfoUI(partyMemberData.DisplayName, partyMemberData.Avatar);
-            
+
             if (partyMemberData.UserId == currentLeaderUserId)
             {
                 partyMemberEntryPanels[index].ChangePanelColor(_leaderPanelColor);
             }
+            
+            // If the current player is leader, set the other players' MemberInfoPanel to be interactable except the leader's.
+            // else if member, set all MemberInfoPanels interactable status to false.
+            bool isPanelInteractable = (_authWrapper.userData.user_id == currentLeaderUserId) && (_authWrapper.userData.user_id != partyMemberData.UserId);
+            partyMemberEntryPanels[index].SetMemberInfoPanelInteractable(isPanelInteractable);
         }
     }
 
@@ -100,12 +113,6 @@ public class PartyHandler : MenuCanvas
         MenuManager.Instance.OnBackPressed();
     }
 
-    public void SetLeaveButtonInteractable(bool isInteractable)
-    {
-        Debug.Log($"[Party] SetLeaveButtonInteractable: {isInteractable}");
-        leaveButton.interactable = isInteractable;
-    }
-    
     public override GameObject GetFirstButton()
     {
         return leaveButton.gameObject;

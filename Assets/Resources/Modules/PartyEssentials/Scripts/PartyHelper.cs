@@ -43,21 +43,19 @@ public class PartyHelper : MonoBehaviour
 
     private void UpdatePartyMembersData(SessionV2MemberData[] members, string leaderId = null)
     {
-        Debug.Log($"[PARTY] UpdatePartyMembersData {members.Length} + {leaderId}");
-
         // set current party's leader id
-        if (_partyHandler.currentLeaderUserId == "" && leaderId != "")
+        if (leaderId != "")
         {
             _partyHandler.currentLeaderUserId = leaderId;
         }
-
-        List<PartyMemberData> partyMemberDatas = new List<PartyMemberData>();
+        
         // get members' user info data
         List<string> membersUserId = members.Select(member => member.id).ToList();
         _authWrapper.BulkGetUserInfo(membersUserId.ToArray(), result =>
         {
             if (!result.IsError)
             {
+                List<PartyMemberData> partyMemberDatas = new List<PartyMemberData>();
                 foreach (BaseUserInfo userData in result.Value.data)
                 {
                     string displayName = userData.displayName == ""
@@ -121,19 +119,16 @@ public class PartyHelper : MonoBehaviour
 
     private void OnPartyUpdated(Result<SessionV2PartySessionUpdatedNotification> result)
     {
-        Debug.Log($"[PartyNotif] SessionV2PartyUpdated - {result.Value.members.Length}");
-        // _partyHandler.UpdatePartyMembersData(result.Value.members, result.Value.leaderId);
         UpdatePartyMembersData(result.Value.members, result.Value.leaderId);
     }
 
     private void OnPartyMemberChanged(Result<SessionV2PartyMembersChangedNotification> result)
     {
-        Debug.Log($"[PartyNotif] SessionV2PartyMemberChanged - {result.Value.session.members.Length}");
         List<SessionV2MemberData> members = result.Value.session.members.ToList();
+        
         bool isUpdated = false;
         foreach (SessionV2MemberData member in result.Value.session.members)
         {
-            Debug.Log($"[PartyNotif] Looping.. => {member.id} - {member.status}");
             if (member.id == result.Value.joinerId)
             {
                 if (member.status == SessionV2MemberStatus.JOINED)
@@ -169,6 +164,7 @@ public class PartyHelper : MonoBehaviour
     {
         _partyHandler.currentPartyId = partySession.id;
         _partyHandler.currentLeaderUserId = partySession.leaderId;
+        _partyHandler.SetLeaveButtonInteractable(true);
         UpdatePartyMembersData(partySession.members, partySession.leaderId);
     }
 
@@ -178,7 +174,7 @@ public class PartyHelper : MonoBehaviour
         {
             if (!result.IsError)
             {
-                TriggerMessageNotification($"{userId} promoted to leader!");
+                TriggerMessageNotification($"{DEFAULT_DISPLAY_NAME + userId.Substring(0,5)} promoted to leader!");
             }
         });
     }
@@ -218,13 +214,13 @@ public class PartyHelper : MonoBehaviour
             foreach (SessionV2PartySession partySession in result.Value.data)
             {
                 _partyWrapper.LeaveParty(partySession.id, null);
+                TriggerMessageNotification("You left the party!");
             }
         }
     }
 
     private void OnCreatePartyCompleted(Result<SessionV2PartySession> result, string inviteeUserId)
     {
-        Debug.Log("[PARTY] Successfully create a new party!");
         TriggerMessageNotification("You've just created a new party!");
 
         // update party data
@@ -239,7 +235,6 @@ public class PartyHelper : MonoBehaviour
 
     private void OnSendPartyInvitationCompleted(Result result)
     {
-        Debug.Log($"[PARTY] Sending party invitation..");
         TriggerMessageNotification("You've just sent out a party invitation! Waiting for a response..");
     }
 

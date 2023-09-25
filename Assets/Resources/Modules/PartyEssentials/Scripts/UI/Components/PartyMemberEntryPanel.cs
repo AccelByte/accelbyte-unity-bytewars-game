@@ -13,34 +13,53 @@ public class PartyMemberEntryPanel : MonoBehaviour
     private PartyEntryView _displayEntryView = PartyEntryView.Empty;
     
     [SerializeField] private Button addMemberButton;
-    [SerializeField] private Transform memberInfoPanel;
+    [SerializeField] private Button memberInfoPanel;
     [SerializeField] private Image playerAvatarPanelImage;
     [SerializeField] private Image avatarImage;
     [SerializeField] private TMP_Text playerNameText;
 
+    private string _currentUserId;
+    
     // Start is called before the first frame update
     void Start()
     {
         addMemberButton.onClick.AddListener(OnAddMemberButtonClicked);
+        memberInfoPanel.onClick.AddListener(OnMemberInfoPanelClicked);
     }
 
+    private void OnAddMemberButtonClicked()
+    {
+        MenuManager.Instance.ChangeToMenu(AssetEnum.FriendMenuCanvas);
+    }
+    
+    private void OnMemberInfoPanelClicked()
+    {
+        // Trigger Friend Details Menu
+        MenuCanvas friendDetailsMenu = MenuManager.Instance.GetMenu(AssetEnum.FriendDetailsMenuCanvas);
+        FriendDetailsMenuHandler friendDetailsMenuHandler = friendDetailsMenu.gameObject.GetComponent<FriendDetailsMenuHandler>();
+        
+        Transform friendDetailsPanel = friendDetailsMenuHandler.friendDetailsPanel;
+        Image avatar = friendDetailsPanel.GetComponentInChildren<Image>();
+        TMP_Text playerDisplayName = friendDetailsPanel.GetComponentInChildren<TMP_Text>();
+
+        friendDetailsMenuHandler.UserID = _currentUserId;
+        avatar.sprite = avatarImage.sprite;
+        playerDisplayName.text = playerNameText.text;
+
+        MenuManager.Instance.ChangeToMenu(AssetEnum.FriendDetailsMenuCanvas);
+    }
+    
     public void SwitchView(PartyEntryView partyEntryView)
     {
         addMemberButton.gameObject.SetActive(partyEntryView == PartyEntryView.Empty);
         memberInfoPanel.gameObject.SetActive(partyEntryView == PartyEntryView.MemberInfo);
     }
 
-    public void UpdateMemberInfoUIs(string playerName, Result<Texture2D> avatar = null)
+    public void UpdateCurrentUserId(string userId)
     {
-        playerNameText.text = playerName;
-        if (avatar != null)
-        {
-            avatarImage.sprite = Sprite.Create(avatar.Value, new Rect(0f, 0f, avatar.Value.width, avatar.Value.height), Vector2.zero);
-        }
-        
-        SwitchView(PartyEntryView.MemberInfo);
+        _currentUserId = userId;
     }
-    
+
     public void UpdateMemberInfoUI(string playerName, Texture2D avatar = null)
     {
         playerNameText.text = playerName;
@@ -60,8 +79,8 @@ public class PartyMemberEntryPanel : MonoBehaviour
         playerAvatarPanelImage.color = color;
     }
 
-    private void OnAddMemberButtonClicked()
+    public void SetMemberInfoPanelInteractable(bool isInteractable)
     {
-        MenuManager.Instance.ChangeToMenu(AssetEnum.FriendMenuCanvas);
+        memberInfoPanel.interactable = isInteractable;
     }
 }
