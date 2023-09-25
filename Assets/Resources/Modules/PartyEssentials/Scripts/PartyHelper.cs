@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using AccelByte.Api;
 using AccelByte.Core;
@@ -71,7 +70,7 @@ public class PartyHelper : MonoBehaviour
 
                         if (partyMemberDatas.Count == membersUserId.Count)
                         {
-                            _partyHandler.membersUserInfo = partyMemberDatas.OrderBy(data => membersUserId.IndexOf(data.UserId)).ToList();
+                            _partyHandler.MembersUserInfo = partyMemberDatas.OrderBy(data => membersUserId.IndexOf(data.UserId)).ToList();
                             if (_partyHandler.gameObject.activeSelf)
                             {
                                 _partyHandler.DisplayPartyMembersInfo();

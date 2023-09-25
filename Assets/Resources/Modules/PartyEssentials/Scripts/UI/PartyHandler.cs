@@ -1,13 +1,5 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using AccelByte.Api;
-using AccelByte.Core;
-using AccelByte.Models;
-using TMPro;
 using UnityEngine;
-using UnityEngine.Networking;
 using UnityEngine.UI;
 using WebSocketSharp;
 
@@ -22,7 +14,7 @@ public class PartyHandler : MenuCanvas
 
     [HideInInspector] public string currentPartyId = "";
     [HideInInspector] public string currentLeaderUserId = "";
-    public List<PartyMemberData> membersUserInfo = new List<PartyMemberData>();
+    public List<PartyMemberData> MembersUserInfo = new List<PartyMemberData>();
     
     private const string DEFUSERNAME = "Player-";
     private Color _leaderPanelColor = Color.blue;
@@ -45,7 +37,7 @@ public class PartyHandler : MenuCanvas
 
     private void OnEnable()
     {
-        if (!currentPartyId.IsNullOrEmpty() && membersUserInfo.Count > 0)
+        if (!currentPartyId.IsNullOrEmpty() && MembersUserInfo.Count > 0)
         {
             DisplayPartyMembersInfo();
         }
@@ -76,9 +68,9 @@ public class PartyHandler : MenuCanvas
     public void DisplayPartyMembersInfo()
     {
         ResetPartyMemberEntryUI();
-        for (int index = 0; index < membersUserInfo.Count; index++)
+        for (int index = 0; index < MembersUserInfo.Count; index++)
         {
-            PartyMemberData partyMemberData = membersUserInfo[index];
+            PartyMemberData partyMemberData = MembersUserInfo[index];
             partyMemberEntryPanels[index].SwitchView(PartyEntryView.MemberInfo);
             partyMemberEntryPanels[index].UpdateMemberInfoUI(partyMemberData.DisplayName, partyMemberData.Avatar);
             

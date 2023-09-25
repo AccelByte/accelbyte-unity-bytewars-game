@@ -1,11 +1,7 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using AccelByte.Api;
-using AccelByte.Core;
-using AccelByte.Models;
 using UnityEngine;
 using UnityEngine.UI;
+using WebSocketSharp;
 
 public class PartyHandler_Starter : MenuCanvas
 {
