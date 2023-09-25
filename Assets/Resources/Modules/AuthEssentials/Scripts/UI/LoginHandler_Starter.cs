@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using AccelByte.Core;
+using AccelByte.Models;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -35,26 +36,9 @@ public class LoginHandler_Starter : MenuCanvas
         get => CurrentView;
         set
         {
-            switch (value)
-            {
-                case LoginView.LoginState:
-                    loginStatePanel.SetActive(true);
-                    loginLoadingPanel.SetActive(false);
-                    loginFailedPanel.SetActive(false);
-                    break;
-
-                case LoginView.LoginLoading:
-                    loginStatePanel.SetActive(false);
-                    loginLoadingPanel.SetActive(true);
-                    loginFailedPanel.SetActive(false);
-                    break;
-            
-                case LoginView.LoginFailed:
-                    loginStatePanel.SetActive(false);
-                    loginLoadingPanel.SetActive(false);
-                    loginFailedPanel.SetActive(true);
-                    break;
-            }
+            loginStatePanel.SetActive(value == LoginView.LoginState);
+            loginLoadingPanel.SetActive(value == LoginView.LoginLoading);
+            loginFailedPanel.SetActive(value == LoginView.LoginFailed);
         }
     }
 
@@ -66,7 +50,7 @@ public class LoginHandler_Starter : MenuCanvas
     //Paste OnEnable() function from "Add a Login Menu" here (step number 4)
 
     
-    //initially Paste Login() function login from "Add a Login Menu" here (step number 5)
+    //initially Paste Login() function login from "Add a Login Menu" here (step number 3)
     //then change it using code from "Put it All together" unit (step number 5)
 
     
