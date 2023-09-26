@@ -22,7 +22,7 @@ public class CacheHelper
     public static async void LoadTexture(string uri, int desiredWidth, int desiredHeight, Action<Texture2D> onLoadFinished)
     {
         LoadCachePath();
-        var result = new Texture2D(desiredWidth, desiredHeight);
+        Texture2D result = null;
         Debug.Log($"will load texture url:{uri}");
         var rUri = new Uri(uri);
         var fileName = GetUriLastElementFilename(rUri);
@@ -30,6 +30,7 @@ public class CacheHelper
         if (CachedFiles.TryGetValue(path, out var existingPath))
         {
             var savedFile = await File.ReadAllBytesAsync(existingPath);
+            result = new Texture2D(desiredWidth, desiredHeight);
             result.LoadImage(savedFile);
         }
         else

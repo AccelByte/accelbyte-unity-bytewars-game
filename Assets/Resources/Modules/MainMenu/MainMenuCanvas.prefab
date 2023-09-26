@@ -117,9 +117,6 @@ MonoBehaviour:
   mainButtonsContainer: {fileID: 73831450492722075}
   playButton: {fileID: 867537189888110524}
   playOnlineBtn: {fileID: 5676985755904903461}
-  profileButton: {fileID: 0}
-  leaderboardButton: {fileID: 0}
-  socialButton: {fileID: 0}
   helpAndOptionsButton: {fileID: 867537189723416779}
   quitButton: {fileID: 867537188822523570}
   layoutGroup: {fileID: 73831450492722074}

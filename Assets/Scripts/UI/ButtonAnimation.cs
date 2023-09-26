@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -8,6 +10,8 @@ public class ButtonAnimation : MonoBehaviour, IPointerEnterHandler, IDeselectHan
     public TMP_Text text;
     public Button button;
     [SerializeField] private Selectable selectable;
+    [SerializeField] private ContentSizeFitter contentSizeFitter;
+    [SerializeField] private RectTransform rectTransform;
 
     // Start is called before the first frame update
     void Start()
@@ -44,5 +48,24 @@ public class ButtonAnimation : MonoBehaviour, IPointerEnterHandler, IDeselectHan
     public void OnDeselect(BaseEventData eventData)
     {
         selectable.OnPointerExit(null);
+    }
+
+    private void OnEnable()
+    {
+        if (contentSizeFitter != null
+            && rectTransform!=null)
+        {
+            StartCoroutine(FixLayout());
+        }
+    }
+
+    IEnumerator FixLayout()
+    {
+        yield return new WaitForEndOfFrame();
+        var size = rectTransform.sizeDelta;
+        yield return new WaitForEndOfFrame();
+        contentSizeFitter.enabled = false;
+        yield return new WaitForEndOfFrame();
+        rectTransform.sizeDelta = size;
     }
 }

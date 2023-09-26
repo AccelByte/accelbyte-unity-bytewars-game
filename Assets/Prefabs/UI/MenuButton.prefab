@@ -276,6 +276,8 @@ MonoBehaviour:
   text: {fileID: 940215663889083257}
   button: {fileID: 940215664547834098}
   selectable: {fileID: 940215664547834098}
+  contentSizeFitter: {fileID: 7071317920418096113}
+  rectTransform: {fileID: 940215664547834099}
 --- !u!114 &7071317920418096113
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -117,6 +117,7 @@ public class AssetNameEnumGenerator : AssetModificationProcessor
                 }
             }
         }
+        enumNames.Sort();
         if (newAssetNames?.Count == 0)
             return;
         string enumScript = @"//auto generated from AssetNameEnumGenerator

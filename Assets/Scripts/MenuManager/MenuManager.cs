@@ -320,9 +320,7 @@ public class MenuManager : MonoBehaviour
         
         foreach (var menuCanvas in mainmenuConfig.otherMenuCanvas)
         {
-            menuCanvas.gameObject.SetActive(false);
             var otherCoreMenu = Instantiate(menuCanvas, transform);
-            menuCanvas.gameObject.SetActive(true);
             otherCoreMenu.gameObject.SetActive(false);
             string gameObjectName = menuCanvas.gameObject.name;
             otherCoreMenu.name = gameObjectName;
@@ -382,8 +380,8 @@ public class MenuManager : MonoBehaviour
         }
         var test = (GameObject)AssetManager.Singleton.GetAsset(assetEnum);
         var modulePrefab = test.GetComponent<MenuCanvas>();
-        modulePrefab.gameObject.SetActive(false);
         var menubyModule = Instantiate(modulePrefab, Vector3.zero, Quaternion.identity, _instance.transform);
+        menubyModule.gameObject.SetActive(false);
         menubyModule.name = modulePrefab.name;
         _menusDictionary.Add(menubyModule.GetAssetEnum(), menubyModule);
         // _menusDictionary[menubyModule.GetAssetEnum()].gameObject.SetActive(false);

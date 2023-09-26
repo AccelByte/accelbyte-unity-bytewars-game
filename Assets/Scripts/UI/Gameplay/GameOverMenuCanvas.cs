@@ -41,12 +41,12 @@ public class GameOverMenuCanvas : MenuCanvas
         {
             return b.score.CompareTo(a.score);
         });
-        winningPlayerTextUI.text = playerStates[0].playerName;
+        winningPlayerTextUI.text = playerStates[0].GetPlayerName();
         winningPlayerTextUI.color = teamStates[playerStates[0].teamIndex].teamColour;
         for (int i = 0; i < playerStates.Count; i++)
         {
             var pState = playerStates[i];
-            leaderBoards[i].SetDetails(pState.playerName, teamStates[pState.teamIndex].teamColour, 
+            leaderBoards[i].SetDetails(pState.GetPlayerName(), teamStates[pState.teamIndex].teamColour, 
                 pState.killCount, (int)pState.score);
             leaderBoards[i].gameObject.SetActive(true);
         }
