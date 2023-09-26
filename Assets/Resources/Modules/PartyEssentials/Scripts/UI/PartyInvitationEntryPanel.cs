@@ -28,12 +28,16 @@ public class PartyInvitationEntryPanel : MonoBehaviour
         rejectButton.onClick.AddListener(RejectPartyInvitation);
     }
 
-    public void UpdatePartyInvitationInfo(string partyId, string senderId)
+    public void UpdatePartyInvitationInfo(string partyId, string senderName, Texture2D senderAvatar = null)
     {
         _partyId = partyId;
-        invitationText.text = senderId + "invited you to join their Party";
+        invitationText.text = senderName + " invited you to join their Party";
+        if (senderAvatar != null)
+        {
+            senderImage.sprite = Sprite.Create(senderAvatar, new Rect(0f, 0f, senderAvatar.width, senderAvatar.height), Vector2.zero);
+        }
     }
-    
+
     private void AcceptPartyInvitation()
     {
         if (_partyId != null)
@@ -54,7 +58,7 @@ public class PartyInvitationEntryPanel : MonoBehaviour
 
     private void OnJoinPartyCompleted(Result<SessionV2PartySession> result)
     {
-        _partyHelper.OnJoinedParty(result.Value);
+        _partyHelper.HandleJoiningParty(result.Value);
         Destroy(this.gameObject);
     }
 

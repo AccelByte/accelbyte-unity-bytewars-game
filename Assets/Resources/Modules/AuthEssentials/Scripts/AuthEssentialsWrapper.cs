@@ -52,6 +52,11 @@ public class AuthEssentialsWrapper : MonoBehaviour
         user.GetUserByUserId(receivedUserId, OnGetUserPublicDataFinished);
     }
 
+    public void GetUserByUserId(string userId, ResultCallback<PublicUserData> resultCallback)
+    {
+        user.GetUserByUserId(userId, result => OnGetUserByUserId(result, resultCallback));
+    }
+    
     /// <summary>
     /// Get user info of some users in bulk
     /// </summary>
@@ -105,6 +110,20 @@ public class AuthEssentialsWrapper : MonoBehaviour
             GameData.CachedPlayerState.avatarUrl = publicUserData.avatarUrl;
             GameData.CachedPlayerState.playerName = publicUserData.displayName;
         }
+    }
+
+    private void OnGetUserByUserId(Result<PublicUserData> result, ResultCallback<PublicUserData> customCallback = null)
+    {
+        if (!result.IsError)
+        {
+            Debug.Log("Successfully get the user public data!");
+        }
+        else
+        {
+            Debug.Log($"Unable to get the user public data. Message: {result.Error.Message}");
+        }
+        
+        customCallback?.Invoke(result);
     }
 
     /// <summary>

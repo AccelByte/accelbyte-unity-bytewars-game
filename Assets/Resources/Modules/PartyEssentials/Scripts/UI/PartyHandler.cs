@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AccelByte.Core;
 using UnityEngine;
 using UnityEngine.UI;
 using WebSocketSharp;
@@ -33,11 +34,15 @@ public class PartyHandler : MenuCanvas
         {
             DisplayOnlyCurrentPlayer();
         }
+        else
+        {
+            DisplayPartyMembersInfo();
+        }
     }
 
     private void OnEnable()
     {
-        if (!currentPartyId.IsNullOrEmpty() && MembersUserInfo.Count > 0)
+        if (!currentPartyId.IsNullOrEmpty() && MembersUserInfo.Count > 0 && _authWrapper)
         {
             DisplayPartyMembersInfo();
         }
@@ -46,6 +51,16 @@ public class PartyHandler : MenuCanvas
     public void SetLeaveButtonInteractable(bool isInteractable)
     {
         leaveButton.interactable = isInteractable;
+    }
+    
+    public void HandleNotInParty()
+    {
+        ResetPartyMemberEntryUI();
+        DisplayOnlyCurrentPlayer();
+
+        _partyWrapper.partyId = "";
+        currentPartyId = "";
+        currentLeaderUserId = "";
     }
     
     public void ResetPartyMemberEntryUI()
@@ -98,16 +113,13 @@ public class PartyHandler : MenuCanvas
     {
         if (!_partyWrapper.partyId.IsNullOrEmpty())
         {
-            _partyWrapper.LeaveParty(_partyWrapper.partyId, result =>
-            {
-                currentPartyId = "";
-                currentLeaderUserId = "";
-                ResetPartyMemberEntryUI();
-                DisplayOnlyCurrentPlayer();
-            });
+            _partyWrapper.LeaveParty(_partyWrapper.partyId, result => HandleNotInParty());
+            
+            PartyHelper partyHelper = TutorialModuleManager.Instance.GetComponentInChildren<PartyHelper>();
+            partyHelper.TriggerMessageNotification(("You left the party!"));
         }
     }
-    
+
     private void OnBackButtonClicked()
     {
         MenuManager.Instance.OnBackPressed();

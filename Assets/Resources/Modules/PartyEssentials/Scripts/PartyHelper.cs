@@ -34,7 +34,7 @@ public class PartyHelper : MonoBehaviour
         };
     }
 
-    private void TriggerMessageNotification(string messageText)
+    public void TriggerMessageNotification(string messageText)
     {
         PushNotificationHandler notificationHandler = MenuManager.Instance.GetChildComponent<PushNotificationHandler>();
         MessageNotificationEntryPanel messageNotificationPanel = notificationHandler.AddNotificationItem<MessageNotificationEntryPanel>(_messageNotificationPrefab);
@@ -50,34 +50,8 @@ public class PartyHelper : MonoBehaviour
         }
         
         // get members' user info data
-        List<string> membersUserId = members.Select(member => member.id).ToList();
-        _authWrapper.BulkGetUserInfo(membersUserId.ToArray(), result =>
-        {
-            if (!result.IsError)
-            {
-                List<PartyMemberData> partyMemberDatas = new List<PartyMemberData>();
-                foreach (BaseUserInfo userData in result.Value.data)
-                {
-                    string displayName = userData.displayName == ""
-                        ? DEFAULT_DISPLAY_NAME + userData.userId.Substring(0, 5)
-                        : userData.displayName;
-                    _authWrapper.GetUserAvatar(userData.userId, avatarResult =>
-                    {
-                        PartyMemberData memberData = new PartyMemberData(userData.userId, displayName, avatarResult.Value);
-                        partyMemberDatas.Add(memberData);
-
-                        if (partyMemberDatas.Count == membersUserId.Count)
-                        {
-                            _partyHandler.MembersUserInfo = partyMemberDatas.OrderBy(data => membersUserId.IndexOf(data.UserId)).ToList();
-                            if (_partyHandler.gameObject.activeSelf)
-                            {
-                                _partyHandler.DisplayPartyMembersInfo();
-                            }
-                        }
-                    });
-                }
-            }
-        });
+        string[] membersUserId = members.Select(member => member.id).ToArray();
+        _authWrapper.BulkGetUserInfo(membersUserId, result => OnBulkGetUserInfo(result, membersUserId.ToList()));
     }
 
     #region Lobby Notification Callback Functions
@@ -101,20 +75,25 @@ public class PartyHelper : MonoBehaviour
 
     private void OnReceivePartyInvitation(Result<SessionV2PartyInvitationNotification> invitation)
     {
+        _authWrapper.GetUserByUserId(invitation.Value.senderId, userResult =>
+        {
+            _authWrapper.GetUserAvatar(
+                invitation.Value.senderId, 
+                avatarResult => OnGetUserAvatarCompleted(avatarResult, invitation.Value.partyId, userResult.Value.displayName));
+        });
+    }
+
+    private void OnGetUserAvatarCompleted(Result<Texture2D> result, string partyId, string senderDisplayName)
+    {
         PushNotificationHandler notificationHandler = MenuManager.Instance.GetChildComponent<PushNotificationHandler>();
-        PartyInvitationEntryPanel invitationEntryPanel =
-            notificationHandler.AddNotificationItem<PartyInvitationEntryPanel>(_partyInvitationPrefab);
-        invitationEntryPanel.UpdatePartyInvitationInfo(invitation.Value.partyId, invitation.Value.senderId);
+        PartyInvitationEntryPanel invitationEntryPanel = notificationHandler.AddNotificationItem<PartyInvitationEntryPanel>(_partyInvitationPrefab);
+        invitationEntryPanel.UpdatePartyInvitationInfo(partyId, senderDisplayName, result.Value);
     }
 
     private void OnKickedFromParty(Result<SessionV2PartyUserKickedNotification> result)
     {
-        _partyHandler.ResetPartyMemberEntryUI();
-        _partyHandler.DisplayOnlyCurrentPlayer();
-
-        _partyWrapper.partyId = "";
-        _partyHandler.currentPartyId = "";
-        _partyHandler.currentLeaderUserId = "";
+        _partyHandler.HandleNotInParty();
+        TriggerMessageNotification("You've been kicked from party!");
     }
 
     private void OnPartyUpdated(Result<SessionV2PartySessionUpdatedNotification> result)
@@ -124,21 +103,15 @@ public class PartyHelper : MonoBehaviour
 
     private void OnPartyMemberChanged(Result<SessionV2PartyMembersChangedNotification> result)
     {
-        List<SessionV2MemberData> members = result.Value.session.members.ToList();
-        
         bool isUpdated = false;
+        List<SessionV2MemberData> members = result.Value.session.members.ToList();
         foreach (SessionV2MemberData member in result.Value.session.members)
         {
-            if (member.id == result.Value.joinerId)
+            if (member.id == result.Value.joinerId && member.status == SessionV2MemberStatus.JOINED)
             {
-                if (member.status == SessionV2MemberStatus.JOINED)
-                {
-                    isUpdated = true;
-                }
+                isUpdated = true;
             }
-
-            SessionV2MemberStatus[] excludeConditions = {SessionV2MemberStatus.LEFT, SessionV2MemberStatus.KICKED};
-            if (excludeConditions.Contains(member.status))
+            if (member.status == SessionV2MemberStatus.LEFT || member.status == SessionV2MemberStatus.KICKED)
             {
                 members.Remove(member);
                 isUpdated = true;
@@ -160,7 +133,29 @@ public class PartyHelper : MonoBehaviour
         _partyWrapper.GetUserParties(OnGetUserPartiesCompleted);
     }
 
-    public void OnJoinedParty(SessionV2PartySession partySession)
+    public void PromoteToPartyLeader(string userId)
+    {
+        _partyWrapper.PromoteMemberToPartyLeader(_partyWrapper.partyId, userId, OnPromoteToPartyLeaderCompleted);
+    }
+
+    public void KickFromParty(string userId)
+    {
+        _partyWrapper.KickMemberFromParty(_partyWrapper.partyId, userId, OnKickMemberFromPartyCompleted);
+    }
+
+    public void InviteToParty(string inviteeUserId)
+    {
+        if (string.IsNullOrEmpty(_partyWrapper.partyId))
+        {
+            _partyWrapper.CreateParty(PARTY_SESSION_TEMPLATE_NAME, result => OnCreatePartyCompleted(result, inviteeUserId));
+        }
+        else
+        {
+            _partyWrapper.SendPartyInvitation(_partyWrapper.partyId, inviteeUserId, OnSendPartyInvitationCompleted);
+        }
+    }
+    
+    public void HandleJoiningParty(SessionV2PartySession partySession)
     {
         _partyHandler.currentPartyId = partySession.id;
         _partyHandler.currentLeaderUserId = partySession.leaderId;
@@ -168,45 +163,47 @@ public class PartyHelper : MonoBehaviour
         UpdatePartyMembersData(partySession.members, partySession.leaderId);
     }
 
-    public void PromoteToPartyLeader(string userId)
-    {
-        _partyWrapper.PromoteMemberToPartyLeader(_partyWrapper.partyId, userId, result =>
-        {
-            if (!result.IsError)
-            {
-                TriggerMessageNotification($"{DEFAULT_DISPLAY_NAME + userId.Substring(0,5)} promoted to leader!");
-            }
-        });
-    }
-
-    public void KickFromParty(string userId)
-    {
-        _partyWrapper.KickMemberFromParty(_partyWrapper.partyId, userId, result =>
-        {
-            if (!result.IsError)
-            {
-                TriggerMessageNotification($"{userId} kicked from party!");
-            }
-        });
-    }
-
-    public void InviteToParty(string inviteeUserId)
-    {
-        if (string.IsNullOrEmpty(_partyWrapper.partyId))
-        {
-            _partyWrapper.CreateParty(PARTY_SESSION_TEMPLATE_NAME,
-                result => OnCreatePartyCompleted(result, inviteeUserId));
-        }
-        else
-        {
-            _partyWrapper.SendPartyInvitation(_partyWrapper.partyId, inviteeUserId, OnSendPartyInvitationCompleted);
-        }
-    }
-
     #endregion
 
     #region Party Service Callback Functions
 
+    private void OnBulkGetUserInfo(Result<ListBulkUserInfoResponse> result, List<string> membersUserId)
+    {
+        if (!result.IsError)
+        {
+            List<PartyMemberData> partyMemberDatas = new List<PartyMemberData>();
+            foreach (BaseUserInfo userData in result.Value.data)
+            {
+                string displayName = userData.displayName == ""
+                    ? DEFAULT_DISPLAY_NAME + userData.userId.Substring(0, 5)
+                    : userData.displayName;
+                
+                _authWrapper.GetUserAvatar(userData.userId, avatarResult =>
+                {
+                    PartyMemberData memberData = new PartyMemberData(userData.userId, displayName, avatarResult.Value);
+                    partyMemberDatas.Add(memberData);
+
+                    if (partyMemberDatas.Count == membersUserId.Count)
+                    {
+                        _partyHandler.MembersUserInfo = partyMemberDatas.OrderBy(data => membersUserId.IndexOf(data.UserId)).ToList();
+                        if (_partyHandler.gameObject.activeSelf)
+                        {
+                            _partyHandler.DisplayPartyMembersInfo();
+                        }
+                    }
+                });
+            }
+        }
+    }
+    
+    private void OnPromoteToPartyLeaderCompleted(Result<SessionV2PartySession> result)
+    {
+        if (!result.IsError)
+        {
+            TriggerMessageNotification($"A member promoted to leader!");
+        }
+    }
+    
     private void OnGetUserPartiesCompleted(Result<PaginatedResponse<SessionV2PartySession>> result)
     {
         if (!result.IsError)
@@ -214,8 +211,15 @@ public class PartyHelper : MonoBehaviour
             foreach (SessionV2PartySession partySession in result.Value.data)
             {
                 _partyWrapper.LeaveParty(partySession.id, null);
-                TriggerMessageNotification("You left the party!");
             }
+        }
+    }
+    
+    private void OnKickMemberFromPartyCompleted(Result<SessionV2PartySessionKickResponse> result)
+    {
+        if (!result.IsError)
+        {
+            TriggerMessageNotification($"You have kicked a member from party!");
         }
     }
 
