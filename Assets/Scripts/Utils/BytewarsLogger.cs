@@ -33,7 +33,6 @@ public static class BytewarsLogger
 #endif
     }
     
-
     private static string GetLast(string path)
     {
         var filename = path.Contains('\\') ? path.Split('\\').Last() : path.Split('/').Last();
