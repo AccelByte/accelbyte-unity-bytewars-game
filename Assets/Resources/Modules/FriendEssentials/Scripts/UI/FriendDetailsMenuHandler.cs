@@ -39,6 +39,10 @@ public class FriendDetailsMenuHandler : MenuCanvas
         blockButton.onClick.AddListener(OnBlockCliked);
         unfriendButton.onClick.AddListener(OnUnfriendClicked);
         
+        PartyHandler partyHandler = MenuManager.Instance.GetChildComponent<PartyHandler>();
+        promoteToLeaderButton.interactable = _userId != partyHandler.currentLeaderUserId;
+        kickButton.interactable = _userId != partyHandler.currentLeaderUserId;
+        
         PartyHelper partyHelper = TutorialModuleManager.Instance.GetComponentInChildren<PartyHelper>();
         promoteToLeaderButton.onClick.AddListener(() =>
         {

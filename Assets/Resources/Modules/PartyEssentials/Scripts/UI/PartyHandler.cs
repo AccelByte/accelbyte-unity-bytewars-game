@@ -102,10 +102,9 @@ public class PartyHandler : MenuCanvas
                 partyMemberEntryPanels[index].ChangePanelColor(_leaderPanelColor);
             }
             
-            // If the current player is leader, set the other players' MemberInfoPanel to be interactable except the leader's.
-            // else if member, set all MemberInfoPanels interactable status to false.
-            bool isPanelInteractable = (_authWrapper.userData.user_id == currentLeaderUserId) && (_authWrapper.userData.user_id != partyMemberData.UserId);
-            partyMemberEntryPanels[index].SetMemberInfoPanelInteractable(isPanelInteractable);
+            // Set MemberInfoPanel to be interactable only to other players' MemberInfoPanel
+            bool isOtherPanel = _authWrapper.userData.user_id != partyMemberData.UserId;
+            partyMemberEntryPanels[index].SetMemberInfoPanelInteractable(isOtherPanel);
         }
     }
 
