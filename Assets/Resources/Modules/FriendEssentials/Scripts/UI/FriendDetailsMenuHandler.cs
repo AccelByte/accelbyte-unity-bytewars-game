@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using AccelByte.Core;
 using AccelByte.Models;
 using UnityEngine;
@@ -30,34 +31,54 @@ public class FriendDetailsMenuHandler : MenuCanvas
     {
         EnableButton(blockButton, TutorialType.ManagingFriends);
         EnableButton(unfriendButton, TutorialType.ManagingFriends);
-        EnableButton(promoteToLeaderButton, TutorialType.PartyEssentials);
-        EnableButton(kickButton, TutorialType.PartyEssentials);
-        EnableButton(inviteToPartyButton, TutorialType.PartyEssentials);
         
         _managingFriendsWrapper = TutorialModuleManager.Instance.GetModuleClass<ManagingFriendsWrapper>();
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
         blockButton.onClick.AddListener(OnBlockCliked);
         unfriendButton.onClick.AddListener(OnUnfriendClicked);
         
-        PartyHandler partyHandler = MenuManager.Instance.GetChildComponent<PartyHandler>();
-        promoteToLeaderButton.interactable = _userId != partyHandler.currentLeaderUserId;
-        kickButton.interactable = _userId != partyHandler.currentLeaderUserId;
+        promoteToLeaderButton.gameObject.SetActive(false);
+        kickButton.gameObject.SetActive(false);
+        inviteToPartyButton.gameObject.SetActive(true);
         
         PartyHelper partyHelper = TutorialModuleManager.Instance.GetComponentInChildren<PartyHelper>();
         promoteToLeaderButton.onClick.AddListener(() =>
         {
             partyHelper.PromoteToPartyLeader(UserID);
+            UpdatePartyButtons();
         });
         kickButton.onClick.AddListener(() =>
         {
             partyHelper.KickFromParty(UserID);
+            UpdatePartyButtons();
         });
         inviteToPartyButton.onClick.AddListener(() =>
         {
             partyHelper.InviteToParty(UserID);
+            UpdatePartyButtons();
         });
     }
-    
+
+    private void OnEnable()
+    {
+        UpdatePartyButtons();
+    }
+
+    private void UpdatePartyButtons()
+    {
+        PartyHandler partyHandler = MenuManager.Instance.GetChildComponent<PartyHandler>();
+        AuthEssentialsWrapper authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
+        if (partyHandler && authWrapper)
+        {
+            bool isCurrentlyLeader = authWrapper.userData.user_id == partyHandler.currentLeaderUserId;
+            bool isTheLeader = _userId == partyHandler.currentLeaderUserId;
+            bool isInParty = partyHandler.MembersUserInfo.Any(data => data.UserId == _userId);
+            promoteToLeaderButton.gameObject.SetActive(isCurrentlyLeader && isInParty);
+            kickButton.gameObject.SetActive(isCurrentlyLeader && isInParty);
+            inviteToPartyButton.gameObject.SetActive(!isTheLeader && !isInParty);
+        }
+    }
+
     private void EnableButton(Button button, TutorialType tutorialType)
     {
         var module = TutorialModuleManager.Instance.GetModule(tutorialType);

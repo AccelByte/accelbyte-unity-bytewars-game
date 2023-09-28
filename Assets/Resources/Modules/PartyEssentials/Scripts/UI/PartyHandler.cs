@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using AccelByte.Core;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using WebSocketSharp;
@@ -51,6 +52,8 @@ public class PartyHandler : MenuCanvas
     public void SetLeaveButtonInteractable(bool isInteractable)
     {
         leaveButton.interactable = isInteractable;
+        TMP_Text leaveButtonText = leaveButton.GetComponentInChildren<TMP_Text>();
+        leaveButtonText.color = isInteractable ? Color.white : Color.gray;
     }
     
     public void HandleNotInParty()
@@ -61,6 +64,7 @@ public class PartyHandler : MenuCanvas
         _partyWrapper.partyId = "";
         currentPartyId = "";
         currentLeaderUserId = "";
+        MembersUserInfo.Clear();
     }
     
     public void ResetPartyMemberEntryUI()
