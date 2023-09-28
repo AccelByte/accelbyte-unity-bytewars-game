@@ -88,11 +88,14 @@ public class MainMenu : MenuCanvas
         return AssetEnum.MainMenuCanvas;
     }
 
+
     private void CheckModulesButtons()
     {
         #if !BYTEWARS_DEBUG
-            bool isOnlineBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.SessionEssentials);
-            playOnlineBtn.gameObject.SetActive(isOnlineBtnActive);
+        bool isOnlineBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithDS)
+                                 || TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithDS)
+                                 || TutorialModuleManager.Instance.IsModuleActive(TutorialType.SessionEssentials);
+        playOnlineBtn.gameObject.SetActive(isOnlineBtnActive);
         #endif
 
         bool isFriendModuleActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.FriendEssentials);
@@ -113,3 +116,4 @@ public class MainMenu : MenuCanvas
         layoutGroup.enabled = true;
     }
 }
+

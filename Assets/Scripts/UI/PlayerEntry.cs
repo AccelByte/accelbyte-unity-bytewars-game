@@ -27,7 +27,7 @@ public class PlayerEntry : MonoBehaviour
 
         avatarUrl = playerState.avatarUrl;
     }
-    private readonly Vector2 centerPivot = new Vector2(0.5f, 0.5f);
+    private readonly Vector2 _centerPivot = new Vector2(0.5f, 0.5f);
     private void OnEnable()
     {
         if (!String.IsNullOrEmpty(avatarUrl))
@@ -39,7 +39,7 @@ public class PlayerEntry : MonoBehaviour
             {
                 if(texture!=null)
                     playerAvatar.sprite = 
-                        Sprite.Create(texture, new Rect(0,0,texture.width,texture.height), centerPivot);
+                        Sprite.Create(texture, new Rect(0,0,texture.width,texture.height), _centerPivot);
             });
         }
     }
