@@ -80,7 +80,11 @@ crashlytics-build.properties
 
 /[Aa]ssets/[Rr]esources/Accelbyte*.json
 /[Aa]ssets/[Rr]esources/Accelbyte*.json.meta
-
+steam_appid.txt
+packages-lock.json
+URP-Balanced-Renderer.asset
+GradientVector SDF.asset
+Melete-Bold SDF.asset
+ShaderGraphSettings.asset
 Accelbyte*.asset
 Accelbyte*.*.meta
-steam_appid.txt

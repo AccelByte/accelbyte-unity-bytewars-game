@@ -318,9 +318,7 @@ public class MenuManager : MonoBehaviour
             return;
         }
 
-        mainmenuConfig.starter.gameObject.SetActive(false);
         var starterMenu = Instantiate(mainmenuConfig.starter, transform);
-        mainmenuConfig.starter.gameObject.SetActive(true);
         GameObject o = starterMenu.gameObject;
         o.SetActive(false);
         string mainMenuName = mainmenuConfig.starter.gameObject.name;

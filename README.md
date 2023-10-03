@@ -67,5 +67,10 @@ To clone the repository and checkout the tutorial branch, run the following comm
 Peer to Peer mode is currently disabled, to enable it check `Assets\Scripts\UI\MainMenu\PlayOnlineMenu.cs` line `28`.
 
 ## Run Byte Wars Online (Tutorial Modules Branch)
-
 Follow along Byte Wars [Tutorial Module 2: Getting Online](https://docs-preview.accelbyte.io/gaming-services/tutorials/unity/module-2/).
+
+## Git
+To revert files with only line ending difference use --renormalize. Example this command will revert all prefabs with only line ending difference and also stage (add) other actually changed prefab files. 
+```
+git add --renormalize *.prefab
+```
