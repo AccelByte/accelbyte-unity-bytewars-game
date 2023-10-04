@@ -7,15 +7,42 @@ using UnityEngine;
 
 public class CloudSaveHelper_Starter : MonoBehaviour
 {
-    
+    // Copy AccelByte's Multi Registry references from "Set Audio Volume Settings from Player Record" unit here (step number 2)
 
-    // Start is called before the first frame update
-    void Start()
+
+    // Copy constant variables declaration from "Set Audio Volume Settings from Player Record" unit here (step number 3)
+
+
+    // Copy volumeSettings initialization from "Save the Audio Volume Settings in Options Menu UI" unit here (step number 2)
+
+
+    private void Start()
     {
-        LoginHandler.onLoginCompleted += tokenData => {};
-        OptionsMenu.onOptionsMenuActivated += (musicVolume, sfxVolume) => {};
-        OptionsMenu.onOptionsMenuDeactivated += (musicVolume, sfxVolume) => {};
+        // Copy wrapper initialization from "Set Audio Volume Settings from Player Record" unit here (step number 2)
+        
+        
+        // Copy volumeSettings initialization from "Save the Audio Volume Settings in Options Menu UI" unit here (step number 2)
+
+
+        // Copy onLoginCompleted event listener from "Set Audio Volume Settings from Player Record" unit here (step number 6)
+
+
+        // Copy onOptionsMenuDeactivated event listener from "Save the Audio Volume Settings in Options Menu UI" unit here (step number 5)
+
+        
     }
+
+    // Copy OnGetGameOptionsCompleted() from "Set Audio Volume Settings from Player Record" unit here (step number 4)
+    // Modify OnGetGameOptionsCompleted() according to "Save the Audio Volume Settings in Options Menu UI" unit here (step number 6)
+
+
+    // Copy GetGameOptions() from "Set Audio Volume Settings from Player Record" unit here (step number 5)
+
+
+    // Copy OnSaveGameOptionsCompleted() from "Save the Audio Volume Settings in Options Menu UI" unit here (step number 3)
+
+
+    // Copy SaveGameOptions() from "Save the Audio Volume Settings in Options Menu UI" unit here (step number 4)
     
     
 }

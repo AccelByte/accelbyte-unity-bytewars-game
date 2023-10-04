@@ -7,19 +7,19 @@ using UnityEngine;
 
 public class AuthEssentialsWrapper_Starter : MonoBehaviour
 {
-    //Copy AccelByte's Multi Registry references from "Use the AccelByte SDK to Login" unit here (step number 2)
+    // Copy AccelByte's Multi Registry references from "Use the AccelByte SDK to Login" unit here (step number 2)
     
 
-    //paste platform type code from "Use the AccelByte SDK to Login" here (step number 4)
+    // Copy Start() function from "Use the AccelByte SDK to Login" unit here (step number 2)
     
     
-    //Copy Start() function from "Use the AccelByte SDK to Login" unit here (step number 2)
-
+    // Copy OnloginCompleted() here from "Use the AccelByte SDK to Login" unit here (step number 3)
     
-    //Paste Login() function from "Use the AccelByte SDK to Login" here (step number 5)
-
-
-    //Paste OnloginCompleted here from "Use the AccelByte SDK to Login" unit here (step number 3)
-
+    
+    // Copy local variables declaration from "Use the AccelByte SDK to Login" unit here (step number 4)
+    
+    
+    // Copy Login() function from "Use the AccelByte SDK to Login" unit here (step number 5)
+    
     
 }
