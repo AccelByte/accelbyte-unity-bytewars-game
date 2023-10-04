@@ -37,46 +37,19 @@ public class FriendDetailsMenuHandler : MenuCanvas
         blockButton.onClick.AddListener(OnBlockCliked);
         unfriendButton.onClick.AddListener(OnUnfriendClicked);
         
+        // Party-related buttons setup
         promoteToLeaderButton.gameObject.SetActive(false);
         kickButton.gameObject.SetActive(false);
         inviteToPartyButton.gameObject.SetActive(true);
         
-        PartyHelper partyHelper = TutorialModuleManager.Instance.GetComponentInChildren<PartyHelper>();
-        promoteToLeaderButton.onClick.AddListener(() =>
-        {
-            partyHelper.PromoteToPartyLeader(UserID);
-            UpdatePartyButtons();
-        });
-        kickButton.onClick.AddListener(() =>
-        {
-            partyHelper.KickFromParty(UserID);
-            UpdatePartyButtons();
-        });
-        inviteToPartyButton.onClick.AddListener(() =>
-        {
-            partyHelper.InviteToParty(UserID);
-            UpdatePartyButtons();
-        });
+        promoteToLeaderButton.onClick.AddListener(OnPromoteToLeaderButtonClicked);
+        kickButton.onClick.AddListener(OnKickButtonClicked);
+        inviteToPartyButton.onClick.AddListener(OnInviteToPartyButtonClicked);
     }
 
     private void OnEnable()
     {
         UpdatePartyButtons();
-    }
-
-    private void UpdatePartyButtons()
-    {
-        PartyHandler partyHandler = MenuManager.Instance.GetChildComponent<PartyHandler>();
-        AuthEssentialsWrapper authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
-        if (partyHandler && authWrapper)
-        {
-            bool isCurrentlyLeader = authWrapper.userData.user_id == partyHandler.currentLeaderUserId;
-            bool isTheLeader = _userId == partyHandler.currentLeaderUserId;
-            bool isInParty = partyHandler.MembersUserInfo.Any(data => data.UserId == _userId);
-            promoteToLeaderButton.gameObject.SetActive(isCurrentlyLeader && isInParty);
-            kickButton.gameObject.SetActive(isCurrentlyLeader && isInParty);
-            inviteToPartyButton.gameObject.SetActive(!isTheLeader && !isInParty);
-        }
     }
 
     private void EnableButton(Button button, TutorialType tutorialType)
@@ -122,6 +95,46 @@ public class FriendDetailsMenuHandler : MenuCanvas
         }
     }
 
+    #region Party Functions
+
+    private void UpdatePartyButtons()
+    {
+        PartyHandler partyHandler = MenuManager.Instance.GetChildComponent<PartyHandler>();
+        AuthEssentialsWrapper authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
+        if (partyHandler && authWrapper)
+        {
+            bool isCurrentlyLeader = authWrapper.userData.user_id == partyHandler.currentLeaderUserId;
+            bool isTheLeader = _userId == partyHandler.currentLeaderUserId;
+            bool isInParty = partyHandler.MembersUserInfo.Any(data => data.UserId == _userId);
+            promoteToLeaderButton.gameObject.SetActive(isCurrentlyLeader && isInParty);
+            kickButton.gameObject.SetActive(isCurrentlyLeader && isInParty);
+            inviteToPartyButton.gameObject.SetActive(!isTheLeader && !isInParty);
+        }
+    }
+
+    private void OnPromoteToLeaderButtonClicked()
+    {
+        PartyHelper partyHelper = TutorialModuleManager.Instance.GetComponentInChildren<PartyHelper>();
+        partyHelper.PromoteToPartyLeader(UserID);
+        UpdatePartyButtons();
+    }
+    
+    private void OnKickButtonClicked()
+    {
+        PartyHelper partyHelper = TutorialModuleManager.Instance.GetComponentInChildren<PartyHelper>();
+        partyHelper.KickFromParty(UserID);
+        UpdatePartyButtons();
+    }
+    
+    private void OnInviteToPartyButtonClicked()
+    {
+        PartyHelper partyHelper = TutorialModuleManager.Instance.GetComponentInChildren<PartyHelper>();
+        partyHelper.InviteToParty(UserID);
+        UpdatePartyButtons();
+    }
+
+    #endregion
+    
     public override GameObject GetFirstButton()
     {
         return backButton.gameObject;

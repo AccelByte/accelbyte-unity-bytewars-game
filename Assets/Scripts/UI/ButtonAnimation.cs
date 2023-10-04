@@ -35,7 +35,7 @@ public class ButtonAnimation : MonoBehaviour, IPointerEnterHandler, IDeselectHan
     }
     private void OnComplete()
     {
-        text.color = button.interactable? Color.white : Color.gray;
+        text.color = Color.white;
     }
 
     public void OnPointerEnter(PointerEventData eventData)

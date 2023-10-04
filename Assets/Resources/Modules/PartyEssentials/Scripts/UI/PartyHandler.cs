@@ -47,15 +47,16 @@ public class PartyHandler : MenuCanvas
         {
             DisplayPartyMembersInfo();
         }
+
+        // please remove if button animation's onComplete changed.
+        // current behavior: after leaving party, leave button will turn gray after reopening the party menu
+        if (!leaveButton.interactable)
+        {
+            TMP_Text leaveButtonText = leaveButton.GetComponentInChildren<TMP_Text>();
+            leaveButtonText.color = leaveButton.interactable ? Color.white : Color.gray;
+        }
     }
-    
-    public void SetLeaveButtonInteractable(bool isInteractable)
-    {
-        leaveButton.interactable = isInteractable;
-        TMP_Text leaveButtonText = leaveButton.GetComponentInChildren<TMP_Text>();
-        leaveButtonText.color = isInteractable ? Color.white : Color.gray;
-    }
-    
+
     public void HandleNotInParty()
     {
         ResetPartyMemberEntryUI();
@@ -121,6 +122,14 @@ public class PartyHandler : MenuCanvas
             PartyHelper partyHelper = TutorialModuleManager.Instance.GetComponentInChildren<PartyHelper>();
             partyHelper.TriggerMessageNotification(("You left the party!"));
         }
+    }
+    
+    public void SetLeaveButtonInteractable(bool isInteractable)
+    {
+        leaveButton.interactable = isInteractable;
+        
+        TMP_Text leaveButtonText = leaveButton.GetComponentInChildren<TMP_Text>();
+        leaveButtonText.color = isInteractable ? Color.white : Color.gray;
     }
 
     private void OnBackButtonClicked()
