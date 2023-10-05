@@ -56,7 +56,7 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
     private void OnLoginWithSteamButtonClicked()
     {
         if (loginHandler == null) return;
-        loginHandler.onRetryLoginClicked = OnLoginWithSteamButtonClicked;
+        loginHandler.OnRetryLoginClicked = OnLoginWithSteamButtonClicked;
         loginHandler.SetView(LoginHandler.LoginView.LoginLoading);
         //get steam token to be used as platform token later
         steamHelper.GetAuthSessionTicket(OnGetAuthSessionTicketFinished);
@@ -73,7 +73,7 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
         if (result.IsError)
         {
             Debug.Log($"[{ClassName}] error OnGetUserPublicDataFinished:{result.Error.Message}");
-            loginHandler.onRetryLoginClicked = () => GetUserPublicData(tokenData.user_id);
+            loginHandler.OnRetryLoginClicked = () => GetUserPublicData(tokenData.user_id);
             loginHandler.OnLoginCompleted(CreateLoginErrorResult(result.Error.Code, result.Error.Message));
         }
         else

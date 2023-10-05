@@ -1,11 +1,12 @@
 using System;
+using System.Collections;
 using System.Linq;
-using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class LoginHandler : MenuCanvas
@@ -22,7 +23,14 @@ public class LoginHandler : MenuCanvas
     public delegate void LoginHandlerDelegate(TokenData tokenData);
     public static event LoginHandlerDelegate onLoginCompleted = delegate {};
 
-    public UnityAction onRetryLoginClicked;
+    public UnityAction OnRetryLoginClicked
+    {
+        set
+        {
+            retryLoginButton.onClick.RemoveAllListeners();
+            retryLoginButton.onClick.AddListener(value);
+        }
+    }
 
     private AuthEssentialsWrapper _authWrapper;
     private LoginType _lastLoginMethod;
@@ -70,12 +78,16 @@ public class LoginHandler : MenuCanvas
         // get auth's subsystem
         _authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
         loginWithDeviceIdButton.onClick.AddListener(OnLoginWithDeviceIdButtonClicked);
-        retryLoginButton.onClick.AddListener(onRetryLoginClicked);
+        retryLoginButton.onClick.AddListener(OnRetryLoginButtonClicked);
         quitGameButton.onClick.AddListener(OnQuitGameButtonClicked);
     }
 
     private void OnEnable()
     {
+        // UI initialization
+        loginWithDeviceIdButton.onClick.AddListener(OnLoginWithDeviceIdButtonClicked);
+        quitGameButton.onClick.AddListener(OnQuitGameButtonClicked);
+
         CurrentView = LoginView.LoginState;
     }
 
@@ -83,7 +95,7 @@ public class LoginHandler : MenuCanvas
     {
         CurrentView = LoginView.LoginLoading;
         _lastLoginMethod = loginMethod;
-        onRetryLoginClicked = OnRetryLoginButtonClicked;
+        OnRetryLoginClicked = OnRetryLoginButtonClicked;
         _authWrapper.Login(loginMethod, OnLoginCompleted);
     }
 
@@ -99,7 +111,14 @@ public class LoginHandler : MenuCanvas
         {
             failedMessageText.text = "Login Failed: "  + result.Error.error;
             CurrentView = LoginView.LoginFailed;
+            StartCoroutine(SetSelectedGameObject(retryLoginButton.gameObject));
         }
+    }
+
+    IEnumerator SetSelectedGameObject(GameObject gameObjectToSelect)
+    {
+        yield return new WaitForEndOfFrame();
+        EventSystem.current.SetSelectedGameObject(gameObjectToSelect);
     }
 
     private void AutoLoginCmd()
