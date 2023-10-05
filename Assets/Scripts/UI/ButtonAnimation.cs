@@ -47,7 +47,8 @@ public class ButtonAnimation : MonoBehaviour, IPointerEnterHandler, IDeselectHan
 
     public void OnDeselect(BaseEventData eventData)
     {
-        selectable.OnPointerExit(null);
+        if(selectable!=null)
+            selectable.OnPointerExit(null);
     }
 
     private void OnEnable()
