@@ -21,13 +21,13 @@ public class PeriodicLeaderboardHelper : MonoBehaviour
         _authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
         currentUserData = _authWrapper.userData;
         
-        LeaderboardsPeriodMenu.onLeaderboardsPeriodMenuActivated += DisplayCyclePeriodButtons;
-        IndividualLeaderboardMenu.onDisplayRankingListEvent += DisplayCycleRankingList;
-        IndividualLeaderboardMenu.onDisplayUserRankingEvent += DisplayUserCycleRanking;
+        LeaderboardCycleMenu.onLeaderboardCycleMenuActivated += DisplayLeaderboardCycleButtons;
+        LeaderboardMenu.onDisplayRankingListEvent += DisplayCycleRankingList;
+        LeaderboardMenu.onDisplayUserRankingEvent += DisplayUserCycleRanking;
     }
     
-    private void DisplayCyclePeriodButtons(Transform leaderboardListPanel, GameObject leaderboardItemButtonPrefab){
-        string[] cycleIds = LeaderboardsMenu.leaderboardCycleIds[LeaderboardsMenu.chosenLeaderboardCode];
+    private void DisplayLeaderboardCycleButtons(Transform leaderboardListPanel, GameObject leaderboardItemButtonPrefab){
+        string[] cycleIds = LeaderboardSelectionMenu.leaderboardCycleIds[LeaderboardSelectionMenu.chosenLeaderboardCode];
 
         foreach (string cycleId in cycleIds)
         {
@@ -38,7 +38,7 @@ public class PeriodicLeaderboardHelper : MonoBehaviour
                     Button leaderboardButton = Instantiate(leaderboardItemButtonPrefab, leaderboardListPanel).GetComponent<Button>();
                     TMP_Text leaderboardButtonText = leaderboardButton.GetComponentInChildren<TMP_Text>();
                     leaderboardButtonText.text = result.Value.Name;
-                    leaderboardButton.onClick.AddListener(() => LeaderboardsPeriodMenu.ChangeToIndividualLeaderboardMenu(LeaderboardsPeriodMenu.LeaderboardPeriodType.Cycle));
+                    leaderboardButton.onClick.AddListener(() => LeaderboardCycleMenu.ChangeToLeaderboardMenu(LeaderboardCycleMenu.LeaderboardCycleType.Weekly));
 
                     chosenCycleId = cycleId;
                 }
@@ -46,23 +46,23 @@ public class PeriodicLeaderboardHelper : MonoBehaviour
         }
     }
 
-    private void DisplayCycleRankingList(IndividualLeaderboardMenu individualLeaderboardMenu, UserCycleRanking[] userCycleRankings)
+    private void DisplayCycleRankingList(LeaderboardMenu leaderboardMenu, UserCycleRanking[] userCycleRankings)
     {
-        if (LeaderboardsPeriodMenu.chosenPeriod is LeaderboardsPeriodMenu.LeaderboardPeriodType.Cycle)
+        if (LeaderboardCycleMenu.chosenCycleType is LeaderboardCycleMenu.LeaderboardCycleType.Weekly)
         {
-            _periodicLeaderboardWrapper.GetRankingsByCycle(LeaderboardsMenu.chosenLeaderboardCode, chosenCycleId, individualLeaderboardMenu.OnDisplayRankingListCompleted, RESULTOFFSET, RESULTLIMIT);
+            _periodicLeaderboardWrapper.GetRankingsByCycle(LeaderboardSelectionMenu.chosenLeaderboardCode, chosenCycleId, leaderboardMenu.OnGetRankingsCompleted, RESULTOFFSET, RESULTLIMIT);
         }
     }
 
-    private void DisplayUserCycleRanking(IndividualLeaderboardMenu individualLeaderboardMenu, UserCycleRanking[] userCycleRankings)
+    private void DisplayUserCycleRanking(LeaderboardMenu leaderboardMenu, UserCycleRanking[] userCycleRankings)
     {
-        if (LeaderboardsPeriodMenu.chosenPeriod is LeaderboardsPeriodMenu.LeaderboardPeriodType.Cycle)
+        if (LeaderboardCycleMenu.chosenCycleType is LeaderboardCycleMenu.LeaderboardCycleType.Weekly)
         {
             foreach (UserCycleRanking cycleRanking in userCycleRankings)
             {
                 if (cycleRanking.CycleId == chosenCycleId)
                 {
-                    individualLeaderboardMenu.InstantiateRankingItem(currentUserData.user_id, cycleRanking.Rank, currentUserData.display_name, cycleRanking.Point);
+                    leaderboardMenu.InstantiateRankingEntry(currentUserData.user_id, cycleRanking.Rank, currentUserData.display_name, cycleRanking.Point);
                     break;
                 }
             }

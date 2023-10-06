@@ -122,7 +122,7 @@ MonoBehaviour:
   prefabImage: {fileID: 8449343592311133661}
   playerRankText: {fileID: 2369731490184943617}
   playerNameText: {fileID: 1867827909745167622}
-  highestScoreText: {fileID: 728778624695576622}
+  playerScoreText: {fileID: 728778624695576622}
 --- !u!1 &2709123553721550180
 GameObject:
   m_ObjectHideFlags: 0
@@ -293,7 +293,7 @@ GameObject:
   - component: {fileID: 728778624695576622}
   - component: {fileID: 1099010791797598604}
   m_Layer: 5
-  m_Name: HighestScoreText
+  m_Name: PlayerScoreText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

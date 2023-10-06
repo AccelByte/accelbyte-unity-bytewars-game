@@ -56,7 +56,15 @@ public class MainMenu : MenuCanvas
     
     public void OnLeaderboardButtonPressed()
     {
-        MenuManager.Instance.ChangeToMenu(AssetEnum.LeaderboardsMenuCanvas);
+        var leaderboardEssentialModule = TutorialModuleManager.Instance.GetModule(TutorialType.LeaderboardEssentials);
+        if (!leaderboardEssentialModule.isStarterActive)
+        {
+            MenuManager.Instance.ChangeToMenu(AssetEnum.LeaderboardSelectionMenuCanvas);
+        }
+        else
+        {
+            MenuManager.Instance.ChangeToMenu(AssetEnum.LeaderboardSelectionMenuCanvas_Starter);
+        }
     }
     
     public void OnProfileButtonPressed()
