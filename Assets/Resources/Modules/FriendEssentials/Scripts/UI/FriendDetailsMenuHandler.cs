@@ -99,13 +99,12 @@ public class FriendDetailsMenuHandler : MenuCanvas
 
     private void UpdatePartyButtons()
     {
-        PartyHandler partyHandler = MenuManager.Instance.GetChildComponent<PartyHandler>();
         AuthEssentialsWrapper authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
-        if (partyHandler && authWrapper)
+        if (authWrapper)
         {
-            bool isCurrentlyLeader = authWrapper.userData.user_id == partyHandler.currentLeaderUserId;
-            bool isTheLeader = _userId == partyHandler.currentLeaderUserId;
-            bool isInParty = partyHandler.MembersUserInfo.Any(data => data.UserId == _userId);
+            bool isCurrentlyLeader = authWrapper.userData.user_id == PartyHelper.CurrentLeaderUserId; // current user is leader
+            bool isTheLeader = _userId == PartyHelper.CurrentLeaderUserId; // displayed friend details is the leader's info
+            bool isInParty = PartyHelper.PartyMembersData.Any(data => data.UserId == _userId);
             promoteToLeaderButton.gameObject.SetActive(isCurrentlyLeader && isInParty);
             kickButton.gameObject.SetActive(isCurrentlyLeader && isInParty);
             inviteToPartyButton.gameObject.SetActive(!isTheLeader && !isInParty);

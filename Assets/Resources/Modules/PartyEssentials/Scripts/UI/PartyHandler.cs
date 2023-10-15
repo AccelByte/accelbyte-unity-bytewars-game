@@ -13,15 +13,12 @@ public class PartyHandler : MenuCanvas
 
     private PartyEssentialsWrapper _partyWrapper;
     private AuthEssentialsWrapper _authWrapper;
-
-    [HideInInspector] public string currentPartyId = "";
-    [HideInInspector] public string currentLeaderUserId = "";
-    public List<PartyMemberData> MembersUserInfo = new List<PartyMemberData>();
     
-    private const string DEFAULT_DISPLAY_NAME = "Player-";
-    private Color _leaderPanelColor = Color.blue;
-    private Color _memberPanelColor = Color.white;
+    private readonly Color _leaderPanelColor = Color.blue;
+    private readonly Color _memberPanelColor = Color.white;
 
+    private const string DefaultDisplayName = "Player-";
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -31,21 +28,21 @@ public class PartyHandler : MenuCanvas
         leaveButton.onClick.AddListener(OnLeaveButtonClicked);
         backButton.onClick.AddListener(OnBackButtonClicked);
 
-        if (currentPartyId == "")
+        if (PartyHelper.CurrentPartyId == "")
         {
             DisplayOnlyCurrentPlayer();
         }
         else
         {
-            DisplayPartyMembersInfo();
+            DisplayPartyMembersData();
         }
     }
 
     private void OnEnable()
     {
-        if (!currentPartyId.IsNullOrEmpty() && MembersUserInfo.Count > 0 && _authWrapper)
+        if (!PartyHelper.CurrentPartyId.IsNullOrEmpty() && PartyHelper.PartyMembersData.Count > 0 && _authWrapper)
         {
-            DisplayPartyMembersInfo();
+            DisplayPartyMembersData();
         }
 
         // please remove if button animation's onComplete changed.
@@ -63,12 +60,10 @@ public class PartyHandler : MenuCanvas
         DisplayOnlyCurrentPlayer();
 
         _partyWrapper.partyId = "";
-        currentPartyId = "";
-        currentLeaderUserId = "";
-        MembersUserInfo.Clear();
+        PartyHelper.ResetPartyData();
     }
-    
-    public void ResetPartyMemberEntryUI()
+
+    private void ResetPartyMemberEntryUI()
     {
         foreach (PartyMemberEntryPanel entryPanel in partyMemberEntryPanels)
         {
@@ -78,13 +73,13 @@ public class PartyHandler : MenuCanvas
             entryPanel.SetMemberInfoPanelInteractable(false);
         }
     }
-    
-    public void DisplayOnlyCurrentPlayer()
+
+    private void DisplayOnlyCurrentPlayer()
     {
         string displayName = _authWrapper.userData.display_name;
         if (displayName.IsNullOrEmpty())
         {
-            displayName = DEFAULT_DISPLAY_NAME + _authWrapper.userData.user_id.Substring(0, 5);
+            displayName = DefaultDisplayName + _authWrapper.userData.user_id.Substring(0, 5);
         }
 
         partyMemberEntryPanels[0].SwitchView(PartyEntryView.MemberInfo);
@@ -92,17 +87,17 @@ public class PartyHandler : MenuCanvas
         SetLeaveButtonInteractable(false);
     }
 
-    public void DisplayPartyMembersInfo()
+    public void DisplayPartyMembersData()
     {
         ResetPartyMemberEntryUI();
-        for (int index = 0; index < MembersUserInfo.Count; index++)
+        for (int index = 0; index < PartyHelper.PartyMembersData.Count; index++)
         {
-            PartyMemberData partyMemberData = MembersUserInfo[index];
+            PartyMemberData partyMemberData = PartyHelper.PartyMembersData[index];
             partyMemberEntryPanels[index].SwitchView(PartyEntryView.MemberInfo);
             partyMemberEntryPanels[index].UpdateCurrentUserId(partyMemberData.UserId);
             partyMemberEntryPanels[index].UpdateMemberInfoUI(partyMemberData.DisplayName, partyMemberData.Avatar);
 
-            if (partyMemberData.UserId == currentLeaderUserId)
+            if (partyMemberData.UserId == PartyHelper.CurrentLeaderUserId)
             {
                 partyMemberEntryPanels[index].ChangePanelColor(_leaderPanelColor);
             }
