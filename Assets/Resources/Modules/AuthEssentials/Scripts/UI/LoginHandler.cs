@@ -84,10 +84,6 @@ public class LoginHandler : MenuCanvas
 
     private void OnEnable()
     {
-        // UI initialization
-        loginWithDeviceIdButton.onClick.AddListener(OnLoginWithDeviceIdButtonClicked);
-        quitGameButton.onClick.AddListener(OnQuitGameButtonClicked);
-
         CurrentView = LoginView.LoginState;
     }
 

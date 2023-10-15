@@ -14,6 +14,6 @@ public enum TutorialType
     ManagingFriends=12,
     PeriodicLeaderboardEssentials=13,
     SessionEssentials=14,
-    MultiplayerDSEssentials=15
-
+    MultiplayerDSEssentials=15,
+	PartyEssentials=16
 }

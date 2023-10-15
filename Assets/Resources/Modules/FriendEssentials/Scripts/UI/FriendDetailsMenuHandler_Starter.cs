@@ -9,6 +9,9 @@ public class FriendDetailsMenuHandler_Starter : MenuCanvas
 {
     public RectTransform friendDetailsPanel;
     [SerializeField] private Button backButton;
+    [SerializeField] private Button promoteToLeaderButton;
+    [SerializeField] private Button kickButton;
+    [SerializeField] private Button inviteToPartyButton;
     [SerializeField] private Button blockButton;
     [SerializeField] private Button unfriendButton;
 
@@ -30,6 +33,15 @@ public class FriendDetailsMenuHandler_Starter : MenuCanvas
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
         blockButton.onClick.AddListener(OnBlockCliked);
         unfriendButton.onClick.AddListener(OnUnfriendClicked);
+        
+        // Party-related buttons setup
+        promoteToLeaderButton.gameObject.SetActive(false);
+        kickButton.gameObject.SetActive(false);
+        inviteToPartyButton.gameObject.SetActive(true);
+        
+        promoteToLeaderButton.onClick.AddListener(OnPromoteToLeaderButtonClicked);
+        kickButton.onClick.AddListener(OnKickButtonClicked);
+        inviteToPartyButton.onClick.AddListener(OnInviteToPartyButtonClicked);
     }
     
     private void EnableButton(Button button, TutorialType tutorialType)
@@ -50,6 +62,25 @@ public class FriendDetailsMenuHandler_Starter : MenuCanvas
     {
         Debug.LogWarning($"Block a player is not yet implemented.");
     }
+    
+    #region Party Functions
+
+    private void OnPromoteToLeaderButtonClicked()
+    {
+        // add your code here
+    }
+    
+    private void OnKickButtonClicked()
+    {
+        // add your code here
+    }
+    
+    private void OnInviteToPartyButtonClicked()
+    {
+        // add your code here
+    }
+
+    #endregion
     
     public override GameObject GetFirstButton()
     {
