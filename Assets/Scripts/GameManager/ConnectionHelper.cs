@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 
-public class ConnectionHelper 
+public class ConnectionHelper
 {
     private static int ServerClaimedMaxWaitSec = 7;
     public async Task<ConnectionApprovalResult> ConnectionApproval(NetworkManager.ConnectionApprovalRequest request,

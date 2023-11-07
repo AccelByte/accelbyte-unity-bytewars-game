@@ -33,6 +33,7 @@ public class Reconnect : MonoBehaviour
         unityTransport.MaxConnectAttempts = GameConstant.MaxConnectAttemptsSec;
         var connectionData = GameUtility.ToByteArray(initialConnectionData);
         NetworkManager.Singleton.NetworkConfig.ConnectionData = connectionData;
+        NetworkManager.Singleton.NetworkConfig.NetworkTransport = unityTransport;
     }
     public void StartAsHost(UnityTransport unityTransport, string address, ushort port, 
         InitialConnectionData initialConnectionData)

@@ -48,9 +48,11 @@ public class QuickPlayGameMenu : MenuCanvas
                 if (result.isStartAsHostP2P)
                 {
                     Debug.Log($"starting as p2p host ip{result.m_serverIpAddress} port:{result.m_serverPort} InGameMode:{result.InGameMode}");
+                    string testServerSessionId = "test-server-session";
+                    GameData.ServerSessionID = testServerSessionId;
                     GameManager.Instance
                         .StartAsHost("127.0.0.1", result.m_serverPort, 
-                            result.InGameMode);
+                            result.InGameMode, testServerSessionId);
                 }
                 else
                 {

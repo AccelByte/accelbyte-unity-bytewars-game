@@ -10,10 +10,11 @@ public enum TutorialType
     LeaderboardEssentials=6,
     SinglePlatformAuth=7,
     FriendEssentials=8,
+    MatchmakingWithP2P=9,
     MatchSessionWithDS=11,
     ManagingFriends=12,
     PeriodicLeaderboardEssentials=13,
     SessionEssentials=14,
-    MultiplayerDSEssentials=15
-
+    MultiplayerDSEssentials=15,
+    MatchmakingSession=103
 }

@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -65,8 +62,6 @@ public class LoadingMenuCanvas : MenuCanvas
     private int loadingTimeoutSec = 0;
     private string timeoutPrefix;
     private string timeoutReachedInfo;
-    private readonly WaitForSeconds wait1Second = new WaitForSeconds(1);
-    private IEnumerator timeoutRoutine;
     public void Show(string loadingInfo, LoadingTimeoutInfo loadingTimeoutInfo=null, UnityAction cancelCallback=null)
     {
         infoText.text = loadingInfo;
@@ -91,8 +86,7 @@ public class LoadingMenuCanvas : MenuCanvas
             timeoutPrefix = loadingTimeoutInfo.info;
             timeoutReachedInfo = loadingTimeoutInfo.timeoutReachedError;
             UpdateTimeoutLabel();
-            timeoutRoutine = UpdateTimeout();
-            StartCoroutine(timeoutRoutine);
+            oneSecondCounter = 0;
         }
     }
 
@@ -101,28 +95,31 @@ public class LoadingMenuCanvas : MenuCanvas
         timeoutInfo.text = timeoutPrefix + loadingTimeoutSec;
     }
 
-    private IEnumerator UpdateTimeout()
-    {
-        while (loadingTimeoutSec>0)
-        {
-            loadingTimeoutSec--;
-            yield return wait1Second;
-            UpdateTimeoutLabel();
-        }
-        MenuManager.Instance.ShowInfo(timeoutReachedInfo, "Timeout");
-        gameObject.SetActive(false);
-    }
-
-
-    private void OnDisable()
-    {
-        if(timeoutRoutine!=null)
-            StopCoroutine(timeoutRoutine);
-    }
-
     public override AssetEnum GetAssetEnum()
     {
         return AssetEnum.LoadingMenuCanvas;
+    }
+    private float oneSecondCounter = 0;
+    private void FixedUpdate()
+    {
+        if(timeoutContainer!=null && timeoutContainer.activeSelf)
+        {
+            if(loadingTimeoutSec>0)
+            {
+                oneSecondCounter+=Time.fixedDeltaTime;
+                if(oneSecondCounter>=1)
+                {
+                    oneSecondCounter=0;
+                    loadingTimeoutSec--;
+                    UpdateTimeoutLabel();
+                }
+            }
+            else
+            {
+                MenuManager.Instance.ShowInfo(timeoutReachedInfo, "Timeout");
+                gameObject.SetActive(false);
+            }
+        }
     }
 }
 

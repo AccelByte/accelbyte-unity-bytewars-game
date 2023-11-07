@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 
@@ -65,5 +66,24 @@ public abstract class MenuCanvas : MonoBehaviour
         {
             btn.gameObject.SetActive(isVisible);
         }
+    }
+    protected void ShowLoading(string loadingMessage, 
+        string timeoutReachedMessage, int timeoutInSecond, 
+        UnityAction cancelCallback=null)
+    {
+        MenuManager.Instance.HideInfo();
+        MenuManager.Instance.ShowLoading(loadingMessage, 
+            new LoadingTimeoutInfo(){info = "will timeout in ", 
+                timeoutReachedError = timeoutReachedMessage, timeoutSec = timeoutInSecond}, 
+            cancelCallback);
+    }
+    protected void ShowError(string errorMessage)
+    {
+        MenuManager.Instance.HideLoading();
+        MenuManager.Instance.ShowInfo(errorMessage, "Error");
+    }
+    protected void HideLoading()
+    {
+        MenuManager.Instance.HideLoading();
     }
 }

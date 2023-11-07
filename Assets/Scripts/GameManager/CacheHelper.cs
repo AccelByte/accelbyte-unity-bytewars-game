@@ -44,6 +44,7 @@ public class CacheHelper
             if (uwr.result != UnityWebRequest.Result.Success)
             {
                 Debug.Log(uwr.error);
+                result = null;
             }
             else
             {

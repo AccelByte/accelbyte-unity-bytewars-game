@@ -662,6 +662,9 @@ public class GameManager : NetworkBehaviour
             case InGameState.None:
                 _hud.gameObject.SetActive(false);
                 ResetLevel();
+                #if !UNITY_SERVER
+                OnGameStateIsNone?.Invoke();
+                #endif
                 break;
             case InGameState.Initializing:
                 if(_hud)
@@ -833,10 +836,10 @@ public class GameManager : NetworkBehaviour
         reconnect.ConnectAsClient(_unityTransport, address, port, initialData);
     }
 
-    public void StartAsHost(string address, ushort port, InGameMode inGameMode)
+    public void StartAsHost(string address, ushort port, InGameMode inGameMode, string serverSessionId)
     {
         
-        var initialData = new InitialConnectionData(){ inGameMode = inGameMode };
+        var initialData = new InitialConnectionData(){ inGameMode = inGameMode, serverSessionId = serverSessionId };
         reconnect.StartAsHost(_unityTransport, address, port, initialData);
         NetworkManager.Singleton.SceneManager.OnSceneEvent += OnNetworkSceneEvent;
     }
@@ -853,9 +856,8 @@ public class GameManager : NetworkBehaviour
         PlayerState[] playerStates, InGameMode inGameMode, bool isInGameScene)
     {
         //client side, because the previous playerState only exists in server, clientrpc is called on client
-        Debug.Log($"update player state lobby playerStates: {JsonUtility.ToJson(playerStates)} " +
+        BytewarsLogger.Log($"update player state lobby playerStates: {JsonUtility.ToJson(playerStates)} " +
                   $"teamStates: {JsonUtility.ToJson(teamStates)}");
-        
         _serverHelper.UpdatePlayerStates(teamStates, playerStates);
         _inGameMode = inGameMode;
         GameData.GameModeSo = availableInGameMode[(int)inGameMode];
@@ -952,6 +954,7 @@ public class GameManager : NetworkBehaviour
     public event Action OnDeregisterServer;
     public event Action OnRegisterServer;
     public event Action OnRejectBackfill; 
+    public event Action OnGameStateIsNone; 
     private async void DeregisterServer()
     {
 #if UNITY_SERVER
@@ -969,4 +972,9 @@ public class GameManager : NetworkBehaviour
     /// called when client is disconnected and will send disconnect reason if available
     /// </summary>
     public static event Action<string> OnDisconnectedInMainMenu;
+    public static void StartListenNetworkSceneEvent()
+    {
+        NetworkManager.Singleton.SceneManager.OnSceneEvent -= _instance.OnNetworkSceneEvent;
+        NetworkManager.Singleton.SceneManager.OnSceneEvent += _instance.OnNetworkSceneEvent;
+    }
 }
