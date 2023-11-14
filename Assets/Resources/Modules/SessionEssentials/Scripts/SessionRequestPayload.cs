@@ -10,6 +10,8 @@ public class SessionRequestPayload
 {
     public SessionType SessionType { get; set; }
     public string SessionId { get; set; }
+    
+    public string SessionTemplateName { get; set; }
     public string MatchPool { get; set; }
     public InGameMode? InGameMode { get; set; }
     public TutorialType? TutorialType { get; set; }
@@ -19,6 +21,7 @@ public class SessionRequestPayload
     {
         SessionType = SessionType.none;
         SessionId = null;
+        SessionTemplateName = null;
         MatchPool = null;
         InGameMode = null;
         TutorialType = null;

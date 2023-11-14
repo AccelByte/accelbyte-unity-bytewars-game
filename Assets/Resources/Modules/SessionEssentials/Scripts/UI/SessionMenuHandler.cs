@@ -197,7 +197,7 @@ public class SessionMenuHandler : MenuCanvas
         {
             SessionType = SessionType.none,
             InGameMode = InGameMode.None,
-            MatchPool = "unity-elimination-none",
+            SessionTemplateName = "unity-elimination-none",
             TutorialType = TutorialType.SessionEssentials
         };
 

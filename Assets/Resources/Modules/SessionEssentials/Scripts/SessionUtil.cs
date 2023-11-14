@@ -18,7 +18,7 @@ public static class SessionUtil
                 {
                         type = GetSessionConfigTemplate(type),
                         joinability = SessionV2Joinability.OPEN,
-                        configurationName = sessionRequest.MatchPool,
+                        configurationName = !String.IsNullOrEmpty(sessionRequest.SessionTemplateName) ? sessionRequest.SessionTemplateName : sessionRequest.MatchPool,
                         matchPool = sessionRequest.MatchPool,
                         attributes = sessionRequest.attributes
                 };
