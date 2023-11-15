@@ -11,10 +11,6 @@ public class SessionEssentialsWrapper_Starter : MonoBehaviour
     protected Session _session;
     protected Lobby _lobby;
     
-    /// <summary>
-    /// This event will raised after JoinSession is complete
-    /// </summary>
-    public event Action<SessionResponsePayload> OnJoinSessionCompleteEvent;
     
     /// <summary>
     /// This event will raised after GetGameSessionDetailsById is complete
@@ -33,18 +29,6 @@ public class SessionEssentialsWrapper_Starter : MonoBehaviour
         LoginHandler.onLoginCompleted += LoginToLobby;
     }
 
-    
-    /// <summary>
-    /// This method will invoke OnJoinSessionCompleteEvent and return SessionRequestPayload.
-    /// You can filter it by add _tutorialType static flag from class who called this method. 
-    /// </summary>
-    /// <param name="sessionId"></param>
-    /// <param name="sourceFilePath">this will capture class name who called this method, leave it empty</param>
-    protected void JoinSession(string sessionId, [CallerFilePath] string? sourceFilePath=null)
-    {
-        var tutorialType = SessionUtil.GetTutorialTypeFromClass((sourceFilePath));
-        _session.JoinGameSession(sessionId, result => OnJoinSessionCompleted(result, tutorialType));
-    }
     
     /// <summary>
     /// This method will invoke OnGetSessionDetailsCompleteEvent and return SessionRequestPayload.
@@ -67,30 +51,6 @@ public class SessionEssentialsWrapper_Starter : MonoBehaviour
     }
 
     #region Callback
-
-    
-    /// <summary>
-    /// JoinSession Callback
-    /// </summary>
-    /// <param name="result"></param>
-    /// <param name="tutorialType"></param>
-    private void OnJoinSessionCompleted(Result<SessionV2GameSession> result, TutorialType? tutorialType = null)
-    {
-        var response = new SessionResponsePayload();
-        
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"Successfully joined the game session");
-            response.Result = result;
-            response.TutorialType = tutorialType;
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
-            response.IsError = result.IsError;
-        }
-        OnJoinSessionCompleteEvent?.Invoke(response);
-    }
     
     
     /// <summary>
