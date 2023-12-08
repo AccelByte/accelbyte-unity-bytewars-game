@@ -5,6 +5,7 @@ using Unity.Netcode;
 
 public class GameSessionEssentialsWrapper : SessionEssentialsWrapper
 {
+#if UNITY_SERVER
     private DedicatedServerManager _dedicatedServerManager;
     
     public DedicatedServerManager DedicatedServerManager 
@@ -12,19 +13,16 @@ public class GameSessionEssentialsWrapper : SessionEssentialsWrapper
         get => _dedicatedServerManager;
         private set => _dedicatedServerManager = value; 
     }
+#endif
     
     protected void Awake()
     {
         base.Awake();
+#if UNITY_SERVER
         _dedicatedServerManager = MultiRegistry.GetServerApiClient().GetDedicatedServerManager();
         DedicatedServerManager = _dedicatedServerManager;
+#endif
     }
-
-    #region Server Code
-
-
-    
-    #endregion
 
     #region GameClient
 

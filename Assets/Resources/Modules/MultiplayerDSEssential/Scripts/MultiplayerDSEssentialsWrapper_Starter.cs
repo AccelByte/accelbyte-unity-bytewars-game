@@ -7,7 +7,7 @@ using System.IO;
 using AccelByte.Core;
 using UnityEngine;
 
-public class MultiplayerDSEssentialsWrapper : MonoBehaviour
+public class MultiplayerDSEssentialsWrapper_Starter : MonoBehaviour
 {
 #if UNITY_SERVER
 
@@ -16,8 +16,7 @@ public class MultiplayerDSEssentialsWrapper : MonoBehaviour
     public event Action OnLoginServerCompleteEvent;
     private void Start()
     {
-        
-        _dsServiceWrapper = TutorialModuleManager.Instance.GetModuleClass<ArmadaV3Wrapper>();
+        _dsServiceWrapper = TutorialModuleManager.Instance.GetModuleClass<ArmadaV3Wrapper_Starter>();
         _dsServiceWrapper.OnInstantiateComplete += SwitchModule;
         _dsServiceWrapper.OnInstantiateComplete += _dsServiceWrapper.LoginServer;
         _dsServiceWrapper.OnLoginCompleteEvent += RegisterDS;
@@ -31,8 +30,8 @@ public class MultiplayerDSEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            _dsServiceWrapper.RegisterServer();
             OnLoginServerCompleteEvent?.Invoke();
+            _dsServiceWrapper.RegisterServer();
         }
     }
 
@@ -68,10 +67,10 @@ public class MultiplayerDSEssentialsWrapper : MonoBehaviour
         if (CheckDSServerConfig())
         {   
             BytewarsLogger.Log($"AMSWrapper");
-            var armadaV3Wrapper = TutorialModuleManager.Instance.GetModuleClass<ArmadaV3Wrapper>();
+            var armadaV3Wrapper = TutorialModuleManager.Instance.GetModuleClass<ArmadaV3Wrapper_Starter>();
             armadaV3Wrapper.gameObject.SetActive(false);
             
-            _dsServiceWrapper = TutorialModuleManager.Instance.GetModuleClass<AMSWrapper>();
+            _dsServiceWrapper = TutorialModuleManager.Instance.GetModuleClass<AMSWrapper_Starter>();
             IsArmadaV3 = false;
         }
         else
@@ -79,10 +78,10 @@ public class MultiplayerDSEssentialsWrapper : MonoBehaviour
             BytewarsLogger.Log($"ArmadaV3Wrapper");
 
             //Disable armada
-            var amsWrapper = TutorialModuleManager.Instance.GetModuleClass<AMSWrapper>();
+            var amsWrapper = TutorialModuleManager.Instance.GetModuleClass<AMSWrapper_Starter>();
             amsWrapper.gameObject.SetActive(false);
             
-            _dsServiceWrapper = TutorialModuleManager.Instance.GetModuleClass<ArmadaV3Wrapper>();
+            _dsServiceWrapper = TutorialModuleManager.Instance.GetModuleClass<ArmadaV3Wrapper_Starter>();
             IsArmadaV3 = true;
         }
     }

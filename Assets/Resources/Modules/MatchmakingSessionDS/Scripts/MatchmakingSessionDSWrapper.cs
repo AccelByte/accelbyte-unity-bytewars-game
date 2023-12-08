@@ -49,9 +49,19 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     private void Start()
     {
 #if UNITY_SERVER
-        var _multiplayerDSEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<MultiplayerDSEssentialsWrapper>();
-        _multiplayerDSEssentialsWrapper.OnLoginServerCompleteEvent += MatchMakingServerClaim;
-        _multiplayerDSEssentialsWrapper.OnLoginServerCompleteEvent += BackFillProposal;
+        var dsEssentialModule = TutorialModuleManager.Instance.GetModule(TutorialType.MultiplayerDSEssentials);
+        if (dsEssentialModule.isStarterActive)
+        {
+            var multiplayerDSEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<MultiplayerDSEssentialsWrapper_Starter>();
+            multiplayerDSEssentialsWrapper.OnLoginServerCompleteEvent += MatchMakingServerClaim;
+            multiplayerDSEssentialsWrapper.OnLoginServerCompleteEvent += BackFillProposal;
+        }
+        else
+        {
+            var multiplayerDSEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<MultiplayerDSEssentialsWrapper>();
+            multiplayerDSEssentialsWrapper.OnLoginServerCompleteEvent += MatchMakingServerClaim;
+            multiplayerDSEssentialsWrapper.OnLoginServerCompleteEvent += BackFillProposal;
+        }
         GameManager.Instance.OnRejectBackfill += () => { _isGameStarted = true; };
         GameManager.Instance.OnGameStateIsNone += () => { _isGameStarted = false; };
 #endif
