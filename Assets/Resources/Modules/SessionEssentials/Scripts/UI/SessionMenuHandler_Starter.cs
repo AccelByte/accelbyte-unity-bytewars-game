@@ -30,7 +30,7 @@ public class SessionMenuHandler_Starter : MenuCanvas
     
     private SessionResponsePayload _sessionResponsePayload;
     
-    private SessionEssentialsWrapper_Starter _sessionEssentialsWrapper;
+    // Copy SessionEssentialsWrapper_Starter field from "Putting it all together" unit here (step number 1)
     
     private static readonly TutorialType _tutorialType = TutorialType.SessionEssentials;
 
@@ -96,22 +96,26 @@ public class SessionMenuHandler_Starter : MenuCanvas
             failedPanel
         };
         
-        _sessionEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<SessionEssentialsWrapper_Starter>();
+        // Copy _sessionEssentialsWrapper variable assignment from "Putting it all together" unit here (step number 2)
     }
     
+    // Update OnEnable() with the code snippet from "Putting it all together" unit here (step number 5)
     private void OnEnable()
     {
         CurrentView = SessionMenuView.Default;
+        
     }
 
+    // Update OnDisable() with the code snippet from "Putting it all together" unit here (step number 6)
     private void OnDisable()
     {
-
     }
 
     // Start is called before the first frame update
     void Start()
     {
+        // Copy if condition from "Putting it all together" unit here (step number 4)
+
         createEliminationButton.onClick.AddListener(OnEliminationButtonClicked);
         leaveButton.onClick.AddListener(OnLeaveSessionButtonClicked);
         cancelButton.onClick.AddListener(OnCancelButtonClicked);
@@ -135,33 +139,26 @@ public class SessionMenuHandler_Starter : MenuCanvas
         MenuManager.Instance.OnBackPressed();
     }
     
+    // Update OnEliminationButtonClicked() with the code snippet from "Putting it all together" unit here (step number 7)
     private void OnEliminationButtonClicked()
     {
-
     }
 
+    // Update OnLeaveSessionButtonClicked() with the code snippet from "Putting it all together" unit here (step number 8)
     private void OnLeaveSessionButtonClicked()
     {
-
     }
     
     #region EventCallback
 
+    // Update OnCreateSessionCompleted() with the code snippet from "Putting it all together" unit here (step number 8)
     private void OnCreateSessionCompleted(SessionResponsePayload response)
     {
-        if (!response.IsError)
-        {
-            CurrentView = SessionMenuView.Joining;
-            StartCoroutine(DelayCallback(sessionView => Helper(response, sessionView)));
-        }
     }
     
+    // Update OnLeaveSessionCompleted() with the code snippet from "Putting it all together" unit here (step number 8)
     private void OnLeaveSessionCompleted(SessionResponsePayload response)
     {
-        if (response.IsError) return;
-        IsTutorialTypeMatch(_sessionResponsePayload.TutorialType);
-        _sessionResponsePayload = null;
-        MenuManager.Instance.OnBackPressed();
     }
     
     private IEnumerator DelayCallback(Action<SessionMenuView> action)
@@ -173,6 +170,8 @@ public class SessionMenuHandler_Starter : MenuCanvas
     }
 
     #endregion
+
+    // Copy BindToWrapperEvent() and UnbindToWrapperEvent() from "Putting it all together" unit here (step number 3)
 
     #region HelperFunction
 
@@ -220,8 +219,6 @@ public class SessionMenuHandler_Starter : MenuCanvas
     
     #endregion
 
-    
-    
 
     public override GameObject GetFirstButton()
     {
