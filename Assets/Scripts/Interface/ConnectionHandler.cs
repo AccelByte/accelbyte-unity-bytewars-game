@@ -4,18 +4,22 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 public static class ConnectionHandler
 {
     public static string LocalServerName;
     public static string LocalServerIP;
     public const ushort DefaultPort = 7778;
+    private static bool isInitialized;
+    private static bool isUsingLocalDS;
 
-    public static bool GetArgument()
+    public static void Initialization()
     {
+        if (isInitialized)
+        {
+            return;
+        }
         var args = GetCommandlineArgs();
-
         if (args.TryGetValue("-localserver", out string servername))
         {
             LocalServerName = servername;
@@ -27,27 +31,15 @@ public static class ConnectionHandler
             {
                 LocalServerIP = GetLocalIPAddress();
             }
-
-            return true;
+            isUsingLocalDS = true;
         }
-
-        if (args.ContainsKey("-cloud_ds"))
-            return false;
-        #if UNITY_EDITOR
-                LocalServerName = SystemInfo.deviceName;
-                LocalServerIP = GetLocalIPAddress();
-                return true;
-        #endif
-
-        return false;
+        isInitialized = true;
     }
-    
+
     public static Dictionary<string, string> GetCommandlineArgs()
     {
         Dictionary<string, string> argDictionary = new Dictionary<string, string>();
-
         var args = System.Environment.GetCommandLineArgs();
-        
         for (int i = 0; i < args.Length; ++i)
         {
             var arg = args[i].ToLower();
@@ -61,7 +53,7 @@ public static class ConnectionHandler
         }
         return argDictionary;
     }
-    
+
     public static string GetLocalIPAddress()
     {
         var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
@@ -72,7 +64,11 @@ public static class ConnectionHandler
                 return ip.ToString();
             }
         }
-
         return "0.0.0.0";
+    }
+
+    public static bool IsUsingLocalDS()
+    {
+        return isUsingLocalDS;
     }
 }
