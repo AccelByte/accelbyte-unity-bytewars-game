@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -44,16 +44,16 @@ public class LoginHandler_Starter : MenuCanvas
 
     #endregion
 
-    //Paste Start() from "Put it All together" unit here (step number 3)
 
-    
-    //Paste OnEnable() function from "Add a Login Menu" here (step number 4)
+    //Paste Start() function from "Add a Login Menu" here (step number 4)
+    //then change it using code from "Put it All together" unit (step number 3)
 
-    
+
+
     //initially Paste Login() function login from "Add a Login Menu" here (step number 3)
     //then change it using code from "Put it All together" unit (step number 5)
 
-    
+
     //Paste all callback function from "Add a Login Menu" here (step number 5)
     //Then update OnLoginWithDeviceIdButtonClicked and OnRetryLoginButtonClicked from "Put it All together" unit (step number 6)
     private void OnQuitGameButtonClicked()
