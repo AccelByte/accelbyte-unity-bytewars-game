@@ -56,7 +56,9 @@ public class CreateMatchSessionHandler : MenuCanvas
     private void OnDSBtnClicked()
     {
         dsBtn.interactable = false;
-        _selectedSessionServerType = MatchSessionServerType.DedicatedServer;
+        _selectedSessionServerType = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MultiplayerDSEssentials)
+                                         ? MatchSessionServerType.DedicatedServerAMS
+                                         : MatchSessionServerType.DedicatedServer;
         CreateMatchSession();
     }
 

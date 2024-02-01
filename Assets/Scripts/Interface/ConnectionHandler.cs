@@ -71,4 +71,17 @@ public static class ConnectionHandler
     {
         return isUsingLocalDS;
     }
+
+    public static ushort GetPort()
+    {
+        Dictionary<string, string> args = GetCommandlineArgs();
+        if (args.TryGetValue("-port", out string portStr))
+        {
+            if (ushort.TryParse(portStr, out ushort portUshort))
+            {
+                return portUshort;
+            }
+        }
+        return DefaultPort;
+    }
 }

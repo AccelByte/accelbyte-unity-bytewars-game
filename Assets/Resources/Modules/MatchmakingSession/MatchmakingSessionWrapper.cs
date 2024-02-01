@@ -76,7 +76,7 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
     
     protected void UnBindMatchmakingUserJoinedGameSession()
     {
-        _lobby.SessionV2UserJoinedGameSession += OnUserJoinedGameSession;
+        _lobby.SessionV2UserJoinedGameSession -= OnUserJoinedGameSession;
     }
     
     protected void BindOnMatchmakingStarted()

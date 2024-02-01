@@ -1,5 +1,6 @@
 public enum MatchSessionServerType
 {
     DedicatedServer,
-    PeerToPeer
+    PeerToPeer,
+    DedicatedServerAMS
 }

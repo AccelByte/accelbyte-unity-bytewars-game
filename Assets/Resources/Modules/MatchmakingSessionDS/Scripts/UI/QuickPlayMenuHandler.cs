@@ -32,6 +32,12 @@ public class QuickPlayMenuHandler : MenuCanvas
     public static event Action OnMenuDisable;
 
     private MatchmakingSessionDSWrapper _matchmakingSessionDSWrapper;
+
+    private const string EliminationDSMatchPool = "unity-elimination-ds";
+    private const string TeamDeathmatchDSMatchPool = "unity-teamdeathmatch-ds";
+
+    private const string EliminationDSAMSMatchPool = "unity-elimination-ds-ams";
+    private const string TeamDeathmatchDSAMSMatchPool = "unity-teamdeathmatch-ds-ams";
     
     #region QuickPlayView
 
@@ -178,13 +184,19 @@ public class QuickPlayMenuHandler : MenuCanvas
     private void OnEliminationButtonClicked()
     {
         currentView = QuickPlayView.FindingMatch;
-        _matchmakingSessionDSWrapper.StartDSMatchmaking("unity-elimination-ds");
+        string matchPool = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MultiplayerDSEssentials)
+                               ? EliminationDSAMSMatchPool
+                               : EliminationDSMatchPool;
+        _matchmakingSessionDSWrapper.StartDSMatchmaking(matchPool);
     }
     
     private void OnTeamDeathMatchButtonClicked()
     {
         currentView = QuickPlayView.FindingMatch;
-        _matchmakingSessionDSWrapper.StartDSMatchmaking("unity-teamdeathmatch-ds");
+        string matchPool = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MultiplayerDSEssentials)
+                               ? TeamDeathmatchDSAMSMatchPool
+                               : TeamDeathmatchDSMatchPool;
+        _matchmakingSessionDSWrapper.StartDSMatchmaking(matchPool);
     }
 
     private void OnCancelMatchmakingClicked()

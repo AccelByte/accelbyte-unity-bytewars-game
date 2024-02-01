@@ -119,13 +119,15 @@ public class GameManager : NetworkBehaviour
     {
         if (_unityTransport)
         {
-            //this might not necessary, setting server ip and host
-            _unityTransport.ConnectionData.Address = "127.0.0.1";
-            _unityTransport.ConnectionData.Port = 7778;
+            _unityTransport.ConnectionData.Address = ConnectionHandler.GetLocalIPAddress(); //"127.0.0.1"
+            _unityTransport.ConnectionData.Port = ConnectionHandler.GetPort(); //7778
             _unityTransport.ConnectionData.ServerListenAddress = "0.0.0.0";
+            
             NetworkManager.Singleton.StartServer();
             NetworkManager.SceneManager.OnSceneEvent += OnNetworkSceneEvent;
-            Debug.Log(_unityTransport.ConnectionData.ServerListenAddress.ToString());
+            
+            Debug.Log("Server Address: " + _unityTransport.ConnectionData.ServerListenAddress.ToString());
+            Debug.Log("Server Port: " + _unityTransport.ConnectionData.Port.ToString());
             Debug.Log("server started");
         }
     }

@@ -49,19 +49,6 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     private void Start()
     {
 #if UNITY_SERVER
-        var dsEssentialModule = TutorialModuleManager.Instance.GetModule(TutorialType.MultiplayerDSEssentials);
-        if (dsEssentialModule.isStarterActive)
-        {
-            var multiplayerDSEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<MultiplayerDSEssentialsWrapper_Starter>();
-            multiplayerDSEssentialsWrapper.OnLoginServerCompleteEvent += MatchMakingServerClaim;
-            multiplayerDSEssentialsWrapper.OnLoginServerCompleteEvent += BackFillProposal;
-        }
-        else
-        {
-            var multiplayerDSEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<MultiplayerDSEssentialsWrapper>();
-            multiplayerDSEssentialsWrapper.OnLoginServerCompleteEvent += MatchMakingServerClaim;
-            multiplayerDSEssentialsWrapper.OnLoginServerCompleteEvent += BackFillProposal;
-        }
         GameManager.Instance.OnRejectBackfill += () => { _isGameStarted = true; };
         GameManager.Instance.OnGameStateIsNone += () => { _isGameStarted = false; };
 #endif
@@ -320,6 +307,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 
             OnMatchmakingFoundEvent += OnJoiningMatch;
             OnMatchFoundFallbackEvent += PostFallback;
+            OnJoinSessionCompleteEvent += OnJoinedSession;
         }
 
         if (periodically)
@@ -357,7 +345,6 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
             UnBindOnSessionDSUpdateNotification();
 
             OnMatchmakingFoundEvent -= OnJoiningMatch;
-
         }
 
         if (periodically)
@@ -386,6 +373,8 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         {
             var session = result.Value.session;
             var dsInfo = session.dsInformation;
+            
+            BytewarsLogger.Log($"Session DS updated! Checking session status: {dsInfo.status}");
             switch (dsInfo.status)
             {
                 case SessionV2DsStatus.AVAILABLE:
@@ -410,6 +399,21 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         }
     }
 
+    private void OnJoinedSession(SessionResponsePayload sessionPayload)
+    {
+        BytewarsLogger.Log("Join session completed! Proceed to travel to game..");
+        
+        var session = sessionPayload.Result.Value;
+        var dsInfo = session.dsInformation;
+        if (!sessionPayload.Result.IsError)
+        {
+            if (dsInfo.status == SessionV2DsStatus.AVAILABLE)
+            {
+                OnDSAvailableEvent?.Invoke(session);
+            }
+        }
+    }
+
     #endregion
 
     #region GameServer
@@ -417,7 +421,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 #if UNITY_SERVER
     #region GameServerNotification
 
-    private void MatchMakingServerClaim()
+    public void MatchMakingServerClaim()
     {
         _serverDSHub.MatchmakingV2ServerClaimed += result =>
         {
@@ -434,7 +438,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         };
     }
 
-    private void BackFillProposal()
+    public void BackFillProposal()
     {
         _serverDSHub.MatchmakingV2BackfillProposalReceived += result =>
         {

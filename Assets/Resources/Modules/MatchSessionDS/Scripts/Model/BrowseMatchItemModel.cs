@@ -100,6 +100,16 @@ public class BrowseMatchItemModel
             GameMode = InGameMode.CreateMatchDeathMatchGameMode;
             SessionServerType = MatchSessionServerType.PeerToPeer;
         }
+        else if (gameSessionName.Equals(MatchSessionConfig.UnitySessionEliminationDSAMS))
+        {
+            GameMode = InGameMode.CreateMatchEliminationGameMode;
+            SessionServerType = MatchSessionServerType.DedicatedServerAMS;
+        }
+        else if (gameSessionName.Equals(MatchSessionConfig.UnitySessionTeamDeathmatchDSAMS))
+        {
+            GameMode = InGameMode.CreateMatchDeathMatchGameMode;
+            SessionServerType = MatchSessionServerType.DedicatedServerAMS;
+        }
     }
     
 }

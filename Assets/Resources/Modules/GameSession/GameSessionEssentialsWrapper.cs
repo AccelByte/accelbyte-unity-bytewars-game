@@ -2,9 +2,15 @@ using AccelByte.Core;
 using AccelByte.Models;
 using AccelByte.Server;
 using Unity.Netcode;
+using UnityEngine;
 
 public class GameSessionEssentialsWrapper : SessionEssentialsWrapper
 {
+    private const string EliminationDSMatchPool = "unity-elimination-ds";
+    private const string EliminationDSAMSMatchPool = "unity-elimination-ds-ams";
+    private const string TeamDeathmatchDSMatchPool = "unity-teamdeathmatch-ds";
+    private const string TeamDeathmatchDSAMSMatchPool = "unity-teamdeathmatch-ds-ams";
+    
 #if UNITY_SERVER
     private DedicatedServerManager _dedicatedServerManager;
     
@@ -35,7 +41,8 @@ public class GameSessionEssentialsWrapper : SessionEssentialsWrapper
         {
             dsInfo.server.ports.TryGetValue("unityds", out port);
         }
-        else
+        
+        if (port == 0)
         {
             port = dsInfo.server.port;
         }
@@ -49,11 +56,13 @@ public class GameSessionEssentialsWrapper : SessionEssentialsWrapper
 
         switch (session.matchPool)
         {
-            case "unity-elimination-ds":
+            case EliminationDSMatchPool:
+            case EliminationDSAMSMatchPool:
                 initialData.inGameMode = InGameMode.OnlineEliminationGameMode;
                 GameManager.Instance.StartAsClient(dsInfo.server.ip, (ushort)port, initialData);
                 break;
-            case "unity-teamdeathmatch-ds":
+            case TeamDeathmatchDSMatchPool:
+            case TeamDeathmatchDSAMSMatchPool:
                 initialData.inGameMode = InGameMode.OnlineDeathMatchGameMode;
                 GameManager.Instance.StartAsClient(dsInfo.server.ip, (ushort)port, initialData);
                 break;
@@ -69,7 +78,7 @@ public class GameSessionEssentialsWrapper : SessionEssentialsWrapper
         {
             sessionV2Game.dsInformation.server.ports.TryGetValue("unityds", out port);
         }
-        else
+        if (port == 0)
         {
             port = sessionV2Game.dsInformation.server.port;
         }

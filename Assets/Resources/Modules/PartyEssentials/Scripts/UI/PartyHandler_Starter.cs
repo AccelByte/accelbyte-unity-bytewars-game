@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using WebSocketSharp;
 
 public class PartyHandler_Starter : MenuCanvas
 {

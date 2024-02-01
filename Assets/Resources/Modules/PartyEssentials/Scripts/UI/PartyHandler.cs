@@ -1,9 +1,9 @@
+using System;
 using System.Collections.Generic;
 using AccelByte.Core;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using WebSocketSharp;
 
 public class PartyHandler : MenuCanvas
 {
@@ -40,7 +40,7 @@ public class PartyHandler : MenuCanvas
 
     private void OnEnable()
     {
-        if (!PartyHelper.CurrentPartyId.IsNullOrEmpty() && PartyHelper.PartyMembersData.Count > 0 && _authWrapper)
+        if (!String.IsNullOrEmpty(PartyHelper.CurrentPartyId) && PartyHelper.PartyMembersData.Count > 0 && _authWrapper)
         {
             DisplayPartyMembersData();
         }
@@ -77,7 +77,7 @@ public class PartyHandler : MenuCanvas
     private void DisplayOnlyCurrentPlayer()
     {
         string displayName = _authWrapper.userData.display_name;
-        if (displayName.IsNullOrEmpty())
+        if (String.IsNullOrEmpty(displayName))
         {
             displayName = DefaultDisplayName + _authWrapper.userData.user_id.Substring(0, 5);
         }
@@ -110,7 +110,7 @@ public class PartyHandler : MenuCanvas
 
     private void OnLeaveButtonClicked()
     {
-        if (!_partyWrapper.partyId.IsNullOrEmpty())
+        if (!String.IsNullOrEmpty(_partyWrapper.partyId))
         {
             _partyWrapper.LeaveParty(_partyWrapper.partyId, result => HandleNotInParty());
             

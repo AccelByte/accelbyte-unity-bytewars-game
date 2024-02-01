@@ -13,6 +13,8 @@ public class MatchSessionConfig
     public const string UnitySessionEliminationP2P = "unity-elimination-p2p";
     public const string UnitySessionDeathMatchDs = "unity-teamdeathmatch-ds";
     public const string UnitySessionDeathMatchP2P = "unity-teamdeathmatch-p2p";
+    public const string UnitySessionEliminationDSAMS = "unity-elimination-ds-ams";
+    public const string UnitySessionTeamDeathmatchDSAMS = "unity-teamdeathmatch-ds-ams";
     public static readonly Dictionary<InGameMode, Dictionary<MatchSessionServerType, SessionV2GameSessionCreateRequest>>
             MatchRequests =
                 new Dictionary<InGameMode, Dictionary<MatchSessionServerType, SessionV2GameSessionCreateRequest>>()
@@ -36,6 +38,15 @@ public class MatchSessionConfig
                             configurationName = UnitySessionEliminationP2P,
                             attributes = CreatedMatchSessionAttribute
                         }
+                    },
+                    {
+                        MatchSessionServerType.DedicatedServerAMS, new SessionV2GameSessionCreateRequest()
+                        {
+                            type = SessionConfigurationTemplateType.DS,
+                            joinability = SessionV2Joinability.OPEN,
+                            configurationName = UnitySessionEliminationDSAMS,
+                            matchPool = UnitySessionEliminationDSAMS
+                        }
                     }
                     }},
                     { InGameMode.CreateMatchDeathMatchGameMode, new Dictionary<MatchSessionServerType, SessionV2GameSessionCreateRequest>(){
@@ -55,6 +66,15 @@ public class MatchSessionConfig
                             joinability = SessionV2Joinability.OPEN,
                             configurationName = UnitySessionDeathMatchP2P,
                             attributes = CreatedMatchSessionAttribute
+                        }
+                    },
+                    {
+                        MatchSessionServerType.DedicatedServerAMS, new SessionV2GameSessionCreateRequest()
+                        {
+                            type = SessionConfigurationTemplateType.DS,
+                            joinability = SessionV2Joinability.OPEN,
+                            configurationName = UnitySessionTeamDeathmatchDSAMS,
+                            matchPool = UnitySessionTeamDeathmatchDSAMS
                         }
                     }
                     }}
