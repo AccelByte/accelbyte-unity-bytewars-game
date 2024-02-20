@@ -15,8 +15,8 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
     private MatchmakingV2 _matchmakingV2;
     private static string _ticketId;
 
-    protected internal event Action<string> OnMatchmakingFoundEvent; 
-    protected internal event ResultCallback<MatchmakingV2CreateTicketResponse> OnStartMatchmakingCompleteEvent; 
+    protected internal event Action<string> OnMatchmakingFoundEvent;
+    protected internal event ResultCallback<MatchmakingV2CreateTicketResponse> OnStartMatchmakingCompleteEvent;
     protected internal event Action OnCancelMatchmakingCompleteEvent;
     protected internal event ResultCallback<SessionV2GameJoinedNotification> OnUserJoinedGameSessionEvent;
     protected internal event Action OnMatchFoundFallbackEvent;
@@ -24,19 +24,27 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
     protected void Awake()
     {
         base.Awake();
-        
+
         _matchmakingV2 = MultiRegistry.GetApiClient().GetMatchmakingV2();
 
     }
-    
+
     #region Matchmaking
 
     protected void StartMatchmaking(string matchPool, bool isLocal = false)
     {
         var optionalParams = CreateTicketRequestParams(isLocal);
+
+        // Play with Party additional code
+        if (!String.IsNullOrWhiteSpace(PartyHelper.CurrentPartyId))
+        {
+            optionalParams ??= new MatchmakingV2CreateTicketRequestOptionalParams();
+            optionalParams.sessionId = PartyHelper.CurrentPartyId;
+        }
+
         _matchmakingV2.CreateMatchmakingTicket(matchPool, optionalParams, OnStartMatchmakingComplete);
     }
-    
+
     protected void CancelMatchmaking(string matchTicketId)
     {
         _matchmakingV2.DeleteMatchmakingTicket(matchTicketId, result => OnCancelMatchmakingComplete(result, matchTicketId));
@@ -64,45 +72,45 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
     {
         _matchmakingV2.GetMatchmakingTicket(ticketId, OnGetMatchmakingTicketFallbackComplete);
     }
-    
+
     #endregion
 
     #region EventListener
-    
+
     protected void BindMatchmakingUserJoinedGameSession()
     {
         _lobby.SessionV2UserJoinedGameSession += OnUserJoinedGameSession;
     }
-    
+
     protected void UnBindMatchmakingUserJoinedGameSession()
     {
         _lobby.SessionV2UserJoinedGameSession -= OnUserJoinedGameSession;
     }
-    
+
     protected void BindOnMatchmakingStarted()
     {
         _lobby.MatchmakingV2MatchmakingStarted += OnMatchmakingStarted;
     }
-    
+
     protected void UnBindOnMatchmakingStarted()
     {
         _lobby.MatchmakingV2MatchmakingStarted -= OnMatchmakingStarted;
     }
-    
+
     protected void BindMatchFoundNotification()
     {
         _lobby.MatchmakingV2MatchFound += OnMatchFound;
     }
-    
+
     protected void UnBindMatchFoundNotification()
     {
         _lobby.MatchmakingV2MatchFound -= OnMatchFound;
     }
-    
+
     #endregion
 
     #region EventHandler
-    
+
     private void OnUserJoinedGameSession(Result<SessionV2GameJoinedNotification> result)
     {
         if (!result.IsError)
@@ -115,7 +123,7 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
         }
         OnUserJoinedGameSessionEvent?.Invoke(result);
     }
-    
+
     private void OnMatchmakingStarted(Result<MatchmakingV2MatchmakingStartedNotification> result)
     {
         if (!result.IsError)
@@ -127,7 +135,7 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
             BytewarsLogger.LogWarning($"{result.Error.Message}");
         }
     }
-    
+
     private void OnMatchFound(Result<MatchmakingV2MatchFoundNotification> result)
     {
         if (!result.IsError)
@@ -142,7 +150,7 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
     }
 
     #endregion
-    
+
     #region Callbacks
 
     private void OnStartMatchmakingComplete(Result<MatchmakingV2CreateTicketResponse> result)
@@ -168,7 +176,7 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
             BytewarsLogger.Log($"success cancel matchmaking with ticket id {ticketId}");
         }
     }
-    
+
     private void OnGetMatchmakingTicketStatusComplete(Result<MatchmakingV2MatchTicketStatus> result)
     {
         if (!result.IsError)
@@ -202,7 +210,7 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
             BytewarsLogger.LogWarning($"failed to get matchmaking ticket {result.Error.Message}");
         }
     }
-    
+
     #endregion
 
     #region Utils
@@ -221,7 +229,7 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
 
         return optionalParams;
     }
-    
+
     protected IEnumerator WaitForASecond(string ticketId, Action<string> action)
     {
         yield return new WaitForSeconds(1);

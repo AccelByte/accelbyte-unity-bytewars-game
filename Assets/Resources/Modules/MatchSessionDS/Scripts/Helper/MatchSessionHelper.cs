@@ -54,7 +54,7 @@ public static class MatchSessionHelper
         {
             Debug.Log($"[{Path.GetFileName(sourceFilePath)}] [{memberName}] [Log] [{sourceLineNumber}] - {result.Value.ToJsonString()}");
         }
-
+        else
         {
             Debug.LogWarning($"[{Path.GetFileName(sourceFilePath)}] [{memberName}] [Warning] [{sourceLineNumber}] - {result.Error.Message}");
         }

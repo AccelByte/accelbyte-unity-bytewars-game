@@ -97,7 +97,7 @@ public class BrowseMatchMenuCanvas : MenuCanvas
     #endregion RetrieveNextPage
     
     #region JoinMatchSession
-    private void JoinMatch(JoinMatchSessionRequest request)
+    public void JoinMatch(JoinMatchSessionRequest request)
     {
         ShowLoading("Joining Match Session...", CancelJoinMatchSession);
         _matchSessionDSWrapper

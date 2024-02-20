@@ -27,6 +27,7 @@ public class MatchSessionConfig
                             type = SessionConfigurationTemplateType.DS,
                             joinability = SessionV2Joinability.OPEN,
                             configurationName = UnitySessionEliminationDs,
+                            matchPool = UnitySessionEliminationDs,
                             attributes = CreatedMatchSessionAttribute
                         }
                     },
@@ -36,6 +37,7 @@ public class MatchSessionConfig
                             type = SessionConfigurationTemplateType.P2P,
                             joinability = SessionV2Joinability.OPEN,
                             configurationName = UnitySessionEliminationP2P,
+                            matchPool = UnitySessionEliminationP2P,
                             attributes = CreatedMatchSessionAttribute
                         }
                     },
@@ -56,6 +58,7 @@ public class MatchSessionConfig
                             type = SessionConfigurationTemplateType.DS,
                             joinability = SessionV2Joinability.OPEN,
                             configurationName = UnitySessionDeathMatchDs,
+                            matchPool = UnitySessionDeathMatchDs,
                             attributes = CreatedMatchSessionAttribute
                         }
                     },
@@ -65,6 +68,7 @@ public class MatchSessionConfig
                             type = SessionConfigurationTemplateType.P2P,
                             joinability = SessionV2Joinability.OPEN,
                             configurationName = UnitySessionDeathMatchP2P,
+                            matchPool = UnitySessionDeathMatchP2P,
                             attributes = CreatedMatchSessionAttribute
                         }
                     },

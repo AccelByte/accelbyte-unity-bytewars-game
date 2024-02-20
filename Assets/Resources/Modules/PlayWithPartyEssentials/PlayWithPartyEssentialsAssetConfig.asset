@@ -10,36 +10,36 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0c946b292dbcfa2418ef1a2b2e60b8b7, type: 3}
-  m_Name: PartyEssentialsAssetConfig
+  m_Name: PlayWithPartyEssentialsAssetConfig
   m_EditorClassIdentifier: 
   isBaseModule: 0
   disableUI: 0
-  defaultMenuUIPrefab: {fileID: 5229087888638738446, guid: 653d2e086b0a5d44b9e359b6848543ba,
+  defaultMenuUIPrefab: {fileID: 3638046498178330691, guid: 3c85cb6e20a7e7e42bb3bc239a744ffe,
     type: 3}
   defaultAdditionalMenuUIPrefabs: []
-  defaultModuleScript: {fileID: 11500000, guid: 0e3bc0a681194d24095e97f4fe2ada8b,
+  defaultModuleScript: {fileID: 11500000, guid: fcf9b95937714b21b6a3c0d01acbcc31,
     type: 3}
-  type: 17
+  type: 18
   isActive: 1
   additionalScripts: 1
   additionalPrefab: 0
   defaultHelperScripts:
-  - {fileID: 11500000, guid: 28074e45f9a341c680620aad9fb58ec2, type: 3}
+  - {fileID: 11500000, guid: cb2a82b976c7527478d34fcfcb91d1fa, type: 3}
   starterHelperScripts:
-  - {fileID: 11500000, guid: 8da38f0f2ec64c8a81a5fc00f99ff268, type: 3}
-  starterScript: {fileID: 11500000, guid: 50c4fded74caa624cbb26acde8da4a96, type: 3}
-  starterMenuUIPrefab: {fileID: 4699425663576930667, guid: df4cb37075b6a36459034ebaeba84d03,
+  - {fileID: 11500000, guid: 2b147c0e6abf48328e8f72782a92aef2, type: 3}
+  starterScript: {fileID: 11500000, guid: 351827e11f944fdc9a5d0a47798aeb68, type: 3}
+  starterMenuUIPrefab: {fileID: 3638046498178330691, guid: 3c85cb6e20a7e7e42bb3bc239a744ffe,
     type: 3}
   starterAdditionalMenuUIPrefabs: []
   isStarterActive: 0
   moduleDependencies:
-  - {fileID: 11400000, guid: 04ca20375bb050249b26b1082a299a25, type: 2}
-  instantiatedPrefabType: 1
-  instantiatedGameObjectName: InviteToPartyButton
+  - {fileID: 11400000, guid: 6ae93ae4c37a4f143ae1822fd1ef13b0, type: 2}
+  instantiatedPrefabType: 0
+  instantiatedGameObjectName: 
   prefabClassType: 0
   associateDefaultPrefabClass: 0
   associateStarterPrefabClass: 0
-  otherTutorialModule: 8
+  otherTutorialModule: 0
   genericPrefabClass: 0
   buttonText: 
   targetParentGameObjectPath: 

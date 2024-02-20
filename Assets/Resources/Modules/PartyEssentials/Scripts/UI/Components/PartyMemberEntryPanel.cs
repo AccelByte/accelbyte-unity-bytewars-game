@@ -1,8 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
-using AccelByte.Api;
-using AccelByte.Core;
-using AccelByte.Models;
+// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,18 +9,20 @@ using Image = UnityEngine.UI.Image;
 
 public class PartyMemberEntryPanel : MonoBehaviour
 {
-    private PartyEntryView _displayEntryView = PartyEntryView.Empty;
-    
-    [SerializeField] private Button addMemberButton;
-    [SerializeField] private Button memberInfoPanel;
-    [SerializeField] private Image playerAvatarPanelImage;
-    [SerializeField] private Image avatarImage;
-    [SerializeField] private TMP_Text playerNameText;
+    [SerializeField]
+    private Button addMemberButton;
+    [SerializeField]
+    private Button memberInfoPanel;
+    [SerializeField]
+    private Image playerAvatarPanelImage;
+    [SerializeField]
+    private Image avatarImage;
+    [SerializeField]
+    private TMP_Text playerNameText;
 
-    private string _currentUserId;
-    
-    // Start is called before the first frame update
-    void Start()
+    private string currentUserId;
+
+    private void Start()
     {
         addMemberButton.onClick.AddListener(OnAddMemberButtonClicked);
         memberInfoPanel.onClick.AddListener(OnMemberInfoPanelClicked);
@@ -31,24 +32,24 @@ public class PartyMemberEntryPanel : MonoBehaviour
     {
         MenuManager.Instance.ChangeToMenu(AssetEnum.FriendMenuCanvas);
     }
-    
+
     private void OnMemberInfoPanelClicked()
     {
         // Trigger Friend Details Menu
         MenuCanvas friendDetailsMenu = MenuManager.Instance.GetMenu(AssetEnum.FriendDetailsMenuCanvas);
         FriendDetailsMenuHandler friendDetailsMenuHandler = friendDetailsMenu.gameObject.GetComponent<FriendDetailsMenuHandler>();
-        
+
         Transform friendDetailsPanel = friendDetailsMenuHandler.friendDetailsPanel;
         Image avatar = friendDetailsPanel.GetComponentInChildren<Image>();
         TMP_Text playerDisplayName = friendDetailsPanel.GetComponentInChildren<TMP_Text>();
 
-        friendDetailsMenuHandler.UserID = _currentUserId;
+        friendDetailsMenuHandler.UserID = currentUserId;
         avatar.sprite = avatarImage.sprite;
         playerDisplayName.text = playerNameText.text;
 
         MenuManager.Instance.ChangeToMenu(AssetEnum.FriendDetailsMenuCanvas);
     }
-    
+
     public void SwitchView(PartyEntryView partyEntryView)
     {
         addMemberButton.gameObject.SetActive(partyEntryView == PartyEntryView.Empty);
@@ -57,7 +58,7 @@ public class PartyMemberEntryPanel : MonoBehaviour
 
     public void UpdateCurrentUserId(string userId)
     {
-        _currentUserId = userId;
+        currentUserId = userId;
     }
 
     public void UpdateMemberInfoUI(string playerName, Texture2D avatar = null)
@@ -67,7 +68,7 @@ public class PartyMemberEntryPanel : MonoBehaviour
         {
             avatarImage.sprite = Sprite.Create(avatar, new Rect(0f, 0f, avatar.width, avatar.height), Vector2.zero);
         }
-        
+
         SwitchView(PartyEntryView.MemberInfo);
     }
 

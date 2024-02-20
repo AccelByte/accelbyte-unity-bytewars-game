@@ -15,5 +15,6 @@ public enum TutorialType
     PeriodicLeaderboardEssentials=13,
     SessionEssentials=14,
     MultiplayerDSEssentials=15,
-	PartyEssentials=16
+	PartyEssentials=17,
+	PlayWithPartyEssentials=18
 }

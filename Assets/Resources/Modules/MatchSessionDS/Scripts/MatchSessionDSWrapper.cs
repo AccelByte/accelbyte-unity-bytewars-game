@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Linq;
 using AccelByte.Core;
 using AccelByte.Models;
 using UnityEngine;
@@ -67,6 +68,20 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
         {
             request.serverName = ConnectionHandler.LocalServerName;
         }
+
+        // Playing with Party additional code
+        if (!String.IsNullOrWhiteSpace(PartyHelper.CurrentPartyId))
+        {
+            string[] memberIds = PartyHelper.PartyMembersData.Select(data => data.UserId).ToArray();
+            request.teams = new SessionV2TeamData[]
+            {
+                new SessionV2TeamData()
+                {
+                    userIds = memberIds
+                }
+            };
+        }
+
         CreateCustomMatchSession(request);
     }
 

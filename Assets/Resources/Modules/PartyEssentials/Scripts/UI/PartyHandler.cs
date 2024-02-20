@@ -13,12 +13,12 @@ public class PartyHandler : MenuCanvas
 
     private PartyEssentialsWrapper _partyWrapper;
     private AuthEssentialsWrapper _authWrapper;
-    
+
     private readonly Color _leaderPanelColor = Color.blue;
     private readonly Color _memberPanelColor = Color.white;
 
     private const string DefaultDisplayName = "Player-";
-    
+
     // Start is called before the first frame update
     void Start()
     {
@@ -59,7 +59,7 @@ public class PartyHandler : MenuCanvas
         ResetPartyMemberEntryUI();
         DisplayOnlyCurrentPlayer();
 
-        _partyWrapper.partyId = "";
+        _partyWrapper.PartyId = "";
         PartyHelper.ResetPartyData();
     }
 
@@ -101,7 +101,7 @@ public class PartyHandler : MenuCanvas
             {
                 partyMemberEntryPanels[index].ChangePanelColor(_leaderPanelColor);
             }
-            
+
             // Set MemberInfoPanel to be interactable only to other players' MemberInfoPanel
             bool isOtherPanel = _authWrapper.userData.user_id != partyMemberData.UserId;
             partyMemberEntryPanels[index].SetMemberInfoPanelInteractable(isOtherPanel);
@@ -110,19 +110,19 @@ public class PartyHandler : MenuCanvas
 
     private void OnLeaveButtonClicked()
     {
-        if (!String.IsNullOrEmpty(_partyWrapper.partyId))
+        if (!String.IsNullOrEmpty(_partyWrapper.PartyId))
         {
-            _partyWrapper.LeaveParty(_partyWrapper.partyId, result => HandleNotInParty());
-            
+            _partyWrapper.LeaveParty(_partyWrapper.PartyId, result => HandleNotInParty());
+
             PartyHelper partyHelper = TutorialModuleManager.Instance.GetComponentInChildren<PartyHelper>();
-            partyHelper.TriggerMessageNotification(("You left the party!"));
+            partyHelper.TriggerMessageNotification("You left the party!");
         }
     }
-    
+
     public void SetLeaveButtonInteractable(bool isInteractable)
     {
         leaveButton.interactable = isInteractable;
-        
+
         TMP_Text leaveButtonText = leaveButton.GetComponentInChildren<TMP_Text>();
         leaveButtonText.color = isInteractable ? Color.white : Color.gray;
     }

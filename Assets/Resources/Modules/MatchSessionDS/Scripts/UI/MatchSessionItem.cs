@@ -1,3 +1,7 @@
+// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using TMPro;
 using UnityEngine;
@@ -5,40 +9,53 @@ using UnityEngine.UI;
 
 public class MatchSessionItem : MonoBehaviour
 {
-    [SerializeField] private Image avatarImg;
-    [SerializeField] private TextMeshProUGUI nameTxt;
-    [SerializeField] private TextMeshProUGUI serverTypeTxt;
-    [SerializeField] private TextMeshProUGUI matchTypeTxt;
-    [SerializeField] private TextMeshProUGUI playerOccupancyTxt;
-    [SerializeField] private Button joinBtn;
-    private readonly Vector2 _centerPivot = new Vector2(0.5f, 0.5f);
-    private const string ClassName = "[MatchSessionItem]";
-    private string _matchSessionId;
-    private BrowseMatchItemModel _model;
-    private Action<JoinMatchSessionRequest> _onJoinMatchSession;
-    void Start()
+    [SerializeField]
+    private Image avatarImg;
+    [SerializeField]
+    private TextMeshProUGUI nameTxt;
+    [SerializeField]
+    private TextMeshProUGUI serverTypeTxt;
+    [SerializeField]
+    private TextMeshProUGUI matchTypeTxt;
+    [SerializeField]
+    private TextMeshProUGUI playerOccupancyTxt;
+    [SerializeField]
+    private Button joinBtn;
+    private readonly Vector2 centerPivot = new Vector2(0.5f, 0.5f);
+    private string matchSessionId;
+    private BrowseMatchItemModel model;
+    private Action<JoinMatchSessionRequest> onJoinMatchSession;
+
+    public static Action<string> OnJoinButtonClicked = delegate { };
+    public static Action<GameObject> OnJoinButtonDataSet;
+
+    private void Start()
     {
         joinBtn.onClick.AddListener(ClickJoinBtn);
     }
 
     private void ClickJoinBtn()
     {
-        _onJoinMatchSession?
-            .Invoke(new JoinMatchSessionRequest(_matchSessionId, _model.GameMode));
+        onJoinMatchSession?
+            .Invoke(new JoinMatchSessionRequest(matchSessionId, model.GameMode));
+
+        OnJoinButtonClicked?.Invoke(matchSessionId);
     }
 
     public void SetData(BrowseMatchItemModel model, Action<JoinMatchSessionRequest> onJoinMatchSession)
     {
-        _model = model;
-        _model.OnDataUpdated = OnDataUpdated;
-        _onJoinMatchSession = onJoinMatchSession;
+        this.model = model;
+        this.model.OnDataUpdated = OnDataUpdated;
+        this.onJoinMatchSession = onJoinMatchSession;
         SetView(model);
         gameObject.SetActive(true);
+
+        OnJoinButtonDataSet?.Invoke(joinBtn.gameObject);
     }
 
     private void SetView(BrowseMatchItemModel model)
     {
-        _matchSessionId = model.MatchSessionId;
+        matchSessionId = model.MatchSessionId;
         nameTxt.text = model.MatchCreatorName;
         if (!String.IsNullOrEmpty(model.MatchCreatorAvatarURL))
         {
@@ -51,7 +68,7 @@ public class MatchSessionItem : MonoBehaviour
 
     private void OnDataUpdated(BrowseMatchItemModel updatedData)
     {
-        _model = updatedData;
+        model = updatedData;
         SetView(updatedData);
     }
 
@@ -97,9 +114,9 @@ public class MatchSessionItem : MonoBehaviour
         {
             if (texture != null)
             {
-                if(avatarImg.gameObject.activeInHierarchy)
-                    avatarImg.sprite = 
-                        Sprite.Create(texture, new Rect(0,0,texture.width,texture.height), _centerPivot);
+                if (avatarImg.gameObject.activeInHierarchy)
+                    avatarImg.sprite =
+                        Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), centerPivot);
             }
         });
     }

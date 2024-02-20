@@ -1,5 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
+// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -7,25 +9,43 @@ using UnityEngine;
 
 public class PartyEssentialsWrapper : MonoBehaviour
 {
+    public delegate void PartyInvitationDelegate(SessionV2PartyInvitationNotification partyInvitation);
+    public delegate void PartyKickedDelegate(string partyId);
+    public delegate void PartyUpdateDelegate(string leaderId, SessionV2MemberData[] members);
+
+    public static event PartyInvitationDelegate OnPartyInvitationReceived = delegate { };
+    public static event PartyKickedDelegate OnUserKicked = delegate { };
+    public static event PartyUpdateDelegate OnPartyUpdated = delegate { };
+
     private Session session;
     private Lobby lobby;
 
-    public string partyId;
+    public string PartyId;
 
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         session = MultiRegistry.GetApiClient().GetSession();
         lobby = MultiRegistry.GetApiClient().GetLobby();
-    }
-    
-    #region Lobby Notifications Listener Functions
 
-    
-    
-    #endregion
+        LoginHandler.onLoginCompleted += data => SubscribeLobbyNotifications();
+    }
 
     #region AB Service Functions
+    private void SubscribeLobbyNotifications()
+    {
+        if (!lobby.IsConnected)
+        {
+            lobby.Connect();
+        }
+
+        // current user related notification
+        lobby.SessionV2InvitedUserToParty += result => OnPartyInvitationReceived.Invoke(result.Value);
+        lobby.SessionV2UserKickedFromParty += result => OnUserKicked.Invoke(result.Value.partyId);
+
+        // other users related notification
+        lobby.SessionV2PartyUpdated += result => OnPartyUpdated.Invoke(result.Value.leaderId, result.Value.members);
+        lobby.SessionV2PartyMemberChanged += result => OnPartyUpdated.Invoke(result.Value.leaderId, result.Value.session.members);
+    }
 
     public void GetUserParties(ResultCallback<PaginatedResponse<SessionV2PartySession>> resultCallback)
     {
@@ -39,13 +59,13 @@ public class PartyEssentialsWrapper : MonoBehaviour
             configurationName = SessionTemplateName,
             joinability = SessionV2Joinability.INVITE_ONLY
         };
-        
+
         session.CreateParty(
-            request, 
+            request,
             result => OnCreatePartyCompleted(result, resultCallback)
         );
     }
-    
+
     public void SendPartyInvitation(string partyId, string inviteeUserId, ResultCallback resultCallback)
     {
         session.InviteUserToParty(
@@ -96,11 +116,9 @@ public class PartyEssentialsWrapper : MonoBehaviour
             result => OnLeavePartyCompleted(result, resultCallback)
         );
     }
-
-    #endregion
+    #endregion AB Service Functions
 
     #region Callback Functions
-    
     private void OnGetUserPartiesCompleted(Result<PaginatedResponse<SessionV2PartySession>> result, ResultCallback<PaginatedResponse<SessionV2PartySession>> customCallback)
     {
         if (!result.IsError)
@@ -111,22 +129,22 @@ public class PartyEssentialsWrapper : MonoBehaviour
         {
             Debug.Log($"Failed to get the current player's parties. Message: {result.Error.Message}");
         }
-        
+
         customCallback?.Invoke(result);
     }
-    
+
     private void OnCreatePartyCompleted(Result<SessionV2PartySession> result, ResultCallback<SessionV2PartySession> customCallback = null)
     {
         if (!result.IsError)
         {
             Debug.Log("Successfully created a party session!");
-            partyId = result.Value.id;
+            PartyId = result.Value.id;
         }
         else
         {
             Debug.Log($"Failed to create a party session. Message: {result.Error.Message}");
         }
-        
+
         customCallback?.Invoke(result);
     }
 
@@ -140,25 +158,25 @@ public class PartyEssentialsWrapper : MonoBehaviour
         {
             Debug.Log($"Failed to send the party invitation. Message: {result.Error.Message}");
         }
-        
+
         customCallback?.Invoke(result);
     }
-    
+
     private void OnJoinPartyCompleted(Result<SessionV2PartySession> result, ResultCallback<SessionV2PartySession> customCallback = null)
     {
         if (!result.IsError)
         {
             Debug.Log("Successfully joined the party session");
-            partyId = result.Value.id;
+            PartyId = result.Value.id;
         }
         else
         {
             Debug.Log($"Failed to join the party session. Message: {result.Error.Message}");
         }
-        
+
         customCallback?.Invoke(result);
     }
-    
+
     private void OnRejectPartyInvitationCompleted(Result result, ResultCallback customCallback = null)
     {
         if (!result.IsError)
@@ -169,10 +187,10 @@ public class PartyEssentialsWrapper : MonoBehaviour
         {
             Debug.Log($"Failed to reject the party invitation. Message: {result.Error.Message}");
         }
-        
+
         customCallback?.Invoke(result);
     }
-    
+
     private void OnPromoteMemberToPartyLeaderCompleted(Result<SessionV2PartySession> result, ResultCallback<SessionV2PartySession> customCallback = null)
     {
         if (!result.IsError)
@@ -183,10 +201,10 @@ public class PartyEssentialsWrapper : MonoBehaviour
         {
             Debug.Log($"Failed to promote the member as party leader. Message: {result.Error.Message}");
         }
-        
+
         customCallback?.Invoke(result);
     }
-    
+
     private void OnKickMemberFromPartyCompleted(Result<SessionV2PartySessionKickResponse> result, ResultCallback<SessionV2PartySessionKickResponse> customCallback = null)
     {
         if (!result.IsError)
@@ -197,24 +215,23 @@ public class PartyEssentialsWrapper : MonoBehaviour
         {
             Debug.Log($"Failed to kick the member from party session. Message: {result.Error.Message}");
         }
-        
+
         customCallback?.Invoke(result);
     }
-    
+
     private void OnLeavePartyCompleted(Result result, ResultCallback customCallback = null)
     {
         if (!result.IsError)
         {
             Debug.Log("Successfully left the party session");
-            partyId = null;
+            PartyId = null;
         }
         else
         {
             Debug.Log($"Failed to leave the party session. Message: {result.Error.Message}");
         }
-        
+
         customCallback?.Invoke(result);
     }
-    
-    #endregion
+    #endregion Callback Functions
 }
