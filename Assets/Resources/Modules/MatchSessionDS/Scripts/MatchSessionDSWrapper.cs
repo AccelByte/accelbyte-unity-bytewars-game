@@ -121,7 +121,6 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
 
     private void OnSessionDetailsCheckFinished(Result<SessionV2GameSession> result)
     {
-        BytewarsLogger.Log($"{result.ToJsonString()}");
         if (isCreateMatchSessionCancelled)
         {
             onCreatedMatchSession?.Invoke("Match session creation cancelled");

@@ -25,7 +25,7 @@ public class MatchSessionWrapper : GameSessionEssentialsWrapper
         _session.CreateGameSession(request, OnCreateCustomMatchSessionComplete);
     }
     
-    protected void BrowseCustomMatchSession(Dictionary<string, object> request)
+    protected void BrowseCustomMatchSession(Dictionary<string, object> request = null)
     {
         _session.QueryGameSession(request, OnBrowseMatchSessionComplete);
     }

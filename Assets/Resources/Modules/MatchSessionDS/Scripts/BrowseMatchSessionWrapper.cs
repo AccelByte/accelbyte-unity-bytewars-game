@@ -30,7 +30,7 @@ public class BrowseMatchSessionWrapper : MatchSessionWrapper
         _nextPage = "";
         _isBrowseMatchSessionsCanceled = false;
         _onQueryMatchSessionFinished = onSessionRetrieved;
-        BrowseCustomMatchSession(MatchSessionConfig.CreatedMatchSessionAttribute);
+        BrowseCustomMatchSession();
     }
     
     public void CancelBrowseMatchSessions()
