@@ -17,7 +17,7 @@ public class QuickPlayMenuHandler : MenuCanvas
     [SerializeField] private Button teamDeathmatchButton;
     [SerializeField] private Button cancelButton;
     [SerializeField] private Button okButton;
-    
+
     [SerializeField] private GameObject contentPanel;
     [SerializeField] private GameObject findingMatchPanel;
     [SerializeField] private GameObject joiningMatchPanel;
@@ -30,15 +30,16 @@ public class QuickPlayMenuHandler : MenuCanvas
 
     public static event Action OnMenuEnable;
     public static event Action OnMenuDisable;
+    public static event Action<InGameMode, string/*MatchPoolName*/> OnSelectedInGameMode;
 
     private MatchmakingSessionDSWrapper _matchmakingSessionDSWrapper;
-
+    private InGameMode selectedInGameMode = InGameMode.None;
     private const string EliminationDSMatchPool = "unity-elimination-ds";
     private const string TeamDeathmatchDSMatchPool = "unity-teamdeathmatch-ds";
 
     private const string EliminationDSAMSMatchPool = "unity-elimination-ds-ams";
     private const string TeamDeathmatchDSAMSMatchPool = "unity-teamdeathmatch-ds-ams";
-    
+
     #region QuickPlayView
 
     public enum QuickPlayView
@@ -58,7 +59,7 @@ public class QuickPlayMenuHandler : MenuCanvas
 
     private void viewSwitcher(QuickPlayView value)
     {
-        
+
         switch (value)
         {
             case QuickPlayView.FindingMatch:
@@ -82,7 +83,7 @@ public class QuickPlayMenuHandler : MenuCanvas
     private void switcherHelper(GameObject panel, QuickPlayView value)
     {
         panel.SetActive(true);
-        _panels.Except(new []{panel})
+        _panels.Except(new[] { panel })
             .ToList().ForEach(x => x.SetActive(false));
         if (value != QuickPlayView.Default)
         {
@@ -90,7 +91,7 @@ public class QuickPlayMenuHandler : MenuCanvas
             footerButtonPanel.SetActive(false);
             return;
         }
-        
+
         headerPanel.SetActive(true);
         footerButtonPanel.SetActive(true);
     }
@@ -101,14 +102,14 @@ public class QuickPlayMenuHandler : MenuCanvas
     {
         _panels = new List<GameObject>()
         {
-            contentPanel, 
-            findingMatchPanel, 
-            joiningMatchPanel, 
-            cancelingMatchPanel, 
+            contentPanel,
+            findingMatchPanel,
+            joiningMatchPanel,
+            cancelingMatchPanel,
             failedPanel
         };
     }
-    
+
 
     private void Start()
     {
@@ -118,14 +119,14 @@ public class QuickPlayMenuHandler : MenuCanvas
         }
 
         BindMatchmakingEvent();
-        
+
         eliminationButton.onClick.AddListener(OnEliminationButtonClicked);
         teamDeathmatchButton.onClick.AddListener(OnTeamDeathMatchButtonClicked);
         cancelButton.onClick.AddListener(OnCancelMatchmakingClicked);
         backButton.onClick.AddListener(OnBackButtonClicked);
         okButton.onClick.AddListener(OnOKFailedButtonClicked);
     }
-    
+
     private void OnEnable()
     {
         OnMenuEnable?.Invoke();
@@ -148,7 +149,7 @@ public class QuickPlayMenuHandler : MenuCanvas
         // listen event when match is found and ds available
         _matchmakingSessionDSWrapper.OnMatchmakingFoundEvent += JoinSessionPanel;
         _matchmakingSessionDSWrapper.OnDSAvailableEvent += TravelToGame;
-        
+
         // listen event when failed
         _matchmakingSessionDSWrapper.OnStartMatchmakingFailed += FailedPanel;
         _matchmakingSessionDSWrapper.OnMatchmakingJoinSessionFailedEvent += FailedPanel;
@@ -175,27 +176,31 @@ public class QuickPlayMenuHandler : MenuCanvas
     }
 
     private void OnDisable()
-    {        
+    {
         OnMenuDisable?.Invoke();
         if (_matchmakingSessionDSWrapper == null) return;
         UnbindMatchmakingEvents();
     }
-    
+
     private void OnEliminationButtonClicked()
     {
+        selectedInGameMode = InGameMode.OnlineEliminationGameMode;
         currentView = QuickPlayView.FindingMatch;
         string matchPool = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MultiplayerDSEssentials)
                                ? EliminationDSAMSMatchPool
                                : EliminationDSMatchPool;
+        OnSelectedInGameMode?.Invoke(selectedInGameMode, matchPool);
         _matchmakingSessionDSWrapper.StartDSMatchmaking(matchPool);
     }
-    
+
     private void OnTeamDeathMatchButtonClicked()
     {
+        selectedInGameMode = InGameMode.OnlineDeathMatchGameMode;
         currentView = QuickPlayView.FindingMatch;
         string matchPool = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MultiplayerDSEssentials)
                                ? TeamDeathmatchDSAMSMatchPool
                                : TeamDeathmatchDSMatchPool;
+        OnSelectedInGameMode?.Invoke(selectedInGameMode, matchPool);
         _matchmakingSessionDSWrapper.StartDSMatchmaking(matchPool);
     }
 
@@ -204,32 +209,32 @@ public class QuickPlayMenuHandler : MenuCanvas
         currentView = QuickPlayView.CancelingMatch;
         _matchmakingSessionDSWrapper.CancelDSMatchmaking();
     }
-    
+
     private void OnBackButtonClicked()
     {
         MenuManager.Instance.OnBackPressed();
     }
-    
+
     private void OnOKFailedButtonClicked()
     {
         MenuManager.Instance.OnBackPressed();
     }
-    
+
     private void FailedPanel()
     {
         currentView = QuickPlayView.Failed;
     }
-    
+
     private void JoinSessionPanel(string sessionId)
     {
         currentView = QuickPlayView.JoiningMatch;
     }
-    
+
     private void TravelToGame(SessionV2GameSession session)
     {
         _matchmakingSessionDSWrapper.TravelToDS(session);
     }
-    
+
     public override GameObject GetFirstButton()
     {
         return eliminationButton.gameObject;

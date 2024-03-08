@@ -6,13 +6,13 @@ using UnityEngine;
 
 public class StatsHelper_Starter : MonoBehaviour
 {
-    
-    
+
+
     // Start is called before the first frame update
     void Start()
     {
-        GameManager.onGameOver += (gameMode, InGameMode, playerStates) => {};
+        GameManager.OnGameOver += (gameMode, InGameMode, playerStates) => { };
     }
-    
-    
+
+
 }

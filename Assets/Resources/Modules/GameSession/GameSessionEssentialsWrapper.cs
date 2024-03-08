@@ -10,7 +10,7 @@ public class GameSessionEssentialsWrapper : SessionEssentialsWrapper
     private const string EliminationDSAMSMatchPool = "unity-elimination-ds-ams";
     private const string TeamDeathmatchDSMatchPool = "unity-teamdeathmatch-ds";
     private const string TeamDeathmatchDSAMSMatchPool = "unity-teamdeathmatch-ds-ams";
-    
+
 #if UNITY_SERVER
     private DedicatedServerManager _dedicatedServerManager;
     
@@ -20,7 +20,7 @@ public class GameSessionEssentialsWrapper : SessionEssentialsWrapper
         private set => _dedicatedServerManager = value; 
     }
 #endif
-    
+
     protected void Awake()
     {
         base.Awake();
@@ -31,23 +31,12 @@ public class GameSessionEssentialsWrapper : SessionEssentialsWrapper
     }
 
     #region GameClient
-
     protected internal void TravelToDS(SessionV2GameSession session)
     {
-        var dsInfo = session.dsInformation;
-        int port = ConnectionHandler.DefaultPort;
-        
-        if (dsInfo.server.ports.Count > 0)
-        {
-            dsInfo.server.ports.TryGetValue("unityds", out port);
-        }
-        
-        if (port == 0)
-        {
-            port = dsInfo.server.port;
-        }
+        SessionV2DsInformation dsInfo = session.dsInformation;
+        ushort port = GetPort(session.dsInformation);
 
-        var initialData = new InitialConnectionData()
+        InitialConnectionData initialData = new InitialConnectionData()
         {
             sessionId = "",
             inGameMode = InGameMode.None,
@@ -59,41 +48,48 @@ public class GameSessionEssentialsWrapper : SessionEssentialsWrapper
             case EliminationDSMatchPool:
             case EliminationDSAMSMatchPool:
                 initialData.inGameMode = InGameMode.OnlineEliminationGameMode;
-                GameManager.Instance.StartAsClient(dsInfo.server.ip, (ushort)port, initialData);
+                GameManager.Instance.StartAsClient(dsInfo.server.ip, port, initialData);
                 break;
             case TeamDeathmatchDSMatchPool:
             case TeamDeathmatchDSAMSMatchPool:
                 initialData.inGameMode = InGameMode.OnlineDeathMatchGameMode;
-                GameManager.Instance.StartAsClient(dsInfo.server.ip, (ushort)port, initialData);
+                GameManager.Instance.StartAsClient(dsInfo.server.ip, port, initialData);
                 break;
         }
-    } 
+    }
 
     //overload TravelToDS
     protected internal void TravelToDS(SessionV2GameSession sessionV2Game, InGameMode gameMode)
     {
-        if (NetworkManager.Singleton.IsListening) return;
-        int port = ConnectionHandler.DefaultPort;
-        if (sessionV2Game.dsInformation.server.ports.Count > 0)
+        if (NetworkManager.Singleton.IsListening)
         {
-            sessionV2Game.dsInformation.server.ports.TryGetValue("unityds", out port);
+            return;
         }
-        if (port == 0)
-        {
-            port = sessionV2Game.dsInformation.server.port;
-        }
-        var ip = sessionV2Game.dsInformation.server.ip;
-        var portUshort = (ushort)port;
-        var initialData = new InitialConnectionData()
+        ushort port = GetPort(sessionV2Game.dsInformation);
+        string ip = sessionV2Game.dsInformation.server.ip;
+        InitialConnectionData initialData = new InitialConnectionData()
         {
             sessionId = "",
             inGameMode = gameMode,
             serverSessionId = sessionV2Game.id
         };
         GameManager.Instance
-            .StartAsClient(ip, portUshort, initialData);
+            .StartAsClient(ip, port, initialData);
     }
 
-    #endregion
+    private ushort GetPort(SessionV2DsInformation dsInformation)
+    {
+        int port = ConnectionHandler.DefaultPort;
+        if (dsInformation.server.ports.Count > 0)
+        {
+            dsInformation.server.ports.TryGetValue("default_port", out port);
+        }
+        if (port == 0)
+        {
+            port = dsInformation.server.port;
+        }
+        return (ushort)port;
+    }
+    #endregion GameClient
 
 }

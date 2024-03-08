@@ -35,7 +35,7 @@ public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
 
     void Start()
     {
-        _lobby.SessionV2GameSessionMemberChanged += OnV2GameSessionMemberChanged;
+        Lobby.SessionV2GameSessionMemberChanged += OnV2GameSessionMemberChanged;
         GameManager.Instance.OnClientLeaveSession += LeaveGameSession;
         LoginHandler.onLoginCompleted += OnLoginSuccess;
 
@@ -103,7 +103,7 @@ public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
         }
         yield return waitOneSecond;
         checkDSStatusCount++;
-        _session.GetGameSessionDetailsBySessionId(gameSessionV2.id, OnSessionDetailsCheckFinished);
+        Session.GetGameSessionDetailsBySessionId(gameSessionV2.id, OnSessionDetailsCheckFinished);
     }
 
     private void OnSessionDetailsCheckFinished(Result<SessionV2GameSession> result)
@@ -271,9 +271,9 @@ public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
     private void OnLoginSuccess(TokenData tokenData)
     {
         MatchSessionHelper.GetCurrentUserPublicData(tokenData.user_id);
-        if (!_lobby.IsConnected)
+        if (!Lobby.IsConnected)
         {
-            _lobby.Connect();
+            Lobby.Connect();
         }
     }
     #endregion
@@ -315,7 +315,7 @@ public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
         {
             return;
         }
-        _session.GetGameSessionDetailsBySessionId(gameSessionV2.id, OnSessionDetailsRetrieved);
+        Session.GetGameSessionDetailsBySessionId(gameSessionV2.id, OnSessionDetailsRetrieved);
     }
 
     private void OnSessionDetailsRetrieved(Result<SessionV2GameSession> result)

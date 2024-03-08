@@ -11,26 +11,26 @@ public class StatsHelper : MonoBehaviour
     private const string SINGLEPLAYER_STATCODE = "unity-highestscore-singleplayer";
     private const string ELIMINATION_STATCODE = "unity-highestscore-elimination";
     private const string TEAMDEATHMATCH_STATCODE = "unity-highestscore-teamdeathmatch";
-	
+
     private StatsEssentialsWrapper _statsWrapper;
     private string currentUserId;
     private string currentStatCode;
-    
+
     // Start is called before the first frame update
     void Start()
     {
         _statsWrapper = TutorialModuleManager.Instance.GetModuleClass<StatsEssentialsWrapper>();
 
-        GameManager.onGameOver += CheckHighestScoreStats;
+        GameManager.OnGameOver += CheckHighestScoreStats;
     }
 
     #region AB Functions Call
-    
+
     private void CheckHighestScoreStats(GameModeEnum gameMode, InGameMode inGameMode, List<PlayerState> playerStates)
     {
         currentUserId = MultiRegistry.GetApiClient().session.UserId;
-        
-        #if UNITY_SERVER
+
+#if UNITY_SERVER
             if (inGameMode is InGameMode.OnlineEliminationGameMode or InGameMode.CreateMatchEliminationGameMode)
             {
                 currentStatCode = ELIMINATION_STATCODE;
@@ -42,8 +42,8 @@ public class StatsHelper : MonoBehaviour
 
             Dictionary<string, float> userStats = playerStates.ToDictionary(state => state.playerId, state => state.score);
             _statsWrapper.BulkGetUsersStatFromServer(userStats.Keys.ToArray(), currentStatCode, result => OnBulkGetUserStatFromServer(result, userStats));
-        #endif
-        
+#endif
+
         if (gameMode is GameModeEnum.SinglePlayer)
         {
             currentStatCode = SINGLEPLAYER_STATCODE;
@@ -56,7 +56,7 @@ public class StatsHelper : MonoBehaviour
                     break;
                 }
             }
-            _statsWrapper.GetUserStatsFromClient(new string[]{currentStatCode}, null, result => OnGetUserStatsFromClient(result, playerState));
+            _statsWrapper.GetUserStatsFromClient(new string[] { currentStatCode }, null, result => OnGetUserStatsFromClient(result, playerState));
         }
     }
 
@@ -89,7 +89,7 @@ public class StatsHelper : MonoBehaviour
             _statsWrapper.UpdateManyUserStatsFromServer(currentStatCode, userStats, OnUpdateStatsWithServerSdkCompleted);
         }
     }
-    
+
     private void OnGetUserStatsFromClient(Result<PagedStatItems> result, PlayerState playerState)
     {
         // if query success
@@ -128,6 +128,6 @@ public class StatsHelper : MonoBehaviour
             Debug.Log("Successfully update stats values with Server SDK!");
         }
     }
-    
+
     #endregion
 }

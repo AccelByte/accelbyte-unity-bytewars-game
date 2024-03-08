@@ -23,7 +23,7 @@ public class PlayWithPartyHelper : MonoBehaviour
         MatchSessionItem.OnJoinButtonClicked += OnJoinButtonClicked;
 
         // Match Session with Party's lobby notifications event
-        PlayWithPartyEssentialsWrapper.onGameSessionInvitationReceived += OnInvitedToGameSession;
+        PlayWithPartyEssentialsWrapper.OnGameSessionInvitationReceived += OnInvitedToGameSession;
     }
 
     #region Match Session with Party
@@ -52,6 +52,7 @@ public class PlayWithPartyHelper : MonoBehaviour
 
     private void OnInvitedToGameSession(string sessionId)
     {
+        BytewarsLogger.Log($"sessionId {sessionId}");
         if (!String.IsNullOrWhiteSpace(PartyHelper.CurrentPartyId))
         {
             playWithPartyWrapper.GetGameSessionBySessionId(sessionId, OnGetGameSessionCompleted);
@@ -60,10 +61,9 @@ public class PlayWithPartyHelper : MonoBehaviour
 
     private void OnGetGameSessionCompleted(Result<SessionV2GameSession> result)
     {
+        BytewarsLogger.Log($"Result<SessionV2GameSession> {result.ToJsonString()}");
         if (!result.IsError)
         {
-            Debug.Log("Success getting the game session data!");
-
             // get InGameMode based on session's configuration name
             InGameMode currentGameMode = GetGameMode(result.Value.configuration.name);
 

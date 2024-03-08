@@ -35,7 +35,7 @@ public static class TutorialModuleForceEnable
         get => _isForceDisableOtherModules;
         set => _isForceDisableOtherModules = value;
     }
-    
+
     private static TutorialModuleData _overrideModule;
     private static string[] _forcedModules;
     private static bool _isError;
@@ -53,7 +53,7 @@ public static class TutorialModuleForceEnable
 
     private static void OnUpdate()
     {
-        if (_isUnityEditorFocused!=UnityEditorInternal.InternalEditorUtility.isApplicationActive)
+        if (_isUnityEditorFocused != UnityEditorInternal.InternalEditorUtility.isApplicationActive)
         {
             _isUnityEditorFocused = UnityEditorInternal.InternalEditorUtility.isApplicationActive;
             if (_isUnityEditorFocused)
@@ -67,7 +67,7 @@ public static class TutorialModuleForceEnable
     {
         var textJson = ReadJson();
         var cachedJsonString = EditorPrefs.GetString(CachedTutorialModuleConfigJson);
-        if (String.IsNullOrEmpty(cachedJsonString) || 
+        if (String.IsNullOrEmpty(cachedJsonString) ||
             !cachedJsonString.Equals(textJson))
         {
             EditorPrefs.SetString(CachedTutorialModuleConfigJson, textJson);
@@ -155,7 +155,7 @@ public static class TutorialModuleForceEnable
         // Check if open asset config from inspector
         if (!readFromInspector)
         {
-            Debug.Log($"override module {String.Join(" ",json.forceEnabledModules)}");
+            Debug.Log($"override module {String.Join(" ", json.forceEnabledModules)}");
             Debug.Log($"override status {json.enableModulesOverride}");
         }
         if (json.forceEnabledModules.Length <= 0)
@@ -203,13 +203,13 @@ public static class TutorialModuleForceEnable
         }
 
         var jsonStr = ReadJson();
-        var isReadJsonConfig = ReadJsonConfig(jsonStr, readFromInspector:true) != null ? _forcedModules : null;
+        var isReadJsonConfig = ReadJsonConfig(jsonStr, readFromInspector: true) != null ? _forcedModules : null;
 
         if (isReadJsonConfig == null)
         {
             return false;
         }
-        
+
         //TODO: Null checcking on moduleName
         var overrideStatus = false;
         var overridesModules = isReadJsonConfig;
@@ -273,7 +273,7 @@ public static class TutorialModuleForceEnable
             {
                 CheckDependency(tutorialModuleData);
             }
-        } 
+        }
     }
 
     private static bool SetDependenciesToActive()
@@ -284,23 +284,23 @@ public static class TutorialModuleForceEnable
             case 0:
                 return true;
             case > 0:
-            {
-                foreach (var dependency in _overrideModule.moduleDependencies.Select((value, index) =>
-                             (value, index)))
                 {
-                    if (dependency.value == null)
+                    foreach (var dependency in _overrideModule.moduleDependencies.Select((value, index) =>
+                                 (value, index)))
                     {
-                        Debug.Log($"this element {dependency.index} is null, please add the dependency value");
-                        return false;
+                        if (dependency.value == null)
+                        {
+                            Debug.Log($"this element {dependency.index} is null, please add the dependency value");
+                            return false;
+                        }
+
+                        Debug.Log($"element {dependency.index} {dependency.value.name}");
+                        dependency.value.isActive = true;
+                        dependency.value.isStarterActive = false;
                     }
 
-                    Debug.Log($"element {dependency.index} {dependency.value.name}");
-                    dependency.value.isActive = true;
-                    dependency.value.isStarterActive = false;
+                    return true;
                 }
-
-                return true;
-            }
             default:
                 return false;
         }
@@ -328,11 +328,11 @@ public static class TutorialModuleForceEnable
     {
         var assetConfig = (TutorialModuleData)selectedGameObject;
         var fileName = selectedGameObject.name;
-        var allModuleFiles = Directory.GetFiles($"{Application.dataPath}/Resources", 
-            fileName, SearchOption.AllDirectories ).Where(x => !x.Contains("UI"));
+        var allModuleFiles = Directory.GetFiles($"{Application.dataPath}/Resources",
+            fileName, SearchOption.AllDirectories).Where(x => !x.Contains("UI"));
 
         var moduleFiles = allModuleFiles as string[] ?? allModuleFiles.ToArray();
-        
+
         if (isStaterActive)
         {
             //return all starter helper files
@@ -356,6 +356,7 @@ public class TutorialModuleConfig
     public bool forceDisabledOtherModules;
     public SteamConfiguration steamConfiguration;
     public MultiplayerDSConfiguration multiplayerDSConfiguration;
+    public bool useAutoGeneratedDeviceIDForLogin;
 }
 
 [Serializable]
@@ -368,5 +369,5 @@ public class SteamConfiguration
 [Serializable]
 public class MultiplayerDSConfiguration
 {
-    public bool isServerUseAMS ;
+    public bool isServerUseAMS;
 }

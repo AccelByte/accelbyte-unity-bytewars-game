@@ -23,37 +23,34 @@ public class PlayOnlineMenu : MenuCanvas
 
     private void SetModuleButtonVisibility()
     {
-        #if !BYTEWARS_DEBUG
+#if !BYTEWARS_DEBUG
         var isCreateSessionBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.SessionEssentials);
         var isQuickPlayBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithDS);
         var isCreateBrowseMatchBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithDS);
-        
+
         createSessionButton.gameObject.SetActive(isCreateSessionBtnActive);
         quickPlayButton.gameObject.SetActive(isQuickPlayBtnActive);
         createMatchButton.gameObject.SetActive(isCreateBrowseMatchBtnActive);
         browseMatchButton.gameObject.SetActive(isCreateBrowseMatchBtnActive);
-        #endif
+#endif
     }
 
 
     private void OnQuickPlayButtonPressed()
     {
-        // MenuManager.Instance.ChangeToMenu(AssetEnum.ServerTypeSelection);
-        //TODO delete this and uncomment code above to enable peer to peer server selection
-        GameData.ServerType = ServerType.OnlineDedicatedServer;
-        MenuManager.Instance.ChangeToMenu(AssetEnum.QuickPlayMenuCanvas);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.ServerTypeSelection);
     }
 
     private void OnCreateMatchButtonPressed()
     {
-       MenuManager.Instance.ChangeToMenu(AssetEnum.CreateMatchMenuCanvas);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.CreateMatchMenuCanvas);
     }
 
     private void OnBrowserMatchButtonPressed()
     {
         MenuManager.Instance.ChangeToMenu(AssetEnum.BrowseMatchMenuCanvas);
     }
-    
+
     private void OnCreateSessionPressed()
     {
         MenuManager.Instance.ChangeToMenu(AssetEnum.SessionEssentialsMenuCanvas);

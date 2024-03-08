@@ -1,14 +1,12 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using AccelByte.Core;
 using AccelByte.Models;
-using UnityEngine;
 
 public class MatchSessionWrapper : GameSessionEssentialsWrapper
 {
-    
+
     protected event Action<Result<PaginatedResponse<SessionV2GameSession>>> OnBrowseMatchSessionCompleteEvent;
     protected event Action<Result<SessionV2GameSession>> OnJoinCustomSessionCompleteEvent;
     protected event Action<Result<SessionV2GameSession>> OnCreateCustomMatchSessionCompleteEvent;
@@ -19,34 +17,35 @@ public class MatchSessionWrapper : GameSessionEssentialsWrapper
     {
         base.Awake();
     }
-    
+
     protected void CreateCustomMatchSession(SessionV2GameSessionCreateRequest request)
     {
-        _session.CreateGameSession(request, OnCreateCustomMatchSessionComplete);
+        Session.CreateGameSession(request, OnCreateCustomMatchSessionComplete);
     }
-    
+
     protected void BrowseCustomMatchSession(Dictionary<string, object> request = null)
     {
-        _session.QueryGameSession(request, OnBrowseMatchSessionComplete);
+        Session.QueryGameSession(request, OnBrowseMatchSessionComplete);
     }
 
     protected void JoinCustomMatchSession(string sessionId)
     {
-        _session.JoinGameSession(sessionId, OnJoinCustomSessionComplete);
+        BytewarsLogger.Log($" sessionId {sessionId}");
+        Session.JoinGameSession(sessionId, OnJoinCustomSessionComplete);
     }
-    
-    protected void LeaveCustomMatchSession(string sessionId, [CallerMemberName] string? memberName=null)
+
+    protected void LeaveCustomMatchSession(string sessionId, [CallerMemberName] string? memberName = null)
     {
-        _session.LeaveGameSession(sessionId, result => OnLeaveCustomSessionComplete(result, memberName));
+        Session.LeaveGameSession(sessionId, result => OnLeaveCustomSessionComplete(result, memberName));
     }
 
     protected internal void DeleteCustomMatchSession(string sessionId)
     {
-        _session.DeleteGameSession(sessionId, OnDeleteCustomSessionComplete);
+        Session.DeleteGameSession(sessionId, OnDeleteCustomSessionComplete);
     }
 
     #region Callback
-    
+
     private void OnCreateCustomMatchSessionComplete(Result<SessionV2GameSession> result)
     {
         if (!result.IsError)
@@ -59,7 +58,7 @@ public class MatchSessionWrapper : GameSessionEssentialsWrapper
         }
         OnCreateCustomMatchSessionCompleteEvent?.Invoke(result);
     }
-    
+
     private void OnBrowseMatchSessionComplete(Result<PaginatedResponse<SessionV2GameSession>> result)
     {
         if (!result.IsError)
@@ -72,7 +71,7 @@ public class MatchSessionWrapper : GameSessionEssentialsWrapper
         }
         OnBrowseMatchSessionCompleteEvent?.Invoke(result);
     }
-    
+
     private void OnJoinCustomSessionComplete(Result<SessionV2GameSession> result)
     {
         if (!result.IsError)
@@ -85,7 +84,7 @@ public class MatchSessionWrapper : GameSessionEssentialsWrapper
         }
         OnJoinCustomSessionCompleteEvent?.Invoke(result);
     }
-    
+
     private void OnLeaveCustomSessionComplete(Result<SessionV2GameSession> result, string callerMethod = null)
     {
         if (!result.IsError)
@@ -102,7 +101,7 @@ public class MatchSessionWrapper : GameSessionEssentialsWrapper
             OnLeaveCustomSessionCompleteEvent?.Invoke(result);
         }
     }
-    
+
     private void OnDeleteCustomSessionComplete(Result result)
     {
         if (!result.IsError)
@@ -115,7 +114,7 @@ public class MatchSessionWrapper : GameSessionEssentialsWrapper
         }
         OnDeleteCustomSessionCompleteEvent?.Invoke();
     }
-    
+
     #endregion
 
 }

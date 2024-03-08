@@ -13,7 +13,7 @@ public class BrowseMatchSessionWrapper_Starter : MatchSessionWrapper
     private static bool _isQueryingNextMatchSessions;
     private static Action<BrowseMatchResult> _onQueryMatchSessionFinished;
     private static Action<BrowseMatchResult> _onQueryNextPageMatchSessionFinished;
-    
+
     private void Start()
     {
         OnBrowseMatchSessionCompleteEvent += OnBrowseMatchSessionsComplete;
@@ -28,7 +28,7 @@ public class BrowseMatchSessionWrapper_Starter : MatchSessionWrapper
         _onQueryMatchSessionFinished = onSessionRetrieved;
         BrowseCustomMatchSession(MatchSessionConfig.CreatedMatchSessionAttribute);
     }
-    
+
     public void CancelBrowseMatchSessions()
     {
         _isBrowseMatchSessionsCanceled = true;
@@ -52,7 +52,7 @@ public class BrowseMatchSessionWrapper_Starter : MatchSessionWrapper
             {
                 var req = GenerateRequestFromNextPage(_nextPage);
                 _onQueryNextPageMatchSessionFinished = onQueryNextMatchSessionsFinished;
-                _session?.QueryGameSession(req, OnQueryNextPageFinished);
+                Session?.QueryGameSession(req, OnQueryNextPageFinished);
             }
         }
     }
@@ -66,13 +66,13 @@ public class BrowseMatchSessionWrapper_Starter : MatchSessionWrapper
         else
         {
             _nextPage = result.Value.paging.next;
-            if(!String.IsNullOrEmpty(_nextPage))
+            if (!String.IsNullOrEmpty(_nextPage))
                 BytewarsLogger.Log($"next page: {_nextPage}");
             _onQueryNextPageMatchSessionFinished?.Invoke(new BrowseMatchResult(result.Value.data));
         }
         _isQueryingNextMatchSessions = false;
     }
-    
+
     private static Dictionary<string, object> GenerateRequestFromNextPage(string nextPageUrl)
     {
         _isQueryingNextMatchSessions = true;
@@ -101,13 +101,13 @@ public class BrowseMatchSessionWrapper_Starter : MatchSessionWrapper
     {
         if (!result.IsError)
         {
-            if(!_isBrowseMatchSessionsCanceled)
+            if (!_isBrowseMatchSessionsCanceled)
                 _onQueryMatchSessionFinished?.Invoke(new BrowseMatchResult(result.Value.data));
             _nextPage = result.Value.paging.next;
         }
         else
         {
-            if(!_isBrowseMatchSessionsCanceled)
+            if (!_isBrowseMatchSessionsCanceled)
                 _onQueryMatchSessionFinished?.Invoke(new BrowseMatchResult(null, result.Error.Message));
         }
     }
@@ -124,5 +124,5 @@ public class BrowseMatchSessionWrapper_Starter : MatchSessionWrapper
 
     #endregion
 
-    
+
 }

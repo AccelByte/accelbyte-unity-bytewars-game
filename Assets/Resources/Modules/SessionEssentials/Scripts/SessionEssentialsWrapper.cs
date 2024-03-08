@@ -1,5 +1,8 @@
+// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
-using System.IO;
 using System.Runtime.CompilerServices;
 using AccelByte.Api;
 using AccelByte.Core;
@@ -8,34 +11,33 @@ using UnityEngine;
 
 public class SessionEssentialsWrapper : MonoBehaviour
 {
-    protected Session _session;
-    protected Lobby _lobby;
-    
+    protected Session Session;
+    protected Lobby Lobby;
+
     /// <summary>
     /// This event will raised after JoinSession is complete
     /// </summary>
     public event Action<SessionResponsePayload> OnJoinSessionCompleteEvent;
-    
+
     /// <summary>
     /// This event will raised after CreateSession is complete
     /// </summary>
     public event Action<SessionResponsePayload> OnCreateSessionCompleteEvent;
-    
+
     /// <summary>
     /// This event will raised after LeaveSession is complete
     /// </summary>
     public event Action<SessionResponsePayload> OnLeaveSessionCompleteEvent;
-    
+
     /// <summary>
     /// This event will raised after GetGameSessionDetailsById is complete
     /// </summary>
     public event Action<SessionResponsePayload> OnGetSessionDetailsCompleteEvent;
-    
 
     protected void Awake()
     {
-        _session = MultiRegistry.GetApiClient().GetSession();
-        _lobby = MultiRegistry.GetApiClient().GetLobby();
+        Session = MultiRegistry.GetApiClient().GetSession();
+        Lobby = MultiRegistry.GetApiClient().GetLobby();
     }
 
     private void Start()
@@ -49,23 +51,30 @@ public class SessionEssentialsWrapper : MonoBehaviour
     /// </summary>
     /// <param name="sessionRequest"></param>
     /// <param name="sourceFilePath">this will capture class name who called this method, leave it empty</param>
-    protected internal void CreateSession(SessionRequestPayload sessionRequest, [CallerFilePath] string? sourceFilePath=null)
+    protected internal void CreateSession(SessionRequestPayload sessionRequest, [CallerFilePath] string? sourceFilePath = null)
     {
         var gameSessionRequest = SessionUtil.CreateGameSessionRequest(sessionRequest);
         var tutorialType = SessionUtil.GetTutorialTypeFromClass(sourceFilePath);
-        _session.CreateGameSession(gameSessionRequest, result =>  OnCreateSessionCompleted(result, tutorialType));
+        Session.CreateGameSession(gameSessionRequest, result => OnCreateSessionCompleted(result, tutorialType));
     }
-    
+
     /// <summary>
     /// This method will invoke OnJoinSessionCompleteEvent and return SessionRequestPayload.
     /// You can filter it by add _tutorialType static flag from class who called this method. 
     /// </summary>
     /// <param name="sessionId"></param>
     /// <param name="sourceFilePath">this will capture class name who called this method, leave it empty</param>
-    protected void JoinSession(string sessionId, [CallerFilePath] string? sourceFilePath=null)
+    protected internal void JoinSession(string sessionId, [CallerFilePath] string? sourceFilePath = null)
     {
         var tutorialType = SessionUtil.GetTutorialTypeFromClass((sourceFilePath));
-        _session.JoinGameSession(sessionId, result => OnJoinSessionCompleted(result, tutorialType));
+        BytewarsLogger.Log($" sessionId {sessionId} ");
+        Session.JoinGameSession(sessionId, result => OnJoinSessionCompleted(result, tutorialType));
+    }
+
+    protected internal void JoinSession(string sessionId, TutorialType tutorialType)
+    {
+        BytewarsLogger.Log($" sessionId {sessionId} ");
+        Session.JoinGameSession(sessionId, result => OnJoinSessionCompleted(result, tutorialType));
     }
 
     /// <summary>
@@ -74,10 +83,15 @@ public class SessionEssentialsWrapper : MonoBehaviour
     /// </summary>
     /// <param name="sessionId"></param>
     /// <param name="sourceFilePath">this will capture class name who called this method, leave it empty</param>
-    protected internal void LeaveSession(string sessionId, [CallerFilePath] string? sourceFilePath=null)
+    protected internal void LeaveSession(string sessionId, [CallerFilePath] string? sourceFilePath = null)
     {
         var tutorialType = SessionUtil.GetTutorialTypeFromClass(sourceFilePath);
-        _session.LeaveGameSession(sessionId, result => OnLeaveSessionCompleted(result, tutorialType));
+        Session.LeaveGameSession(sessionId, result => OnLeaveSessionCompleted(result, tutorialType));
+    }
+
+    protected internal void LeaveSession(string sessionId, TutorialType tutorialType)
+    {
+        Session.LeaveGameSession(sessionId, result => OnLeaveSessionCompleted(result, tutorialType));
     }
 
     /// <summary>
@@ -86,22 +100,21 @@ public class SessionEssentialsWrapper : MonoBehaviour
     /// </summary>
     /// <param name="sessionId"></param>
     /// <param name="sourceFilePath">this will capture class name who called this method, leave it empty</param>
-    protected void GetGameSessionDetailsById(string sessionId, [CallerFilePath] string? sourceFilePath=null)
+    protected void GetGameSessionDetailsById(string sessionId, [CallerFilePath] string? sourceFilePath = null)
     {
         var tutorialType = SessionUtil.GetTutorialTypeFromClass(sourceFilePath);
-        _session.GetGameSessionDetailsBySessionId(sessionId,  result => OnGetGameSessionDetailsByIdComplete(result, tutorialType));
+        Session.GetGameSessionDetailsBySessionId(sessionId, result => OnGetGameSessionDetailsByIdComplete(result, tutorialType));
     }
 
     private void LoginToLobby(TokenData tokenData)
     {
-        if (!_lobby.IsConnected)
+        if (!Lobby.IsConnected)
         {
-            _lobby.Connect();
+            Lobby.Connect();
         }
     }
 
     #region Callback
-
     /// <summary>
     /// CreateSession Callback
     /// </summary>
@@ -124,7 +137,7 @@ public class SessionEssentialsWrapper : MonoBehaviour
         }
         OnCreateSessionCompleteEvent?.Invoke(response);
     }
-    
+
     /// <summary>
     /// JoinSession Callback
     /// </summary>
@@ -133,7 +146,7 @@ public class SessionEssentialsWrapper : MonoBehaviour
     private void OnJoinSessionCompleted(Result<SessionV2GameSession> result, TutorialType? tutorialType = null)
     {
         var response = new SessionResponsePayload();
-        
+
         if (!result.IsError)
         {
             BytewarsLogger.Log($"Successfully joined the game session");
@@ -147,7 +160,7 @@ public class SessionEssentialsWrapper : MonoBehaviour
         }
         OnJoinSessionCompleteEvent?.Invoke(response);
     }
-    
+
     /// <summary>
     /// LeaveSession callback
     /// </summary>
@@ -193,6 +206,5 @@ public class SessionEssentialsWrapper : MonoBehaviour
         }
         OnGetSessionDetailsCompleteEvent?.Invoke(response);
     }
-    
-    #endregion
+    #endregion Callback
 }

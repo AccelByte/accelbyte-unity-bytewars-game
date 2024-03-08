@@ -34,7 +34,7 @@ public static class CreateMatchDebug
 
     private static bool ReadEmailsFromTextFile()
     {
-        string filePath = Application.dataPath+EmailsFilePath;
+        string filePath = Application.dataPath + EmailsFilePath;
         if (File.Exists(filePath))
         {
             _loadedEmails = File.ReadAllLines(filePath);
@@ -62,7 +62,7 @@ public static class CreateMatchDebug
             var userName = GetUserNameFromEmail(email);
             var dob = DateTime.Now.AddYears(-22);
             Debug.Log($"create display name: {userName}");
-            MultiRegistry.GetApiClient().GetUser().Registerv2(email, 
+            MultiRegistry.GetApiClient().GetUser().Registerv2(email,
                 userName.Replace('+', '_'), GetPasswordFromUserName(userName, _emailIndex),
                 userName.Replace('+', ' '), "US", dob, OnRegisteredUser);
             _emailIndex++;
@@ -148,7 +148,7 @@ public static class CreateMatchDebug
 
     private static string GetPasswordFromUserName(string userName, int emailIndex)
     {
-        return userName+emailIndex;
+        return userName + emailIndex;
     }
 
     private static void IncrementTemplateIndex()
@@ -178,7 +178,7 @@ public static class CreateMatchDebug
         }
         return null;
     }
-    
+
     [MenuItem("TutorialModules/Stop Create Match Debug")]
     private static void StopCreatingTestData()
     {
@@ -204,7 +204,7 @@ public static class CreateMatchDebug
                     .GetApiClient()
                     .GetUser()
                     .LoginWithUsernameV3(userName.Replace('+', '_'),
-                        userName+i, delegate(Result<TokenData, OAuthError> loginResult)
+                        userName + i, delegate (Result<TokenData, OAuthError> loginResult)
                         {
                             if (loginResult.IsError)
                             {
@@ -217,7 +217,7 @@ public static class CreateMatchDebug
                                 MultiRegistry
                                     .GetApiClient()
                                     .GetSession()
-                                    .CreateGameSession(req, delegate(Result<SessionV2GameSession> createMatchResult)
+                                    .CreateGameSession(req, delegate (Result<SessionV2GameSession> createMatchResult)
                                     {
                                         if (createMatchResult.IsError)
                                         {
@@ -230,11 +230,11 @@ public static class CreateMatchDebug
                                     });
                                 IncrementTemplateIndex();
                             }
-                        } );
+                        });
             }
         }
     }
-    
+
 }
 
 public struct CreateMatchDebugTemplate

@@ -1,6 +1,8 @@
+// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -8,16 +10,24 @@ using UnityEngine.UI;
 
 public class LoadingMenuCanvas : MenuCanvas
 {
-    [SerializeField] private Image[] loadingImages;
-    [SerializeField] private Button cancelBtn;
-    [SerializeField] private TextMeshProUGUI infoText;
-    [SerializeField] private GameObject timeoutContainer;
-    [SerializeField] private TextMeshProUGUI timeoutInfo;
-
-    private int _index = 0;
-
+    [SerializeField]
+    private Image[] loadingImages;
+    [SerializeField]
+    private Button cancelBtn;
+    [SerializeField]
+    private TextMeshProUGUI infoText;
+    [SerializeField]
+    private GameObject timeoutContainer;
+    [SerializeField]
+    private TextMeshProUGUI timeoutInfo;
+    private float oneSecondCounter = 0;
+    private int index = 0;
+    private int loadingTimeoutSec = 0;
+    private string timeoutPrefix;
+    private string timeoutReachedInfo;
     private const float animationSpeed = 0.65f;
-    
+    private UnityAction cancelProcessCallback;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -26,31 +36,31 @@ public class LoadingMenuCanvas : MenuCanvas
 
     private void StartAnimate()
     {
-        _index = 0;
+        index = 0;
         for (int i = 0; i < loadingImages.Length; i++)
         {
             loadingImages[i].color = new Color(1, 1, 1, 0);
             float tempI = i;
-            Invoke("AnimateImage", tempI*animationSpeed);
+            Invoke("AnimateImage", tempI * animationSpeed);
         }
     }
 
     private void AnimateImage()
     {
         ;
-        if (_index == loadingImages.Length - 1)
+        if (index == loadingImages.Length - 1)
         {
-            LeanTween.color(loadingImages[_index].rectTransform, Color.white, animationSpeed)
+            LeanTween.color(loadingImages[index].rectTransform, Color.white, animationSpeed)
                 .setLoopCount(2).setLoopType(LeanTweenType.pingPong)
                 .setEaseOutQuad()
                 .setOnComplete(StartAnimate);
         }
         else
         {
-            LeanTween.color(loadingImages[_index].rectTransform, Color.white, animationSpeed)
+            LeanTween.color(loadingImages[index].rectTransform, Color.white, animationSpeed)
                 .setEaseOutQuad()
                 .setLoopCount(2).setLoopType(LeanTweenType.pingPong);
-            _index++;
+            index++;
         }
     }
 
@@ -62,15 +72,11 @@ public class LoadingMenuCanvas : MenuCanvas
             return null;
     }
 
-    private int loadingTimeoutSec = 0;
-    private string timeoutPrefix;
-    private string timeoutReachedInfo;
-    private readonly WaitForSeconds wait1Second = new WaitForSeconds(1);
-    private IEnumerator timeoutRoutine;
-    public void Show(string loadingInfo, LoadingTimeoutInfo loadingTimeoutInfo=null, UnityAction cancelCallback=null)
+    public void Show(string loadingInfo, LoadingTimeoutInfo loadingTimeoutInfo = null, UnityAction cancelCallback = null)
     {
+        cancelProcessCallback = cancelCallback;
         infoText.text = loadingInfo;
-        if (cancelCallback!=null)
+        if (cancelCallback != null)
         {
             cancelBtn.gameObject.SetActive(true);
             cancelBtn.onClick.AddListener(cancelCallback);
@@ -87,12 +93,11 @@ public class LoadingMenuCanvas : MenuCanvas
         else
         {
             timeoutContainer.gameObject.SetActive(true);
-            loadingTimeoutSec = loadingTimeoutInfo.timeoutSec;
-            timeoutPrefix = loadingTimeoutInfo.info;
-            timeoutReachedInfo = loadingTimeoutInfo.timeoutReachedError;
+            loadingTimeoutSec = loadingTimeoutInfo.TimeoutSec;
+            timeoutPrefix = loadingTimeoutInfo.Info;
+            timeoutReachedInfo = loadingTimeoutInfo.TimeoutReachedError;
             UpdateTimeoutLabel();
-            timeoutRoutine = UpdateTimeout();
-            StartCoroutine(timeoutRoutine);
+            oneSecondCounter = 0;
         }
     }
 
@@ -101,34 +106,38 @@ public class LoadingMenuCanvas : MenuCanvas
         timeoutInfo.text = timeoutPrefix + loadingTimeoutSec;
     }
 
-    private IEnumerator UpdateTimeout()
-    {
-        while (loadingTimeoutSec>0)
-        {
-            loadingTimeoutSec--;
-            yield return wait1Second;
-            UpdateTimeoutLabel();
-        }
-        MenuManager.Instance.ShowInfo(timeoutReachedInfo, "Timeout");
-        gameObject.SetActive(false);
-    }
-
-
-    private void OnDisable()
-    {
-        if(timeoutRoutine!=null)
-            StopCoroutine(timeoutRoutine);
-    }
-
     public override AssetEnum GetAssetEnum()
     {
         return AssetEnum.LoadingMenuCanvas;
+    }
+
+    private void FixedUpdate()
+    {
+        if (timeoutContainer != null && timeoutContainer.activeSelf)
+        {
+            if (loadingTimeoutSec > 0)
+            {
+                oneSecondCounter += Time.fixedDeltaTime;
+                if (oneSecondCounter >= 1)
+                {
+                    oneSecondCounter = 0;
+                    loadingTimeoutSec--;
+                    UpdateTimeoutLabel();
+                }
+            }
+            else
+            {
+                MenuManager.Instance.ShowInfo(timeoutReachedInfo, "Timeout");
+                cancelProcessCallback?.Invoke();
+                gameObject.SetActive(false);
+            }
+        }
     }
 }
 
 public class LoadingTimeoutInfo
 {
-    public string info;
-    public string timeoutReachedError;
-    public int timeoutSec;
+    public string Info;
+    public string TimeoutReachedError;
+    public int TimeoutSec;
 }

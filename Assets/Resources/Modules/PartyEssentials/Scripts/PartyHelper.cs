@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using AccelByte.Core;
@@ -21,8 +25,7 @@ public class PartyHelper : MonoBehaviour
     private const string PartySessionTemplateName = "unity-party";
     private const string DefaultDisplayName = "Player-";
 
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         partyInvitationPrefab = AssetManager.Singleton.GetAsset(AssetEnum.PartyInvitationEntryPanel) as GameObject;
         messageNotificationPrefab = AssetManager.Singleton.GetAsset(AssetEnum.MessageNotificationEntryPanel) as GameObject;

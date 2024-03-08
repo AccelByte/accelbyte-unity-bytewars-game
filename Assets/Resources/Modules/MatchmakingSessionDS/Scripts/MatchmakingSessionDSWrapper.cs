@@ -1,6 +1,6 @@
-﻿// // Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
-// // This is licensed software from AccelByte Inc, for limitations
-// // and restrictions contact your company contract manager.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 using System;
 using System.Collections;
@@ -12,22 +12,21 @@ using static MatchmakingFallback;
 
 public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 {
-    private ServerMatchmakingV2 _matchmakingV2Server;
-    private ServerDSHub _serverDSHub;
-    private MatchmakingFallback _matchmakingFallback = new MatchmakingFallback();
-
-    private string _matchTicket;
-    private bool _isGameStarted;
-    private string _sessionId;
-    private bool _isSessionActive;
-    private bool _isOnJoinSession;
-    private bool _isDSUpdateError;
-    private bool _onJoinEvent;
-    private bool _onDSAvailable;
-    private bool _isFired = false;
+    private ServerMatchmakingV2 matchmakingV2Server;
+    private ServerDSHub serverDSHub;
+    private MatchmakingFallback matchmakingFallback = new MatchmakingFallback();
+    private string matchTicket;
+    private bool isGameStarted;
+    private string sessionId;
+    private bool isSessionActive;
+    private bool isOnJoinSession;
+    private bool isDSUpdateError;
+    private bool onJoinEvent;
+    private bool onDSAvailable;
+    private bool isFired = false;
+    private const int queueTimeOffsetSec = 5;
 
     private static readonly TutorialType _tutorialType = TutorialType.MatchmakingWithDS;
-
 
     protected internal event Action OnStartMatchmakingFailed;
     protected internal event Action<string> OnStartMatchmakingSucceedEvent;
@@ -37,44 +36,40 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     protected internal event Action OnDSFailedRequestEvent;
     protected internal event Action OnSessionEnded;
 
-
     private void Awake()
     {
         base.Awake();
-
-        _serverDSHub = MultiRegistry.GetServerApiClient().GetDsHub();
-        _matchmakingV2Server = MultiRegistry.GetServerApiClient().GetMatchmakingV2();
+        matchmakingV2Server = MultiRegistry.GetServerApiClient().GetMatchmakingV2();
+#if UNITY_SERVER
+        serverDSHub = MultiRegistry.GetServerApiClient().GetDsHub();
+#endif
     }
 
     private void Start()
     {
 #if UNITY_SERVER
-        GameManager.Instance.OnRejectBackfill += () => { _isGameStarted = true; };
-        GameManager.Instance.OnGameStateIsNone += () => { _isGameStarted = false; };
+        GameManager.Instance.OnRejectBackfill += () => { isGameStarted = true; };
+        GameManager.Instance.OnGameStateIsNone += () => { isGameStarted = false; };
 #endif
 
-        //listen to event
-        QuickPlayMenuHandler.OnMenuEnable += BindEventListener;
-        QuickPlayMenuHandler.OnMenuDisable += UnbindEventListener;
     }
 
-    private void BindEventListener()
+    protected internal void BindEventListener()
     {
         SetupMatchmakingEventListener(true, false);
-        OnStartMatchmakingCompleteEvent += OnStartMatchmakingComplete;
-        OnCancelMatchmakingCompleteEvent += OnCancelMatchmakingComplete;
+        base.OnStartMatchmakingCompleteEvent += OnStartMatchmakingComplete;
+        base.OnCancelMatchmakingCompleteEvent += OnCancelMatchmakingComplete;
     }
 
-    private void UnbindEventListener()
+    protected internal void UnbindEventListener()
     {
         UnbindMatchmakingEventListener(true, false);
-        OnStartMatchmakingCompleteEvent -= OnStartMatchmakingComplete;
-        OnCancelMatchmakingCompleteEvent -= OnCancelMatchmakingComplete;
-        _isFired = false;
+        base.OnStartMatchmakingCompleteEvent -= OnStartMatchmakingComplete;
+        base.OnCancelMatchmakingCompleteEvent -= OnCancelMatchmakingComplete;
+        isFired = false;
     }
 
     #region Fallback
-
     private void CheckMatchFoundNotificationFallback(Result<MatchmakingV2CreateTicketResponse> result)
     {
         if (!result.IsError)
@@ -103,14 +98,14 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 
     private IEnumerator StartFallbackTimer(int queueTime)
     {
-        var waitingTime = queueTime + 5;
+        var waitingTime = queueTime + queueTimeOffsetSec;
         yield return new WaitForSeconds(waitingTime);
-        _matchmakingFallback.FallbackState = FallbackStateEnum.MatchFoundNotificationTimeout;
-        if (_isOnJoinSession == true && _onDSAvailable == false)
+        matchmakingFallback.FallbackState = FallbackStateEnum.MatchFoundNotificationTimeout;
+        if (isOnJoinSession && !onDSAvailable)
         {
-            _matchmakingFallback.FallbackState = FallbackStateEnum.DSUpdateNotificationTimeout;
+            matchmakingFallback.FallbackState = FallbackStateEnum.DSUpdateNotificationTimeout;
         }
-        switch (_matchmakingFallback.FallbackState)
+        switch (matchmakingFallback.FallbackState)
         {
             case FallbackStateEnum.MatchFoundNotificationTimeout:
                 BytewarsLogger.Log($"UnBindMatchFoundNotification");
@@ -123,7 +118,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
                 StartFallback(false, true);
                 break;
             default:
-                BytewarsLogger.Log($" is joined to session {_isOnJoinSession}, is ds update {_onDSAvailable}");
+                BytewarsLogger.Log($" is joined to session {isOnJoinSession}, is ds update {onDSAvailable}");
                 break;
         }
     }
@@ -133,10 +128,10 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         switch (isMatchNotFound)
         {
             case true when !isServerUpdateNotFound:
-                GetMatchmakingTicketDetails(_matchTicket, true);
+                GetMatchmakingTicketDetails(matchTicket, true);
                 break;
             case false when isServerUpdateNotFound:
-                GetSessionAndDSStatus(_matchTicket);
+                GetSessionAndDSStatus(matchTicket);
                 break;
         }
     }
@@ -146,16 +141,16 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         this.StopAllCoroutines();
     }
 
-    private void PostFallback()
+    private void PostFallback(string matchSessionId)
     {
-        switch (_matchmakingFallback.FallbackState)
+        switch (matchmakingFallback.FallbackState)
         {
             case FallbackStateEnum.MatchFoundNotificationTimeout:
                 UnBindMatchFoundNotification();
                 break;
             case FallbackStateEnum.DSUpdateNotificationTimeout:
                 UnBindOnSessionDSUpdateNotification();
-                _matchmakingFallback.FallbackState = FallbackStateEnum.None;
+                matchmakingFallback.FallbackState = FallbackStateEnum.None;
                 ResetFlag();
                 break;
             default:
@@ -165,14 +160,12 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 
     private void ResetFlag()
     {
-        _onDSAvailable = false;
-        _onJoinEvent = false;
+        onDSAvailable = false;
+        onJoinEvent = false;
     }
-
-    #endregion
+    #endregion Fallback
 
     #region DSMatchmakingSetDedicatedServerIPAndServerName
-
     protected internal void StartDSMatchmaking(string matchPool)
     {
         ConnectionHandler.Initialization();
@@ -182,19 +175,17 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     protected internal void CancelDSMatchmaking()
     {
         StopFallback();
-        CancelMatchmaking(_matchTicket);
+        CancelMatchmaking(matchTicket);
     }
-
-    #endregion
+    #endregion DSMatchmakingSetDedicatedServerIPAndServerName
 
     #region EventHandler
-
     private void OnStartMatchmakingComplete(Result<MatchmakingV2CreateTicketResponse> result)
     {
         if (!result.IsError)
         {
-            _matchTicket = result.Value.matchTicketId;
-            OnStartMatchmakingSucceedEvent?.Invoke(_matchTicket);
+            matchTicket = result.Value.matchTicketId;
+            OnStartMatchmakingSucceedEvent?.Invoke(matchTicket);
         }
         else
         {
@@ -204,23 +195,25 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 
     private void OnJoiningMatch(string sessionId)
     {
-        _isOnJoinSession = true;
+        isOnJoinSession = true;
         JoinSession(sessionId);
     }
 
     private void OnCancelMatchmakingComplete()
     {
-        _matchTicket = null;
-        _sessionId = null;
+        matchTicket = null;
+        sessionId = null;
         StopAllCoroutines();
     }
 
     private void OnPeriodicJoinSessionComplete(SessionResponsePayload response)
     {
-        BytewarsLogger.Log("test raised event");
         if (!response.IsError)
         {
-            if (response.TutorialType != _tutorialType) return;
+            if (response.TutorialType != _tutorialType)
+            {
+                return;
+            }
             OnMatchmakingJoinSessionCompleteEvent?.Invoke(response);
         }
         else
@@ -231,18 +224,15 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 
     private void GetSessionDetailsAndDSStatus(SessionResponsePayload response)
     {
-        BytewarsLogger.Log("test raised event");
         if (!response.IsError)
         {
             var session = response.Result.Value;
             GetGameSessionDetailsById(session.id);
         }
     }
-
-    #endregion
+    #endregion EventHandler
 
     #region Override
-
     private void GetSessionAndDSStatus(string sessionId)
     {
         GetGameSessionDetailsById(sessionId);
@@ -250,7 +240,6 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 
     private void GetSessionDetails(SessionResponsePayload response)
     {
-        BytewarsLogger.Log($"test");
         if (!response.IsError)
         {
             if (response.TutorialType != _tutorialType) return;
@@ -285,14 +274,12 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
             }
         }
     }
-
-    #endregion
+    #endregion Override
 
     #region EventListener
-
     private void SetupMatchmakingEventListener(bool notification, bool periodically, bool fallback = false)
     {
-        if (notification && periodically == true)
+        if (notification && periodically)
         {
             BytewarsLogger.Log($"unable to activate both");
             return;
@@ -323,15 +310,14 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         {
             OnStartMatchmakingCompleteEvent += CheckMatchFoundNotificationFallback;
             OnUserJoinedGameSessionEvent += CheckDSStatusUpdateNotificationFallback;
-            OnDSAvailableEvent += result => PostFallback();
+            OnDSAvailableEvent += result => PostFallback(result.id);
 
         }
     }
 
-
     private void UnbindMatchmakingEventListener(bool notification, bool periodically, bool fallback = false)
     {
-        if (notification && periodically == true)
+        if (notification && periodically)
         {
             BytewarsLogger.Log($"unable to activate both");
             return;
@@ -359,12 +345,12 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 
     private void BindOnSessionDSUpdateNotification()
     {
-        _lobby.SessionV2DsStatusChanged += OnSessionDSUpdate;
+        Lobby.SessionV2DsStatusChanged += OnSessionDSUpdate;
     }
 
     private void UnBindOnSessionDSUpdateNotification()
     {
-        _lobby.SessionV2DsStatusChanged -= OnSessionDSUpdate;
+        Lobby.SessionV2DsStatusChanged -= OnSessionDSUpdate;
     }
 
     private void OnSessionDSUpdate(Result<SessionV2DsStatusUpdatedNotification> result)
@@ -373,14 +359,14 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         {
             var session = result.Value.session;
             var dsInfo = session.dsInformation;
-            
+
             BytewarsLogger.Log($"Session DS updated! Checking session status: {dsInfo.status}");
             switch (dsInfo.status)
             {
                 case SessionV2DsStatus.AVAILABLE:
-                    if (!_isFired)
+                    if (!isFired)
                     {
-                        _isFired = true;
+                        isFired = true;
                         OnDSAvailableEvent?.Invoke(session);
                     }
                     break;
@@ -402,7 +388,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     private void OnJoinedSession(SessionResponsePayload sessionPayload)
     {
         BytewarsLogger.Log("Join session completed! Proceed to travel to game..");
-        
+
         var session = sessionPayload.Result.Value;
         var dsInfo = session.dsInformation;
         if (!sessionPayload.Result.IsError)
@@ -413,17 +399,14 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
             }
         }
     }
-
-    #endregion
+    #endregion EventListener
 
     #region GameServer
-
 #if UNITY_SERVER
     #region GameServerNotification
-
     public void MatchMakingServerClaim()
     {
-        _serverDSHub.MatchmakingV2ServerClaimed += result =>
+        serverDSHub.MatchmakingV2ServerClaimed += result =>
         {
             if (!result.IsError)
             {
@@ -440,17 +423,17 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 
     public void BackFillProposal()
     {
-        _serverDSHub.MatchmakingV2BackfillProposalReceived += result =>
+        serverDSHub.MatchmakingV2BackfillProposalReceived += result =>
         {
             if (!result.IsError)
             {
                 BytewarsLogger.Log($"BackFillProposal");
 
-                if (!_isGameStarted)
+                if (!isGameStarted)
                 {
-                    OnBackfillProposalReceived(result.Value, _isGameStarted );
+                    OnBackfillProposalReceived(result.Value, isGameStarted);
                     BytewarsLogger.Log($"Start back-filling process {result.Value.matchSessionId}");
-                
+
                 }
                 else
                 {
@@ -466,7 +449,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 
     private void OnBackfillProposalReceived(MatchmakingV2BackfillProposalNotification proposal, bool isStopBackfilling)
     {
-        _matchmakingV2Server.AcceptBackfillProposal(proposal, isStopBackfilling, result =>
+        matchmakingV2Server.AcceptBackfillProposal(proposal, isStopBackfilling, result =>
         {
             if (!result.IsError)
             {
@@ -474,10 +457,10 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
             }
         });
     }
-    
+
     private void OnBackfillProposalRejected(MatchmakingV2BackfillProposalNotification proposal)
     {
-        _matchmakingV2Server.RejectBackfillProposal(proposal, true, result =>
+        matchmakingV2Server.RejectBackfillProposal(proposal, true, result =>
         {
             if (!result.IsError)
             {
@@ -486,8 +469,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         });
     }
 
-    #endregion
+    #endregion GameServerNotification
 #endif
-
-    #endregion
+    #endregion GameServer
 }

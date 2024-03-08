@@ -6,17 +6,16 @@ using System;
 using AccelByte.Core;
 using AccelByte.Models;
 using AccelByte.Server;
-using UnityEngine;
 
-public class MultiplayerDSAMSWrapper: GameSessionEssentialsWrapper
+public class MultiplayerDSAMSWrapper : GameSessionEssentialsWrapper
 {
     public event Action OnAMSConnectionOpened;
     public event Action OnAMSDrainReceived;
-    
+
     private DedicatedServer ds;
     private ServerAMS ams;
     private ServerDSHub dsHub;
-    
+
 #if UNITY_SERVER
 
     public string DedicatedServerId => AccelByteServerPlugin.Config.DsId;
@@ -25,6 +24,14 @@ public class MultiplayerDSAMSWrapper: GameSessionEssentialsWrapper
     {
         ds = AccelByteServerPlugin.GetDedicatedServer();
         ams = AccelByteServerPlugin.GetAMS();
+        if (ams == null)
+        {
+            BytewarsLogger.LogWarning("[AMS] AMS is null");
+        }
+        else
+        {
+            ams.OnOpen += OnAMSConnected;
+        }
         dsHub = MultiRegistry.GetServerApiClient().GetDsHub();
     }
 
@@ -40,17 +47,38 @@ public class MultiplayerDSAMSWrapper: GameSessionEssentialsWrapper
 #if UNITY_STANDALONE_WIN || UNITY_STANDALONE_LINUX
         OnAMSConnectionOpened?.Invoke();
 #else
-        ams.OnOpen += OnAMSConnected;
+        if(ams.IsConnected)
+        {
+            OnAMSConnectionOpened?.Invoke();
+        }
+        else
+        {
+            ams.OnOpen += OnAMSConnected;
+        }
 #endif
         ams.OnDrainReceived += () => OnAMSDrainReceived?.Invoke();
     }
-    
+
     public void SubscribeDSHubEvents()
     {
         dsHub.OnConnected += OnDSHubConnected;
         dsHub.OnDisconnected += OnDSHubDisconnected;
+        dsHub.MatchmakingV2ServerClaimed += OnServerClaimed;
     }
-    
+
+    private void OnServerClaimed(Result<ServerClaimedNotification> result)
+    {
+        if (result.IsError)
+        {
+            BytewarsLogger.LogWarning($"error: {result.Error.Message}");
+        }
+        else
+        {
+            BytewarsLogger.Log($"ds success claimed {result.Value}");
+            GameData.ServerSessionID = result.Value.sessionId;
+        }
+    }
+
     private void OnAMSConnected()
     {
         BytewarsLogger.Log("[AMS] AMS Connected!");
@@ -61,12 +89,13 @@ public class MultiplayerDSAMSWrapper: GameSessionEssentialsWrapper
     private void OnDSHubConnected()
     {
         BytewarsLogger.Log($"DS connected to DSHub");
+
     }
 
     private void OnDSHubDisconnected(WsCloseCode wsCloseCode)
     {
         BytewarsLogger.Log("DS disconnected from DSHub, trying to reconnect..");
-        
+
         // Reconnect to DS
         if (!String.IsNullOrEmpty(DedicatedServerId) && dsHub != null)
         {
@@ -75,7 +104,7 @@ public class MultiplayerDSAMSWrapper: GameSessionEssentialsWrapper
     }
 
     #endregion
-    
+
     #region AB Service Functions
 
     public void LoginWithClientCredentials(ResultCallback resultCallback = null)
@@ -84,21 +113,21 @@ public class MultiplayerDSAMSWrapper: GameSessionEssentialsWrapper
             result => OnLoginWithClientCredentialsCompleted(result, resultCallback)
         );
     }
-    
+
     public void SendReadyMessageToAMS()
     {
         ams?.SendReadyMessage();
     }
-    
+
     public void ConnectToDSHub(string serverId)
     {
         dsHub?.Connect(serverId);
     }
 
     #endregion
-    
+
     #region Callback Functions
-    
+
     private void OnLoginWithClientCredentialsCompleted(Result result, ResultCallback customCallback = null)
     {
         if (!result.IsError)
@@ -109,11 +138,11 @@ public class MultiplayerDSAMSWrapper: GameSessionEssentialsWrapper
         {
             BytewarsLogger.Log($"Server login failed. Error code: {result.Error.Code}, message: {result.Error.Message}");
         }
-        
+
         customCallback?.Invoke(result);
     }
-    
+
     #endregion
-    
+
 #endif
 }

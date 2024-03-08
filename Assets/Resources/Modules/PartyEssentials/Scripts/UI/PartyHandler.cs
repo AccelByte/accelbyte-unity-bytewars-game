@@ -1,6 +1,8 @@
+// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
-using System.Collections.Generic;
-using AccelByte.Core;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,8 +21,7 @@ public class PartyHandler : MenuCanvas
 
     private const string DefaultDisplayName = "Player-";
 
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         _partyWrapper = TutorialModuleManager.Instance.GetModuleClass<PartyEssentialsWrapper>();
         _authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
@@ -34,6 +35,7 @@ public class PartyHandler : MenuCanvas
         }
         else
         {
+            BytewarsLogger.Log($"current party id: {PartyHelper.CurrentPartyId}");
             DisplayPartyMembersData();
         }
     }

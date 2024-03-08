@@ -1,15 +1,19 @@
-using System.Collections;
-using System.Collections.Generic;
+// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using UnityEngine;
 using UnityEngine.UI;
 
 public class ProfileMenu : MenuCanvas
 {
-    [SerializeField] private Button statsButton;
-    [SerializeField] private Button backButton;
-    
-    // Start is called before the first frame update
-    void Start()
+    [SerializeField]
+    private Button statsButton;
+    [SerializeField]
+    private Button backButton;
+
+
+    private void Start()
     {
         statsButton.onClick.AddListener(OnStatsButtonClicked);
         backButton.onClick.AddListener(OnBackButtonClicked);

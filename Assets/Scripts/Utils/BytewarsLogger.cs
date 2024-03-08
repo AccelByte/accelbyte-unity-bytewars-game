@@ -14,10 +14,11 @@ public static class BytewarsLogger
         [CallerFilePath] string sourceFilePath = "",
         [CallerLineNumber] int sourceLineNumber = 0)
     {
+        string time = GetTime();
 #if UNITY_SERVER
-        Debug.Log($"[{GetLast(sourceFilePath)}] [{memberName}] [Log] [{sourceLineNumber}] - {message}");
+        Debug.Log($"[{time}] [{GetLast(sourceFilePath)}] [{memberName}] [Log] [{sourceLineNumber}] - {message}");
 #else
-        Debug.Log($"[{Path.GetFileName(sourceFilePath)}] [{memberName}] [Log] [{sourceLineNumber}] - {message}");
+        Debug.Log($"[{time}] [{Path.GetFileName(sourceFilePath)}] [{memberName}] [Log] [{sourceLineNumber}] - {message}");
 #endif
 
     }
@@ -26,16 +27,22 @@ public static class BytewarsLogger
         [CallerFilePath] string sourceFilePath = "",
         [CallerLineNumber] int sourceLineNumber = 0)
     {
+        string time = GetTime();
 #if UNITY_SERVER
-        Debug.LogWarning($"[{GetLast(sourceFilePath)}] [{memberName}] [Log] [{sourceLineNumber}] - {message}");
+        Debug.LogWarning($"[{time}] [{GetLast(sourceFilePath)}] [{memberName}] [Log] [{sourceLineNumber}] - {message}");
 #else
-        Debug.LogWarning($"[{Path.GetFileName(sourceFilePath)}] [{memberName}] [Warning] [{sourceLineNumber}] - {message}");
+        Debug.LogWarning($"[{time}] [{Path.GetFileName(sourceFilePath)}] [{memberName}] [Warning] [{sourceLineNumber}] - {message}");
 #endif
     }
-    
+
     private static string GetLast(string path)
     {
         var filename = path.Contains('\\') ? path.Split('\\').Last() : path.Split('/').Last();
         return filename;
+    }
+
+    private static string GetTime()
+    {
+        return System.DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
     }
 }

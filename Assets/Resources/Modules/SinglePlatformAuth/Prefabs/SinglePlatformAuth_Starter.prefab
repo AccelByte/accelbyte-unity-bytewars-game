@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 3790452049242512537}
   - component: {fileID: -2206783065093012220}
   m_Layer: 0
-  m_Name: SinglePlatformAuthEssentials_Starter
+  m_Name: SinglePlatformAuth_Starter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -7,7 +7,7 @@ using System.Collections;
 using AccelByte.Core;
 using UnityEngine;
 
-public class MultiplayerDSAMSHelper: MonoBehaviour
+public class MultiplayerDSAMSHelper : MonoBehaviour
 {
     private MultiplayerDSAMSWrapper amsWrapper;
     private MatchmakingSessionDSWrapper matchmakingDSWrapper;
@@ -20,14 +20,14 @@ public class MultiplayerDSAMSHelper: MonoBehaviour
         {
             return;
         }
-        
+
         amsWrapper = TutorialModuleManager.Instance.GetModuleClass<MultiplayerDSAMSWrapper>();
         matchmakingDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapper>();
-        
+
         matchmakingDSWrapper.MatchMakingServerClaim();
         matchmakingDSWrapper.BackFillProposal();
         GameManager.Instance.OnDeregisterServer += ShutdownDS;
-        
+
         LoginServer();
     }
 
@@ -35,28 +35,29 @@ public class MultiplayerDSAMSHelper: MonoBehaviour
     {
         amsWrapper.LoginWithClientCredentials(OnLoginServerCompleted);
     }
-    
+
     private void HandleAMS()
     {
         amsWrapper.OnAMSConnectionOpened += RegisterDSToAMS;
         amsWrapper.OnAMSDrainReceived += ShutdownDS;
         amsWrapper.SubscribeAMSEvents();
     }
-    
+
     private void RegisterDSToAMS()
     {
         BytewarsLogger.Log("[AMS] Sending ready to AMS");
         amsWrapper.SendReadyMessageToAMS();
         HandleDSHubConnection();
     }
-    
+
     public void HandleDSHubConnection()
     {
         string dsId = amsWrapper.DedicatedServerId;
+        BytewarsLogger.Log($"will connect to dsid {dsId}");
         amsWrapper.ConnectToDSHub(dsId);
         amsWrapper.SubscribeDSHubEvents();
     }
-    
+
     #region Callback Functions
 
     private void OnLoginServerCompleted(Result result)
@@ -68,7 +69,7 @@ public class MultiplayerDSAMSHelper: MonoBehaviour
     }
 
     #endregion
-    
+
     private void ShutdownDS()
     {
         BytewarsLogger.Log($"Shutting down DS..");

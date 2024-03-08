@@ -3,18 +3,20 @@
 /// </summary>
 public enum TutorialType
 {
-    AuthEssentials=2,
-    MatchmakingWithDS=3,
-    StatsEssentials=4,
-    CloudSaveEssentials=5,
-    LeaderboardEssentials=6,
-    SinglePlatformAuth=7,
-    FriendEssentials=8,
-    MatchSessionWithDS=11,
-    ManagingFriends=12,
-    PeriodicLeaderboardEssentials=13,
-    SessionEssentials=14,
-    MultiplayerDSEssentials=15,
-	PartyEssentials=17,
-	PlayWithPartyEssentials=18
+    AuthEssentials = 2,
+    MatchmakingWithDS = 3,
+    StatsEssentials = 4,
+    CloudSaveEssentials = 5,
+    LeaderboardEssentials = 6,
+    SinglePlatformAuth = 7,
+    FriendEssentials = 8,
+    MatchmakingWithP2P = 9,
+    MatchSessionWithDS = 11,
+    ManagingFriends = 12,
+    PeriodicLeaderboardEssentials = 13,
+    SessionEssentials = 14,
+    MultiplayerDSEssentials = 15,
+    PartyEssentials = 17,
+    PlayWithPartyEssentials = 18,
+    MatchmakingSession = 103
 }

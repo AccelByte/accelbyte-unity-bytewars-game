@@ -1,6 +1,6 @@
-﻿// // Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
-// // This is licensed software from AccelByte Inc, for limitations
-// // and restrictions contact your company contract manager.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 using System;
 using System.Collections;
@@ -19,7 +19,8 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
     protected internal event ResultCallback<MatchmakingV2CreateTicketResponse> OnStartMatchmakingCompleteEvent;
     protected internal event Action OnCancelMatchmakingCompleteEvent;
     protected internal event ResultCallback<SessionV2GameJoinedNotification> OnUserJoinedGameSessionEvent;
-    protected internal event Action OnMatchFoundFallbackEvent;
+    protected internal event Action<string/* session id*/> OnMatchFoundFallbackEvent;
+    private bool isMatchmakingCancelled;
 
     protected void Awake()
     {
@@ -31,8 +32,9 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
 
     #region Matchmaking
 
-    protected void StartMatchmaking(string matchPool, bool isLocal = false)
+    public void StartMatchmaking(string matchPool, bool isLocal = false)
     {
+        isMatchmakingCancelled = false;
         var optionalParams = CreateTicketRequestParams(isLocal);
 
         // Play with Party additional code
@@ -45,12 +47,13 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
         _matchmakingV2.CreateMatchmakingTicket(matchPool, optionalParams, OnStartMatchmakingComplete);
     }
 
-    protected void CancelMatchmaking(string matchTicketId)
+    protected internal void CancelMatchmaking(string matchTicketId)
     {
+        isMatchmakingCancelled = true;
         _matchmakingV2.DeleteMatchmakingTicket(matchTicketId, result => OnCancelMatchmakingComplete(result, matchTicketId));
     }
 
-    protected void GetMatchmakingTicketDetails(string ticketId, bool isFallback = false)
+    protected internal void GetMatchmakingTicketDetails(string ticketId, bool isFallback = false)
     {
         _ticketId = ticketId; // cached ticket id
         if (isFallback)
@@ -79,32 +82,32 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
 
     protected void BindMatchmakingUserJoinedGameSession()
     {
-        _lobby.SessionV2UserJoinedGameSession += OnUserJoinedGameSession;
+        Lobby.SessionV2UserJoinedGameSession += OnUserJoinedGameSession;
     }
 
     protected void UnBindMatchmakingUserJoinedGameSession()
     {
-        _lobby.SessionV2UserJoinedGameSession -= OnUserJoinedGameSession;
+        Lobby.SessionV2UserJoinedGameSession -= OnUserJoinedGameSession;
     }
 
     protected void BindOnMatchmakingStarted()
     {
-        _lobby.MatchmakingV2MatchmakingStarted += OnMatchmakingStarted;
+        Lobby.MatchmakingV2MatchmakingStarted += OnMatchmakingStarted;
     }
 
     protected void UnBindOnMatchmakingStarted()
     {
-        _lobby.MatchmakingV2MatchmakingStarted -= OnMatchmakingStarted;
+        Lobby.MatchmakingV2MatchmakingStarted -= OnMatchmakingStarted;
     }
 
     protected void BindMatchFoundNotification()
     {
-        _lobby.MatchmakingV2MatchFound += OnMatchFound;
+        Lobby.MatchmakingV2MatchFound += OnMatchFound;
     }
 
     protected void UnBindMatchFoundNotification()
     {
-        _lobby.MatchmakingV2MatchFound -= OnMatchFound;
+        Lobby.MatchmakingV2MatchFound -= OnMatchFound;
     }
 
     #endregion
@@ -164,7 +167,6 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
             BytewarsLogger.LogWarning($"{result.Error.Message}");
         }
         OnStartMatchmakingCompleteEvent?.Invoke(result);
-
     }
 
     private void OnCancelMatchmakingComplete(Result result, string ticketId)
@@ -179,6 +181,10 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
 
     private void OnGetMatchmakingTicketStatusComplete(Result<MatchmakingV2MatchTicketStatus> result)
     {
+        if (isMatchmakingCancelled)
+        {
+            return;
+        }
         if (!result.IsError)
         {
             if (result.Value.matchFound)
@@ -202,7 +208,7 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
         {
             if (result.Value.matchFound)
             {
-                OnMatchFoundFallbackEvent?.Invoke();
+                OnMatchFoundFallbackEvent?.Invoke(result.Value.sessionId);
             }
         }
         else
