@@ -38,7 +38,7 @@ public class PlayOnlineMenu : MenuCanvas
 
     private void OnQuickPlayButtonPressed()
     {
-        MenuManager.Instance.ChangeToMenu(AssetEnum.ServerTypeSelection);
+        MenuManager.Instance.ChangeToMenu(TutorialType.MatchmakingSession);
     }
 
     private void OnCreateMatchButtonPressed()

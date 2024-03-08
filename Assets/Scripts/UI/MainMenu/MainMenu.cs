@@ -51,7 +51,7 @@ public class MainMenu : MenuCanvas
 
     private void OnPlayOnlineButtonPressed()
     {
-        MenuManager.Instance.ChangeToMenu(TutorialType.MatchmakingSession);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.PlayOnlineMenuCanvas);
     }
 
     public void OnLeaderboardButtonPressed()
