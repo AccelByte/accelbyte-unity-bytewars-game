@@ -47,7 +47,8 @@ public class MatchSessionConfig
                             type = SessionConfigurationTemplateType.DS,
                             joinability = SessionV2Joinability.OPEN,
                             configurationName = UnitySessionEliminationDSAMS,
-                            matchPool = UnitySessionEliminationDSAMS
+                            matchPool = UnitySessionEliminationDSAMS,
+                            attributes = CreatedMatchSessionAttribute
                         }
                     }
                     }},
@@ -78,7 +79,8 @@ public class MatchSessionConfig
                             type = SessionConfigurationTemplateType.DS,
                             joinability = SessionV2Joinability.OPEN,
                             configurationName = UnitySessionTeamDeathmatchDSAMS,
-                            matchPool = UnitySessionTeamDeathmatchDSAMS
+                            matchPool = UnitySessionTeamDeathmatchDSAMS,
+                            attributes = CreatedMatchSessionAttribute
                         }
                     }
                     }}

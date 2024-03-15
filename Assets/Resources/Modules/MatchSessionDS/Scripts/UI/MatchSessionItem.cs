@@ -76,7 +76,7 @@ public class MatchSessionItem : MonoBehaviour
     {
         switch (sessionServerType)
         {
-            case MatchSessionServerType.DedicatedServer:
+            case MatchSessionServerType.DedicatedServer or MatchSessionServerType.DedicatedServerAMS:
                 return "DS";
             case MatchSessionServerType.PeerToPeer:
                 return "P2P";

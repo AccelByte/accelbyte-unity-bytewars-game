@@ -32,6 +32,7 @@ MonoBehaviour:
   isStarterActive: 0
   moduleDependencies:
   - {fileID: 11400000, guid: b4c868ff7e72cc840963d5a37178f14d, type: 2}
+  - {fileID: 11400000, guid: 6cc604fd2c16c2943a757c2eed3f6a71, type: 2}
   instantiatedPrefabType: 0
   instantiatedGameObjectName: 
   prefabClassType: 0

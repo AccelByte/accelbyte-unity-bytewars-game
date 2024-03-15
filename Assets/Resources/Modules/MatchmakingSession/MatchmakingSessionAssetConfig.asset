@@ -31,7 +31,8 @@ MonoBehaviour:
     type: 3}
   starterAdditionalMenuUIPrefabs: []
   isStarterActive: 0
-  moduleDependencies: []
+  moduleDependencies:
+  - {fileID: 11400000, guid: e06d635c5abde8446a7137452792df96, type: 2}
   instantiatedPrefabType: 0
   instantiatedGameObjectName: 
   prefabClassType: 0

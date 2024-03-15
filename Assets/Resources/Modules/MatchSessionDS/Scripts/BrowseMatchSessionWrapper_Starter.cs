@@ -7,31 +7,28 @@ using UnityEngine;
 
 public class BrowseMatchSessionWrapper_Starter : MatchSessionWrapper
 {
-    private static string _nextPage;
-    private static bool _isBrowseMatchSessionsCanceled;
-    private static bool _isJoinMatchSessionCancelled;
-    private static bool _isQueryingNextMatchSessions;
-    private static Action<BrowseMatchResult> _onQueryMatchSessionFinished;
-    private static Action<BrowseMatchResult> _onQueryNextPageMatchSessionFinished;
+    private static string nextPage;
+    private static bool isBrowseMatchSessionsCanceled;
+    private static bool isJoinMatchSessionCancelled;
+    private static bool isQueryingNextMatchSessions;
+    private static Action<BrowseMatchResult> onQueryMatchSessionFinished;
+    private static Action<BrowseMatchResult> onQueryNextPageMatchSessionFinished;
 
     private void Start()
     {
-        OnBrowseMatchSessionCompleteEvent += OnBrowseMatchSessionsComplete;
+        // Copy Start code here
     }
 
     #region BrowseMatchSession
 
     protected internal void BrowseMatch(Action<BrowseMatchResult> onSessionRetrieved)
     {
-        _nextPage = "";
-        _isBrowseMatchSessionsCanceled = false;
-        _onQueryMatchSessionFinished = onSessionRetrieved;
-        BrowseCustomMatchSession(MatchSessionConfig.CreatedMatchSessionAttribute);
+        // Copy BrowseMatch code here
     }
 
     public void CancelBrowseMatchSessions()
     {
-        _isBrowseMatchSessionsCanceled = true;
+        isBrowseMatchSessionsCanceled = true;
     }
 
     #endregion
@@ -40,18 +37,18 @@ public class BrowseMatchSessionWrapper_Starter : MatchSessionWrapper
 
     public void QueryNextMatchSessions(Action<BrowseMatchResult> onQueryNextMatchSessionsFinished)
     {
-        if (String.IsNullOrEmpty(_nextPage))
+        if (String.IsNullOrEmpty(nextPage))
         {
             onQueryNextMatchSessionsFinished?
                 .Invoke(new BrowseMatchResult(Array.Empty<SessionV2GameSession>()));
-            _isQueryingNextMatchSessions = false;
+            isQueryingNextMatchSessions = false;
         }
         else
         {
-            if (!_isQueryingNextMatchSessions)
+            if (!isQueryingNextMatchSessions)
             {
-                var req = GenerateRequestFromNextPage(_nextPage);
-                _onQueryNextPageMatchSessionFinished = onQueryNextMatchSessionsFinished;
+                var req = GenerateRequestFromNextPage(nextPage);
+                onQueryNextPageMatchSessionFinished = onQueryNextMatchSessionsFinished;
                 Session?.QueryGameSession(req, OnQueryNextPageFinished);
             }
         }
@@ -61,21 +58,21 @@ public class BrowseMatchSessionWrapper_Starter : MatchSessionWrapper
     {
         if (result.IsError)
         {
-            _onQueryNextPageMatchSessionFinished?.Invoke(new BrowseMatchResult(null, result.Error.Message));
+            onQueryNextPageMatchSessionFinished?.Invoke(new BrowseMatchResult(null, result.Error.Message));
         }
         else
         {
-            _nextPage = result.Value.paging.next;
-            if (!String.IsNullOrEmpty(_nextPage))
-                BytewarsLogger.Log($"next page: {_nextPage}");
-            _onQueryNextPageMatchSessionFinished?.Invoke(new BrowseMatchResult(result.Value.data));
+            nextPage = result.Value.paging.next;
+            if (!String.IsNullOrEmpty(nextPage))
+                BytewarsLogger.Log($"next page: {nextPage}");
+            onQueryNextPageMatchSessionFinished?.Invoke(new BrowseMatchResult(result.Value.data));
         }
-        _isQueryingNextMatchSessions = false;
+        isQueryingNextMatchSessions = false;
     }
 
     private static Dictionary<string, object> GenerateRequestFromNextPage(string nextPageUrl)
     {
-        _isQueryingNextMatchSessions = true;
+        isQueryingNextMatchSessions = true;
         var result = MatchSessionConfig.CreatedMatchSessionAttribute;
         var fullUrl = nextPageUrl.Split('?');
         if (fullUrl.Length < 2)
@@ -99,17 +96,7 @@ public class BrowseMatchSessionWrapper_Starter : MatchSessionWrapper
 
     private void OnBrowseMatchSessionsComplete(Result<PaginatedResponse<SessionV2GameSession>> result)
     {
-        if (!result.IsError)
-        {
-            if (!_isBrowseMatchSessionsCanceled)
-                _onQueryMatchSessionFinished?.Invoke(new BrowseMatchResult(result.Value.data));
-            _nextPage = result.Value.paging.next;
-        }
-        else
-        {
-            if (!_isBrowseMatchSessionsCanceled)
-                _onQueryMatchSessionFinished?.Invoke(new BrowseMatchResult(null, result.Error.Message));
-        }
+        // Copy OnBrowseMatchSessionsComplete here
     }
 
     #endregion

@@ -12,29 +12,28 @@ public class BrowseMatchMenuCanvas_Starter : MenuCanvas
     [SerializeField] private RectTransform matchItemContainer;
     [SerializeField] private Button refreshBtn;
     [SerializeField] private Button backButton;
-    [SerializeField] private ScrollRect _scrollRect;
+    [SerializeField] private ScrollRect scrollRect;
     [SerializeField] private RectTransform mainPanel;
     [SerializeField] private GameObject noMatchFoundInfo;
     [SerializeField] private LoadingPanel loadingPanel;
     [SerializeField] private ErrorPanel errorPanel;
-    private readonly List<BrowseMatchItemModel> _loadedModels = new List<BrowseMatchItemModel>();
-    private readonly List<MatchSessionItem> _instantiatedView = new List<MatchSessionItem>();
-    private readonly List<SessionV2GameSession> _gameSessions = new List<SessionV2GameSession>();
+    private readonly List<BrowseMatchItemModel> loadedModels = new List<BrowseMatchItemModel>();
+    private readonly List<MatchSessionItem> instantiatedView = new List<MatchSessionItem>();
+    private readonly List<SessionV2GameSession> gameSessionList = new List<SessionV2GameSession>();
     private const float ViewItemHeight = 75;
 
-    private BrowseMatchSessionWrapper _browseMatchSessionWrapper;
-    private MatchSessionDSWrapper _matchSessionDSWrapper;
+    private BrowseMatchSessionWrapper_Starter browseMatchSessionWrapper_Starter;
+    private MatchSessionDSWrapper_Starter matchSessionDSWrapper;
     
     private void Start()
     {
-        _browseMatchSessionWrapper = TutorialModuleManager.Instance.GetModuleClass<BrowseMatchSessionWrapper>();
-        _matchSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionDSWrapper>();
+        browseMatchSessionWrapper_Starter = TutorialModuleManager.Instance.GetModuleClass<BrowseMatchSessionWrapper_Starter>();
+        matchSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionDSWrapper_Starter>();
 
-        // OLD
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
         refreshBtn.onClick.AddListener(BrowseMatchSession);
-        _scrollRect.onValueChanged.AddListener(OnScrollValueChanged);
-        BrowseMatchSessionEventListener.Init(_gameSessions);
+        scrollRect.onValueChanged.AddListener(OnScrollValueChanged);
+        BrowseMatchSessionEventListener.Init(gameSessionList);
         BrowseMatchSessionEventListener.OnUpdate = OnGameSessionUpdated;
         GameManager.OnDisconnectedInMainMenu += OnDisconnectedFromMainMenu;
         BrowseMatchSession();
@@ -43,56 +42,31 @@ public class BrowseMatchMenuCanvas_Starter : MenuCanvas
     #region BrowseMatchSession
     private void BrowseMatchSession()
     {
-        Reset();
-        _browseMatchSessionWrapper.BrowseMatch(OnBrowseMatchSessionFinished);
-        ShowLoading("Getting Match Sessions...", CancelBrowseMatchSession);
+        // Copy BrowseMatchSession Code here
+        BytewarsLogger.Log("Browse Match Session not yet implemented");
     }
+
     private void OnBrowseMatchSessionFinished(BrowseMatchResult result)
     {
-        if (String.IsNullOrEmpty(result.ErrorMessage))
-        {
-            HideLoadingBackToMainPanel();
-            if (result.Result.Length<1)
-            {
-                noMatchFoundInfo.SetActive(true);
-            }
-            else
-            {
-                noMatchFoundInfo.SetActive(false);
-                RenderResult(result.Result);
-            }
-        }
-        else
-        {
-            ShowError(result.ErrorMessage);
-        }
+        // Copy OnBrowseMatchSessionFinished here
     }
+
     private void CancelBrowseMatchSession()
     {
         HideLoadingBackToMainPanel();
-        _browseMatchSessionWrapper.CancelBrowseMatchSessions();
+        browseMatchSessionWrapper_Starter.CancelBrowseMatchSessions();
     }
     #endregion BrowseMatchSession
 
     #region RetrieveNextPage
     private void OnScrollValueChanged(Vector2 scrollPos)
     {
-        //scroll reach bottom
-        if (scrollPos.y <= 0)
-        {
-            _browseMatchSessionWrapper.QueryNextMatchSessions(OnNextPageMatchSessionsRetrieved);
-        }
+        // Copy OnScrollValueChanged here
     }
+
     private void OnNextPageMatchSessionsRetrieved(BrowseMatchResult nextPageResult)
     {
-        if (String.IsNullOrEmpty(nextPageResult.ErrorMessage))
-        {
-            RenderResult(nextPageResult.Result, _loadedModels.Count);
-        }
-        else
-        {
-            ShowError(nextPageResult.ErrorMessage);
-        }
+        // Copy OnNextPageMatchSessionsRetrieved here
     }
     #endregion RetrieveNextPage
     
@@ -100,14 +74,16 @@ public class BrowseMatchMenuCanvas_Starter : MenuCanvas
     private void JoinMatch(JoinMatchSessionRequest request)
     {
         ShowLoading("Joining Match Session...", CancelJoinMatchSession);
-        _matchSessionDSWrapper
+        matchSessionDSWrapper
             .JoinMatchSession(request.MatchSessionId, request.GameMode, OnJoinedMatchSession);
     }
+
     private void CancelJoinMatchSession()
     {
         HideLoadingBackToMainPanel();
-        _matchSessionDSWrapper.CancelJoinMatchSession();
+        matchSessionDSWrapper.CancelJoinMatchSession();
     }
+
     private void OnJoinedMatchSession(string errorMessage)
     {
         //success joined match session will be handled by BrowseMatchSessionWrapper
@@ -126,7 +102,7 @@ public class BrowseMatchMenuCanvas_Starter : MenuCanvas
 
     private void OnGameSessionUpdated(SessionV2GameSession result)
     {
-        var updatedModel = _loadedModels.Find(m => m.MatchSessionId == result.id);
+        var updatedModel = loadedModels.Find(m => m.MatchSessionId == result.id);
         updatedModel?.Update(result);
         var currentMenu = MenuManager.Instance.GetCurrentMenu();
         if (currentMenu is MatchLobbyMenu matchLobbyMenu)
@@ -169,27 +145,29 @@ public class BrowseMatchMenuCanvas_Starter : MenuCanvas
         for (var i = 0; i < gameSessions.Length; i++)
         {
             var gameSession = gameSessions[i];
-            _gameSessions.Add(gameSession);
+            gameSessionList.Add(gameSession);
             var model = new BrowseMatchItemModel(gameSession, previousPageCount + i);
-            _loadedModels.Add(model);
+            loadedModels.Add(model);
             var viewItem = GetAvailableViewItem();
             viewItem.SetData(model, JoinMatch);
-            _instantiatedView.Add(viewItem);
+            instantiatedView.Add(viewItem);
         }
-        matchItemContainer.sizeDelta = new Vector2(0, (_loadedModels.Count)* ViewItemHeight);
+        matchItemContainer.sizeDelta = new Vector2(0, (loadedModels.Count)* ViewItemHeight);
     }
+
     private void Reset()
     {
-        foreach (var matchSessionItem in _instantiatedView)
+        foreach (var matchSessionItem in instantiatedView)
         {
             matchSessionItem.gameObject.SetActive(false);
         }
         matchItemContainer.sizeDelta = Vector2.zero;
     }
+
     private MatchSessionItem GetAvailableViewItem()
     {
         var instantiatedView = 
-            _instantiatedView.Find(v => !v.gameObject.activeSelf);
+            this.instantiatedView.Find(v => !v.gameObject.activeSelf);
         if (instantiatedView == null)
         {
             return Instantiate(matchSessionItemPrefab, matchItemContainer, false);
@@ -205,6 +183,7 @@ public class BrowseMatchMenuCanvas_Starter : MenuCanvas
     {
         return refreshBtn.gameObject;
     }
+
     public override AssetEnum GetAssetEnum()
     {
         return AssetEnum.BrowseMatchMenuCanvas;

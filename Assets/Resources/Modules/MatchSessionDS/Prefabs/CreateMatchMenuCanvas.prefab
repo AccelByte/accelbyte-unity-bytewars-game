@@ -672,7 +672,6 @@ GameObject:
   - component: {fileID: 2169716256886031664}
   - component: {fileID: 2169716256886031671}
   - component: {fileID: 2169716256886031670}
-  - component: {fileID: 4222609567832102627}
   - component: {fileID: 2771192449220484842}
   m_Layer: 5
   m_Name: CreateMatchMenuCanvas
@@ -766,28 +765,6 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
---- !u!114 &4222609567832102627
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2169716256886031669}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ee4c0c81753d48a42aa29a807e19f3d4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  createEliminationBtn: {fileID: 7614937716666002539}
-  createTeamDeathMatchBtn: {fileID: 2514143089569163112}
-  backBtn: {fileID: 5406751274186335520}
-  dsBtn: {fileID: 4109771911206225852}
-  p2pBtn: {fileID: 970207263814022268}
-  backFromServerTypeBtn: {fileID: 8227317133346712762}
-  createMatchPanel: {fileID: 1738339657344088098}
-  selectServerPanel: {fileID: 7680412649551239480}
-  loadingPanel: {fileID: 5557992125796881663}
-  errorPanel: {fileID: 1759865967118834085}
 --- !u!114 &2771192449220484842
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -800,6 +777,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1eb48454219c41b5a167a9fa2855ea38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mainButtonsContainer: {fileID: 0}
   createEliminationBtn: {fileID: 7614937716666002539}
   createTeamDeathMatchBtn: {fileID: 2514143089569163112}
   backBtn: {fileID: 5406751274186335520}
@@ -1835,6 +1813,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d1f4cbc4d1b47547948e771ca981f3f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mainButtonsContainer: {fileID: 0}
   loadingImages:
   - {fileID: 1794758119045590289}
   - {fileID: 4408098504150834906}
