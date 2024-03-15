@@ -23,7 +23,7 @@ public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
     private static SessionV2GameSession gameSessionV2;
 
     private static MatchSessionWrapper matchSessionWrapper;
-    private static readonly WaitForSeconds waitOneSecond = new WaitForSeconds(1);
+    private static readonly WaitForSeconds waitOneSec = new WaitForSeconds(1);
     private const int MaxCheckDSStatusCount = 10;
     private static int checkDSStatusCount = 0;
 
@@ -49,49 +49,12 @@ public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
         MatchSessionServerType sessionServerType,
         Action<string> onCreatedMatchSession)
     {
-        isCreateMatchSessionCancelled = false;
-        requestedSessionServerType = sessionServerType;
-        requestedGameMode = gameMode;
-        gameSessionV2 = null;
-        var config = MatchSessionConfig.MatchRequests;
-        if (!config.TryGetValue(gameMode, out var matchTypeDict))
-        {
-            return;
-        }
-        if (!matchTypeDict.TryGetValue(sessionServerType, out var request))
-        {
-            return;
-        }
-        BytewarsLogger.Log($"creating session {gameMode} {sessionServerType}");
-        MatchSessionDSWrapper_Starter.onCreatedMatchSession = onCreatedMatchSession;
-        ConnectionHandler.Initialization();
-        if (ConnectionHandler.IsUsingLocalDS())
-        {
-            request.serverName = ConnectionHandler.LocalServerName;
-        }
-        CreateCustomMatchSession(request);
+        // Copy Create Code here
     }
 
     private void OnCreateGameSessionResult(Result<SessionV2GameSession> result)
     {
-        if (result.IsError)
-        {
-            BytewarsLogger.Log($"error: {result.Error.Message}");
-            onCreatedMatchSession?.Invoke(result.Error.Message);
-        }
-        else
-        {
-            BytewarsLogger.Log($"create session result: {result.Value.ToJsonString()}");
-            if (isCreateMatchSessionCancelled)
-            {
-                return;
-            }
-            gameSessionV2 = result.Value;
-            SessionCache
-                .SetJoinedSessionIdAndLeaderUserId(gameSessionV2.id, gameSessionV2.leaderId);
-            checkDSStatusCount = 0;
-            matchSessionWrapper.StartCoroutine(CheckSessionDetails());
-        }
+        // Copy OnCreateGameSessionResult Code here
     }
 
     private IEnumerator CheckSessionDetails()
@@ -101,44 +64,14 @@ public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
             onCreatedMatchSession?.Invoke("Error Unable to create session");
             yield break;
         }
-        yield return waitOneSecond;
+        yield return waitOneSec;
         checkDSStatusCount++;
-        Session.GetGameSessionDetailsBySessionId(gameSessionV2.id, OnSessionDetailsCheckFinished);
+        //Copy CheckSessionDetails code here
     }
 
     private void OnSessionDetailsCheckFinished(Result<SessionV2GameSession> result)
     {
-        BytewarsLogger.Log($"{result.ToJsonString()}");
-        if (isCreateMatchSessionCancelled)
-        {
-            onCreatedMatchSession?.Invoke("Match session creation cancelled");
-            return;
-        }
-        if (result.IsError)
-        {
-            string errorMessage = result.Error.Message;
-            onCreatedMatchSession?.Invoke(errorMessage);
-        }
-        else
-        {
-            if (result.Value.dsInformation.status == SessionV2DsStatus.AVAILABLE)
-            {
-                onCreatedMatchSession?.Invoke("");
-                onCreatedMatchSession = null;
-                TravelToDS(result.Value, requestedGameMode);
-            }
-            else
-            {
-                if (checkDSStatusCount >= MaxCheckDSStatusCount)
-                {
-                    onCreatedMatchSession?.Invoke("Failed to Connect to Dedicated Server in time");
-                }
-                else
-                {
-                    matchSessionWrapper.StartCoroutine(CheckSessionDetails());
-                }
-            }
-        }
+        //Copy OnSessionDetailsCheckFinished code here
     }
 
     public void CancelCreateMatchSession()
@@ -161,6 +94,7 @@ public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
 
     private void OnJoinMatchSessionComplete(Result<SessionV2GameSession> result)
     {
+        BytewarsLogger.Log($" on_join_result {result.ToJsonString()}");
         if (result.IsError)
         {
             if (!isJoinMatchSessionCancelled)
@@ -173,25 +107,18 @@ public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
             var gameSession = result.Value;
             if (gameSession.configuration.type == SessionConfigurationTemplateType.DS)
             {
+                if (isJoinMatchSessionCancelled)
+                {
+                    return;
+                }
+                UpdateCachedGameSession(gameSession);
                 if (gameSession.dsInformation.status == SessionV2DsStatus.AVAILABLE)
                 {
-                    if (isJoinMatchSessionCancelled)
-                    {
-                        return;
-                    }
-                    SetJoinedGameSession(gameSession);
-                    SessionCache
-                        .SetJoinedSessionIdAndLeaderUserId(gameSession.id, gameSession.leaderId);
                     TravelToDS(gameSession, requestedGameMode);
                 }
                 else
                 {
-                    LeaveSessionWhenFailed(gameSession.id);
-                    if (!isJoinMatchSessionCancelled)
-                    {
-                        onJoinedMatchSession?
-                            .Invoke("Failed to join _session, no response from the server");
-                    }
+                    Lobby.SessionV2DsStatusChanged += OnV2DSStatusChanged;
                 }
             }
         }
@@ -233,9 +160,15 @@ public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
     #region Events
     private void OnV2DSStatusChanged(Result<SessionV2DsStatusUpdatedNotification> result)
     {
+        Lobby.SessionV2DsStatusChanged -= OnV2DSStatusChanged;
         if (result.IsError)
         {
+            if (gameSessionV2 != null)
+            {
+                LeaveSessionWhenFailed(gameSessionV2.id);
+            }
             BytewarsLogger.LogWarning($"receiving DS status change error: {result.Error.Message}");
+            onJoinedMatchSession?.Invoke(result.Error.Message);
         }
         else
         {
@@ -245,7 +178,7 @@ public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
                 BytewarsLogger.LogWarning($"unmatched DS session id is received");
                 return;
             }
-            gameSessionV2 = result.Value.session;
+            UpdateCachedGameSession(result.Value.session);
             if (isCreateMatchSessionCancelled ||
                 gameSessionV2.dsInformation.status != SessionV2DsStatus.AVAILABLE)
             {
@@ -290,6 +223,7 @@ public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
             SessionCache.SetJoinedSessionId("");
             BytewarsLogger.Log($"success leave session id: {gameSessionV2.id}");
         }
+
         if (isCreateMatchSessionCancelled)
         {
             DeleteCustomMatch(gameSessionV2.id);
@@ -297,16 +231,11 @@ public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
     }
     #endregion
 
-    #region Utils
-    /// <summary>
-    /// cached joined game session
-    /// </summary>
-    /// <param name="gameSession">joined game session</param>
-    private void SetJoinedGameSession(SessionV2GameSession gameSession)
+    private void UpdateCachedGameSession(SessionV2GameSession session)
     {
-        gameSessionV2 = gameSession;
+        gameSessionV2 = session;
+        SessionCache.SetJoinedSessionIdAndLeaderUserId(session.id, session.leaderId);
     }
-    #endregion
 
     #region Debug
     public void GetDetail()

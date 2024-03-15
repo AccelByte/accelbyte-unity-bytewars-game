@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -15,18 +16,25 @@ public class CreateMatchSessionHandler_Starter : MenuCanvas
     [SerializeField] private LoadingPanel loadingPanel;
     [SerializeField] private ErrorPanel errorPanel;
     
-    private RectTransform _shownRectTransform;
-    private InGameMode _gameMode = InGameMode.None;
-    private MatchSessionServerType _selectedSessionServerType = MatchSessionServerType.DedicatedServer;
+    private RectTransform shownRectTransform;
+    private InGameMode gameMode = InGameMode.None;
+    private MatchSessionServerType selectedSessionServerType = MatchSessionServerType.DedicatedServer;
     
-    private static CreateMatchSessionHandler_Starter _instance = null;
+    private static CreateMatchSessionHandler_Starter instance = null;
     private const string ClassName = "[CreateMatchSessionHandler_Starter]";
+    
+    //Copy MatchSessionDSWrapper_Starter here
+
     private void Awake()
     {
-        _instance ??= this;
+        instance ??= this;
     }
+
     private void Start()
     {
+
+        //Copy MatchSessionDSWrapper_Starter for start() here
+
         createEliminationBtn.onClick.AddListener(OnCreateEliminationBtnClicked);
         createTeamDeathMatchBtn.onClick.AddListener(OnTeamDeathMatchBtnClicked);
         backBtn.onClick.AddListener(MenuManager.Instance.OnBackPressed);
@@ -38,55 +46,66 @@ public class CreateMatchSessionHandler_Starter : MenuCanvas
     #region ButtonAction
     private void OnBackFromServerTypeBtnClicked()
     {
-        _gameMode = InGameMode.None;
-        _shownRectTransform = SlideShowRight(selectServerPanel, createMatchPanel);
+        gameMode = InGameMode.None;
+        shownRectTransform = SlideShowRight(selectServerPanel, createMatchPanel);
     }
 
     private void OnDSBtnClicked()
     {
-        
+        // Copy OnDSBtnClicked code here
     }
 
     private void OnTeamDeathMatchBtnClicked()
     {
-        
+        gameMode = InGameMode.CreateMatchDeathMatchGameMode;
+        //show server selection panel
+        shownRectTransform = SlideShowLeft(createMatchPanel, selectServerPanel);
     }
 
     private void OnCreateEliminationBtnClicked()
     {
-        
+        // Copy OnCreateEliminationBtnClicked code here
+
     }
     #endregion ButtonAction
     
     private void CreateMatchSession()
     {
-        //we will call Accelbyte SDK API via wrapper class in this method
-        Debug.Log($"{ClassName} Create Match Session not yet implemented");
+        Debug.Log($"{ClassName} Create Match Session not yet implemented"); // delete this after copy CreateMatchSession implementation
+        // Copy CreateMatchSession code here
     }
 
+    // Copy OnCreatedMatchSession function here
+
     #region UI
+
+    // Copy CancelCreateMatch code here
+
     private RectTransform SlideShowLeft(PanelGroup toHide, PanelGroup toShow)
     {
         toHide.HideSlideLeft();
         var rectTransform = toShow.Show();
         return rectTransform;
     }
+
     private RectTransform SlideShowRight(PanelGroup toHide, PanelGroup toShow)
     {
         toHide.HideSlideRight();
         var rectTransform = toShow.Show();
         return rectTransform;
     }
+
     private void HideError()
     {
-        if(_shownRectTransform!=null)
-            _shownRectTransform.gameObject.SetActive(true);
+        if(shownRectTransform!=null)
+            shownRectTransform.gameObject.SetActive(true);
         errorPanel.gameObject.SetActive(false);
     }
+
     private void ShowLoading(string loadingInfo, UnityAction cancelCallback=null)
     {
-        if(_shownRectTransform!=null)
-            _shownRectTransform.gameObject.SetActive(false);
+        if(shownRectTransform!=null)
+            shownRectTransform.gameObject.SetActive(false);
         loadingPanel.Show(loadingInfo, cancelCallback);
         errorPanel.gameObject.SetActive(false);
     }
@@ -96,13 +115,16 @@ public class CreateMatchSessionHandler_Starter : MenuCanvas
         loadingPanel.gameObject.SetActive(false);
         errorPanel.Show(errorInfo, HideError);
     }
+
     private void OnDisable()
     {
         HideError();
     }
+
     #endregion UI
     
     #region MenuCanvasOverride
+
     public override GameObject GetFirstButton()
     {
         return createEliminationBtn.gameObject;
@@ -112,5 +134,6 @@ public class CreateMatchSessionHandler_Starter : MenuCanvas
     {
         return AssetEnum.CreateMatchMenuCanvas;
     }
+
     #endregion MenuCanvasOverride
 }

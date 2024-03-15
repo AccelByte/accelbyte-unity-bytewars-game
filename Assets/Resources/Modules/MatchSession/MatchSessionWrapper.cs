@@ -18,27 +18,46 @@ public class MatchSessionWrapper : GameSessionEssentialsWrapper
         base.Awake();
     }
 
+    /// <summary>
+    /// Function to Create Custom Match Session 
+    /// </summary>
+    /// <param name="request"></param>
     protected void CreateCustomMatchSession(SessionV2GameSessionCreateRequest request)
     {
         Session.CreateGameSession(request, OnCreateCustomMatchSessionComplete);
     }
 
+    /// <summary>
+    /// Function to Browse Custom Match Session
+    /// </summary>
+    /// <param name="request"></param>
     protected void BrowseCustomMatchSession(Dictionary<string, object> request = null)
     {
         Session.QueryGameSession(request, OnBrowseMatchSessionComplete);
     }
 
+    /// <summary>
+    /// Function to Join Custom Match Session
+    /// </summary>
+    /// <param name="sessionId"></param>
     protected void JoinCustomMatchSession(string sessionId)
     {
-        BytewarsLogger.Log($" sessionId {sessionId}");
         Session.JoinGameSession(sessionId, OnJoinCustomSessionComplete);
     }
 
-    protected void LeaveCustomMatchSession(string sessionId, [CallerMemberName] string? memberName = null)
+    /// <summary>
+    /// Function to Leave Custom Match Session
+    /// </summary>
+    /// <param name="sessionId"></param>
+    protected void LeaveCustomMatchSession(string sessionId)
     {
-        Session.LeaveGameSession(sessionId, result => OnLeaveCustomSessionComplete(result, memberName));
+        Session.LeaveGameSession(sessionId, OnLeaveCustomSessionComplete);
     }
 
+    /// <summary>
+    /// Function to Delete Custom Match Session
+    /// </summary>
+    /// <param name="sessionId"></param>
     protected internal void DeleteCustomMatchSession(string sessionId)
     {
         Session.DeleteGameSession(sessionId, OnDeleteCustomSessionComplete);
@@ -85,7 +104,7 @@ public class MatchSessionWrapper : GameSessionEssentialsWrapper
         OnJoinCustomSessionCompleteEvent?.Invoke(result);
     }
 
-    private void OnLeaveCustomSessionComplete(Result<SessionV2GameSession> result, string callerMethod = null)
+    private void OnLeaveCustomSessionComplete(Result<SessionV2GameSession> result)
     {
         if (!result.IsError)
         {
@@ -96,10 +115,7 @@ public class MatchSessionWrapper : GameSessionEssentialsWrapper
             BytewarsLogger.LogWarning($"error:{result.Error.ToJsonString()}");
         }
 
-        if (callerMethod != null && !callerMethod.ToLower().Contains("failed"))
-        {
-            OnLeaveCustomSessionCompleteEvent?.Invoke(result);
-        }
+        OnLeaveCustomSessionCompleteEvent?.Invoke(result);
     }
 
     private void OnDeleteCustomSessionComplete(Result result)

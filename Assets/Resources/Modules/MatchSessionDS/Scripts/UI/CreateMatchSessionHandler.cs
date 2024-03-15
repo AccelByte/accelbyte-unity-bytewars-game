@@ -16,21 +16,21 @@ public class CreateMatchSessionHandler : MenuCanvas
     [SerializeField] private PanelGroup selectServerPanel;
     [SerializeField] private LoadingPanel loadingPanel;
     [SerializeField] private ErrorPanel errorPanel;
-    private static CreateMatchSessionHandler _instance = null;
-    private RectTransform _shownRectTransform;
-    private InGameMode _gameMode = InGameMode.None;
-    private MatchSessionServerType _selectedSessionServerType = MatchSessionServerType.DedicatedServer;
+    private static CreateMatchSessionHandler instance = null;
+    private RectTransform shownRectTransform;
+    private InGameMode gameMode = InGameMode.None;
+    private MatchSessionServerType selectedSessionServerType = MatchSessionServerType.DedicatedServer;
+    private MatchSessionDSWrapper matchSessionDSWrapper;
 
-    private MatchSessionDSWrapper _matchSessionDSWrapper;
     // Start is called before the first frame update
     private void Awake()
     {
-        _instance ??= this;
+        instance ??= this;
     }
 
     private void Start()
     {
-        _matchSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionDSWrapper>();
+        matchSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionDSWrapper>();
             
         createEliminationBtn.onClick.AddListener(OnCreateEliminationBtnClicked);
         createTeamDeathMatchBtn.onClick.AddListener(OnTeamDeathMatchBtnClicked);
@@ -49,14 +49,14 @@ public class CreateMatchSessionHandler : MenuCanvas
 
     private void OnP2PBtnClicked()
     {
-        _selectedSessionServerType = MatchSessionServerType.PeerToPeer;
+        selectedSessionServerType = MatchSessionServerType.PeerToPeer;
         CreateMatchSession();
     }
 
     private void OnDSBtnClicked()
     {
         dsBtn.interactable = false;
-        _selectedSessionServerType = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MultiplayerDSEssentials)
+        selectedSessionServerType = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MultiplayerDSEssentials)
                                          ? MatchSessionServerType.DedicatedServerAMS
                                          : MatchSessionServerType.DedicatedServer;
         CreateMatchSession();
@@ -65,49 +65,49 @@ public class CreateMatchSessionHandler : MenuCanvas
     private void CreateMatchSession()
     {
         ShowLoading("Creating Match Session...", CancelCreateMatch);
-        _matchSessionDSWrapper.Create(_gameMode, 
-            _selectedSessionServerType, OnCreatedMatchSession);
+        matchSessionDSWrapper.Create(gameMode, 
+            selectedSessionServerType, OnCreatedMatchSession);
     }
 
     private static void OnCreatedMatchSession(string errorMessage)
     {
-        _instance.dsBtn.interactable = true;
+        instance.dsBtn.interactable = true;
         if (!String.IsNullOrEmpty(errorMessage))
         {
-            _instance.ShowError(errorMessage);
+            instance.ShowError(errorMessage);
         }
         else
         {
             //show loading, MatchSessionWrapper will move UI to lobby when connected to DS
-            _instance.ShowLoading("Joining Session");
+            instance.ShowLoading("Joining Session");
             Debug.Log($"success create session");
         }
     }
 
     private void OnTeamDeathMatchBtnClicked()
     {
-        _gameMode = InGameMode.CreateMatchDeathMatchGameMode;
+        gameMode = InGameMode.CreateMatchDeathMatchGameMode;
         //show server selection panel
-        _shownRectTransform = SlideShowLeft(createMatchPanel, selectServerPanel);
+        shownRectTransform = SlideShowLeft(createMatchPanel, selectServerPanel);
     }
 
     private void OnBackFromServerTypeBtnClicked()
     {
-        _gameMode = InGameMode.None;
-        _shownRectTransform = SlideShowRight(selectServerPanel, createMatchPanel);
+        gameMode = InGameMode.None;
+        shownRectTransform = SlideShowRight(selectServerPanel, createMatchPanel);
     }
 
     private void OnCreateEliminationBtnClicked()
     {
-        _gameMode = InGameMode.CreateMatchEliminationGameMode;
+        gameMode = InGameMode.CreateMatchEliminationGameMode;
         //show server selection panel
-        _shownRectTransform = SlideShowLeft(createMatchPanel, selectServerPanel);
+        shownRectTransform = SlideShowLeft(createMatchPanel, selectServerPanel);
     }
 
     private void ShowLoading(string loadingInfo, UnityAction cancelCallback=null)
     {
-        if(_shownRectTransform!=null)
-            _shownRectTransform.gameObject.SetActive(false);
+        if(shownRectTransform!=null)
+            shownRectTransform.gameObject.SetActive(false);
         loadingPanel.Show(loadingInfo, cancelCallback);
         errorPanel.gameObject.SetActive(false);
     }
@@ -120,24 +120,26 @@ public class CreateMatchSessionHandler : MenuCanvas
 
     private void HideError()
     {
-        if(_shownRectTransform!=null)
-            _shownRectTransform.gameObject.SetActive(true);
+        if(shownRectTransform!=null)
+            shownRectTransform.gameObject.SetActive(true);
         errorPanel.gameObject.SetActive(false);
     }
 
     private void CancelCreateMatch()
     {
-        if(_shownRectTransform!=null)
-            _shownRectTransform.gameObject.SetActive(true);
+        if(shownRectTransform!=null)
+            shownRectTransform.gameObject.SetActive(true);
         loadingPanel.gameObject.SetActive(false);
-        _matchSessionDSWrapper.CancelCreateMatchSession();
+        matchSessionDSWrapper.CancelCreateMatchSession();
     }
+
     private RectTransform SlideShowLeft(PanelGroup toHide, PanelGroup toShow)
     {
         toHide.HideSlideLeft();
         var rectTransform = toShow.Show();
         return rectTransform;
     }
+
     private RectTransform SlideShowRight(PanelGroup toHide, PanelGroup toShow)
     {
         toHide.HideSlideRight();
