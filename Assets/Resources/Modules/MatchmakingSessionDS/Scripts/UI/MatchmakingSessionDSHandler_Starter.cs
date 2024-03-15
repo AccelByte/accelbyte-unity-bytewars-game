@@ -1,4 +1,4 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -9,6 +9,8 @@ public class MatchmakingSessionDSHandler_Starter : MenuCanvas
 {
     private const string eliminationWithDSMatchPoolName = "unity-elimination-ds";
     private const string teamdeathmatchWithDSMatchPoolName = "unity-teamdeathmatch-ds";
+    private const string eliminationDSAMSMatchPool = "unity-elimination-ds-ams";
+    private const string teamDeathmatchDSAMSMatchPool = "unity-teamdeathmatch-ds-ams";
     private InGameMode selectedGameMode = InGameMode.None;
     private MatchmakingSessionDSWrapper_Starter matchmakingSessionDSWrapper;
     private const int matchmakingTimeoutSec = 90;
