@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,13 +16,13 @@ public class LeaderboardMenu : MenuCanvas
     [SerializeField] private GameObject rankingEntryPanelPrefab;
     [SerializeField] private RankingEntryPanel userRankingPanel;
 
-    private TokenData _currentUserData;
+    private TokenData currentUserData;
 
-    private LeaderboardEssentialsWrapper _leaderboardWrapper;
-    private AuthEssentialsWrapper _authWrapper;
+    private LeaderboardEssentialsWrapper leaderboardWrapper;
+    private AuthEssentialsWrapper authWrapper;
 
-    private string _currentLeaderboardCode;
-    private LeaderboardCycleMenu.LeaderboardCycleType _currentCycleType;
+    private string currentLeaderboardCode;
+    private LeaderboardCycleMenu.LeaderboardCycleType currentCycleType;
 
     private const int QUERY_OFFSET = 0;
     private const int QUERY_LIMIT = 10;
@@ -37,8 +37,8 @@ public class LeaderboardMenu : MenuCanvas
     {
         backButton.onClick.AddListener(OnBackButtonClicked);
 
-        _leaderboardWrapper = TutorialModuleManager.Instance.GetModuleClass<LeaderboardEssentialsWrapper>();
-        _authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
+        leaderboardWrapper = TutorialModuleManager.Instance.GetModuleClass<LeaderboardEssentialsWrapper>();
+        authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
 
         DisplayRankingList();
     }
@@ -52,16 +52,16 @@ public class LeaderboardMenu : MenuCanvas
 
     private void OnEnable()
     {
-        if (!_leaderboardWrapper || !_authWrapper) return;
+        if (!leaderboardWrapper || !authWrapper) return;
 
         DisplayRankingList();
     }
 
     private void InitializeLeaderboardRequiredValues()
     {
-        _currentUserData = _authWrapper.userData;
-        _currentLeaderboardCode = LeaderboardSelectionMenu.chosenLeaderboardCode;
-        _currentCycleType = LeaderboardCycleMenu.chosenCycleType;
+        currentUserData = authWrapper.userData;
+        currentLeaderboardCode = LeaderboardSelectionMenu.chosenLeaderboardCode;
+        currentCycleType = LeaderboardCycleMenu.chosenCycleType;
     }
 
     private void OnGetUserRankingCompleted(Result<UserRankingDataV3> result)
@@ -70,11 +70,11 @@ public class LeaderboardMenu : MenuCanvas
 
         onDisplayUserRankingEvent.Invoke(this, result.Value.Cycles);
 
-        if (_currentCycleType != LeaderboardCycleMenu.LeaderboardCycleType.AllTime) return;
+        if (currentCycleType != LeaderboardCycleMenu.LeaderboardCycleType.AllTime) return;
 
         UserRanking allTimeUserRank = result.Value.AllTime;
-        userRankingPanel.SetRankingDetails(_currentUserData.user_id, allTimeUserRank.rank,
-            _currentUserData.display_name, allTimeUserRank.point);
+        userRankingPanel.SetRankingDetails(currentUserData.user_id, allTimeUserRank.rank,
+            currentUserData.display_name, allTimeUserRank.point);
     }
 
     private void OnBulkGetUserInfoCompleted(Result<ListBulkUserInfoResponse> result,
@@ -90,10 +90,10 @@ public class LeaderboardMenu : MenuCanvas
             InstantiateRankingEntry(userId, rankOrder, userDisplayNames[userId], userRankInfos[userId]);
         }
 
-        if (userRankInfos.Keys.Contains(_currentUserData.user_id)) return;
+        if (userRankInfos.Keys.Contains(currentUserData.user_id)) return;
 
         // Get player ranking if player not on the ranking list
-        _leaderboardWrapper.GetUserRanking(_currentUserData.user_id, _currentLeaderboardCode,
+        leaderboardWrapper.GetUserRanking(currentUserData.user_id, currentLeaderboardCode,
             OnGetUserRankingCompleted);
     }
 
@@ -109,7 +109,7 @@ public class LeaderboardMenu : MenuCanvas
             result.Value.data.ToDictionary(userPoint => userPoint.userId, userPoint => userPoint.point);
 
         // Get the players' display name from the provided user ids
-        _authWrapper.BulkGetUserInfo(userRankInfos.Keys.ToArray(),
+        authWrapper.BulkGetUserInfo(userRankInfos.Keys.ToArray(),
             authResult => OnBulkGetUserInfoCompleted(authResult, userRankInfos));
     }
 
@@ -117,9 +117,9 @@ public class LeaderboardMenu : MenuCanvas
     {
         InitializeLeaderboardRequiredValues();
 
-        if (_currentCycleType is LeaderboardCycleMenu.LeaderboardCycleType.AllTime)
+        if (currentCycleType is LeaderboardCycleMenu.LeaderboardCycleType.AllTime)
         {
-            _leaderboardWrapper.GetRankings(_currentLeaderboardCode, OnGetRankingsCompleted, QUERY_OFFSET, QUERY_LIMIT);
+            leaderboardWrapper.GetRankings(currentLeaderboardCode, OnGetRankingsCompleted, QUERY_OFFSET, QUERY_LIMIT);
         }
 
         onDisplayRankingListEvent.Invoke(this);
@@ -131,7 +131,7 @@ public class LeaderboardMenu : MenuCanvas
             Instantiate(rankingEntryPanelPrefab, rankingListPanel).GetComponent<RankingEntryPanel>();
         rankingEntryPanel.SetRankingDetails(userId, playerRank, playerName, playerScore);
 
-        if (userId != _currentUserData.user_id) return;
+        if (userId != currentUserData.user_id) return;
 
         // Highlight players ranking entry and set ranking details to user ranking panel
         rankingEntryPanel.SetPanelColor(new Color(1.0f, 1.0f, 1.0f, 0.098f)); // rgba 255,255,255,25

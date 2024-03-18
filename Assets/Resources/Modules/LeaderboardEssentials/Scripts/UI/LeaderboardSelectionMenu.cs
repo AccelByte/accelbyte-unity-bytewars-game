@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using AccelByte.Core;
@@ -14,7 +14,7 @@ public class LeaderboardSelectionMenu : MenuCanvas
     [SerializeField] private Button backButton;
     [SerializeField] private GameObject leaderboardItemButtonPrefab;
 
-    private LeaderboardEssentialsWrapper _leaderboardWrapper;
+    private LeaderboardEssentialsWrapper leaderboardWrapper;
 
     public static string chosenLeaderboardCode;
     public static Dictionary<string, string[]> leaderboardCycleIds;
@@ -23,14 +23,14 @@ public class LeaderboardSelectionMenu : MenuCanvas
     {
         backButton.onClick.AddListener(OnBackButtonClicked);
 
-        _leaderboardWrapper = TutorialModuleManager.Instance.GetModuleClass<LeaderboardEssentialsWrapper>();
+        leaderboardWrapper = TutorialModuleManager.Instance.GetModuleClass<LeaderboardEssentialsWrapper>();
 
         DisplayLeaderboardList();
     }
 
     private void OnEnable()
     {
-        if (!_leaderboardWrapper) return;
+        if (!leaderboardWrapper) return;
 
         DisplayLeaderboardList();
     }
@@ -68,7 +68,7 @@ public class LeaderboardSelectionMenu : MenuCanvas
 
     private void DisplayLeaderboardList()
     {
-        _leaderboardWrapper.GetLeaderboardList(OnGetLeaderboardListCompleted);
+        leaderboardWrapper.GetLeaderboardList(OnGetLeaderboardListCompleted);
     }
 
     private void OnBackButtonClicked()

@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using AccelByte.Models;
 using TMPro;
@@ -26,7 +26,8 @@ public class PeriodicLeaderboardHelper : MonoBehaviour
         LeaderboardMenu.onDisplayUserRankingEvent += DisplayUserCycleRanking;
     }
     
-    private void DisplayLeaderboardCycleButtons(Transform leaderboardListPanel, GameObject leaderboardItemButtonPrefab){
+    private void DisplayLeaderboardCycleButtons(Transform leaderboardListPanel, GameObject leaderboardItemButtonPrefab)
+    {
         string[] cycleIds = LeaderboardSelectionMenu.leaderboardCycleIds[LeaderboardSelectionMenu.chosenLeaderboardCode];
 
         foreach (string cycleId in cycleIds)

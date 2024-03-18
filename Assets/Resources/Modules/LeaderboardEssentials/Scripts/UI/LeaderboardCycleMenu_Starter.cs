@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,16 +9,16 @@ public class LeaderboardCycleMenu_Starter : MenuCanvas
     [SerializeField] private Button allTimeButton;
     [SerializeField] private Button backButton;
 
-    // Copy leaderboard cycle type enum declaration from "Prepare Leaderboard UIs" unit here (step number 2)
+    #region "Tutorial implementation"
+    // Put your code here
+    #endregion
 
     private void Start()
     {
         backButton.onClick.AddListener(OnBackButtonClicked);
 
-        // Copy allTimeButton onClick event listener from "Prepare Leaderboard UIs" unit here (step number 4)
+        // Put your code here
     }
-    
-    // Copy ChangeToLeaderboardMenu() from "Prepare Leaderboard UIs" unit here (step number 3)
 
     private void OnBackButtonClicked()
     {
