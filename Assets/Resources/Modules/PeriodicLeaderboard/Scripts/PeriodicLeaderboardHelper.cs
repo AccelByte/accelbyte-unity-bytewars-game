@@ -7,8 +7,8 @@ using UnityEngine.UI;
 
 public class PeriodicLeaderboardHelper : MonoBehaviour
 {
-    private PeriodicLeaderboardEssentialsWrapper _periodicLeaderboardWrapper;
-    private AuthEssentialsWrapper _authWrapper;
+    private PeriodicLeaderboardEssentialsWrapper periodicLeaderboardWrapper;
+    private AuthEssentialsWrapper authWrapper;
     
     private TokenData currentUserData; 
     private string chosenCycleId;
@@ -17,9 +17,9 @@ public class PeriodicLeaderboardHelper : MonoBehaviour
     
     void Start()
     {
-        _periodicLeaderboardWrapper = TutorialModuleManager.Instance.GetModuleClass<PeriodicLeaderboardEssentialsWrapper>();
-        _authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
-        currentUserData = _authWrapper.userData;
+        periodicLeaderboardWrapper = TutorialModuleManager.Instance.GetModuleClass<PeriodicLeaderboardEssentialsWrapper>();
+        authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
+        currentUserData = authWrapper.userData;
         
         LeaderboardCycleMenu.onLeaderboardCycleMenuActivated += DisplayLeaderboardCycleButtons;
         LeaderboardMenu.onDisplayRankingListEvent += DisplayCycleRankingList;
@@ -32,7 +32,7 @@ public class PeriodicLeaderboardHelper : MonoBehaviour
 
         foreach (string cycleId in cycleIds)
         {
-            _periodicLeaderboardWrapper.GetStatCycleConfig(cycleId, result =>
+            periodicLeaderboardWrapper.GetStatCycleConfig(cycleId, result =>
             {
                 if (!result.IsError)
                 {
@@ -51,7 +51,7 @@ public class PeriodicLeaderboardHelper : MonoBehaviour
     {
         if (LeaderboardCycleMenu.chosenCycleType is LeaderboardCycleMenu.LeaderboardCycleType.Weekly)
         {
-            _periodicLeaderboardWrapper.GetRankingsByCycle(LeaderboardSelectionMenu.chosenLeaderboardCode, chosenCycleId, leaderboardMenu.OnGetRankingsCompleted, RESULTOFFSET, RESULTLIMIT);
+            periodicLeaderboardWrapper.GetRankingsByCycle(LeaderboardSelectionMenu.chosenLeaderboardCode, chosenCycleId, leaderboardMenu.OnGetRankingsCompleted, RESULTOFFSET, RESULTLIMIT);
         }
     }
 

@@ -9,6 +9,9 @@ public class LeaderboardCycleMenu_Starter : MenuCanvas
     [SerializeField] private Button allTimeButton;
     [SerializeField] private Button backButton;
 
+    [SerializeField] private Transform leaderboardListPanel;
+    [SerializeField] private GameObject leaderboardItemButtonPrefab;
+
     #region "Tutorial implementation"
     // Put your code here
     #endregion
