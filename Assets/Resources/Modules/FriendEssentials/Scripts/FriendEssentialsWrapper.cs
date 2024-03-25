@@ -21,8 +21,8 @@ public class FriendEssentialsWrapper : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        _user = MultiRegistry.GetApiClient().GetUser();
-        _lobby = MultiRegistry.GetApiClient().GetLobby();
+        _user = AccelByteSDK.GetClientRegistry().GetApi().GetUser();
+        _lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
         LoginHandler.onLoginCompleted += tokenData =>
         {
             PlayerUserId = tokenData.user_id;

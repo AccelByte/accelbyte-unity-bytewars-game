@@ -36,8 +36,8 @@ public class SessionEssentialsWrapper : MonoBehaviour
 
     protected void Awake()
     {
-        Session = MultiRegistry.GetApiClient().GetSession();
-        Lobby = MultiRegistry.GetApiClient().GetLobby();
+        Session = AccelByteSDK.GetClientRegistry().GetApi().GetSession();
+        Lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
     }
 
     private void Start()

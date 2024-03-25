@@ -26,7 +26,7 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
     {
         base.Awake();
 
-        _matchmakingV2 = MultiRegistry.GetApiClient().GetMatchmakingV2();
+        _matchmakingV2 = AccelByteSDK.GetClientRegistry().GetApi().GetMatchmakingV2();
 
     }
 

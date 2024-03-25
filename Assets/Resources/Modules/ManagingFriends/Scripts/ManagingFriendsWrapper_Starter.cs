@@ -12,7 +12,7 @@ public class ManagingFriendsWrapper_Starter : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        _lobby = MultiRegistry.GetApiClient().GetLobby();
+        _lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
     }
 
 

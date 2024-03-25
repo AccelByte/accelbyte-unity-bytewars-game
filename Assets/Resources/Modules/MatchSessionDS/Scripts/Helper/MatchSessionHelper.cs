@@ -14,7 +14,7 @@ public static class MatchSessionHelper
     {
         if (_user==null)
         {
-            _apiClient = MultiRegistry.GetApiClient();
+            _apiClient = AccelByteSDK.GetClientRegistry().GetApi();
             _user = _apiClient.GetApi<User, UserApi>();
         }
     }

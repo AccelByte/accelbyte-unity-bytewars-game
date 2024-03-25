@@ -13,7 +13,7 @@ public static class BrowseMatchSessionEventListener
     public static void Init(List<SessionV2GameSession> displayedGameSessions)
     {
         _displayedGameSessions = displayedGameSessions;
-        _lobby = MultiRegistry.GetApiClient().GetLobby();
+        _lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
         if(!_lobby.IsConnected)_lobby.Connect();
         _lobby.SessionV2GameSessionUpdated += OnV2GameSessionUpdated;
         _lobby.SessionV2UserRejectedGameSessionInvitation += OnV2UserRejectedGameSessionInvitation;

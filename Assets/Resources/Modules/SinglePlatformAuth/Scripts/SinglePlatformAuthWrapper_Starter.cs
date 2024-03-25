@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -17,7 +17,7 @@ public class SinglePlatformAuthWrapper_Starter : MonoBehaviour
     {
         Debug.Log($"[{ClassName}] is started");
         steamHelper = new SteamHelper();
-        var apiClient = MultiRegistry.GetApiClient();
+        var apiClient = AccelByteSDK.GetClientRegistry().GetApi();
         user = apiClient.GetApi<User, UserApi>();
         SetLoginWithSteamButtonClickCallback();
     }

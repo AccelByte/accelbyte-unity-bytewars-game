@@ -25,7 +25,7 @@ public class GameSessionEssentialsWrapper : SessionEssentialsWrapper
     {
         base.Awake();
 #if UNITY_SERVER
-        _dedicatedServerManager = MultiRegistry.GetServerApiClient().GetDedicatedServerManager();
+        _dedicatedServerManager = AccelByteSDK.GetServerRegistry().GetApi().GetDedicatedServerManager();
         DedicatedServerManager = _dedicatedServerManager;
 #endif
     }

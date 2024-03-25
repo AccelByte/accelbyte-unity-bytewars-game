@@ -13,7 +13,7 @@ public class CloudSaveEssentialsWrapper : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        cloudSave = MultiRegistry.GetApiClient().GetCloudSave();
+        cloudSave = AccelByteSDK.GetClientRegistry().GetApi().GetCloudSave();
     }
 
     #region AB Service Functions

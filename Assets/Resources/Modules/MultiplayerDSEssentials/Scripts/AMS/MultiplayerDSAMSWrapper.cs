@@ -15,15 +15,19 @@ public class MultiplayerDSAMSWrapper : GameSessionEssentialsWrapper
     private DedicatedServer ds;
     private ServerAMS ams;
     private ServerDSHub dsHub;
+    public string DedicatedServerId
+    {
+        get
+        {
+            return AccelByteSDK.GetServerConfig().DsId;
+        }
+    }
 
 #if UNITY_SERVER
-
-    public string DedicatedServerId => AccelByteServerPlugin.Config.DsId;
-
     void Start()
     {
-        ds = AccelByteServerPlugin.GetDedicatedServer();
-        ams = AccelByteServerPlugin.GetAMS();
+        ds = AccelByteSDK.GetServerRegistry().GetApi().GetDedicatedServer();
+        ams = AccelByteSDK.GetServerRegistry().GetAMS();
         if (ams == null)
         {
             BytewarsLogger.LogWarning("[AMS] AMS is null");
@@ -32,7 +36,7 @@ public class MultiplayerDSAMSWrapper : GameSessionEssentialsWrapper
         {
             ams.OnOpen += OnAMSConnected;
         }
-        dsHub = MultiRegistry.GetServerApiClient().GetDsHub();
+        dsHub = AccelByteSDK.GetServerRegistry().GetApi().GetDsHub();
     }
 
     #region Events Functions

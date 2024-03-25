@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using AccelByte.Api;
@@ -20,7 +20,7 @@ public class AuthEssentialsWrapper : MonoBehaviour
 
     void Start()
     {
-        apiClient = MultiRegistry.GetApiClient();
+        apiClient = AccelByteSDK.GetClientRegistry().GetApi();
         user = apiClient.GetApi<User, UserApi>();
     }
 

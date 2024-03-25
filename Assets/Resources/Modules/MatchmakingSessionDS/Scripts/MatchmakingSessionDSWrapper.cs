@@ -39,9 +39,9 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     private void Awake()
     {
         base.Awake();
-        matchmakingV2Server = MultiRegistry.GetServerApiClient().GetMatchmakingV2();
+        matchmakingV2Server = AccelByteSDK.GetServerRegistry().GetApi().GetMatchmakingV2();
 #if UNITY_SERVER
-        serverDSHub = MultiRegistry.GetServerApiClient().GetDsHub();
+        serverDSHub = AccelByteSDK.GetServerRegistry().GetApi().GetDsHub();
 #endif
     }
 

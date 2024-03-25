@@ -122,7 +122,7 @@ public class BrowseMatchSessionWrapper : MatchSessionWrapper
 
     public static void GetUserDisplayName(string userId, ResultCallback<PublicUserData> onPublicUserDataRetrieved)
     {
-        MultiRegistry.GetApiClient().GetUser()
+        AccelByteSDK.GetClientRegistry().GetApi().GetUser()
             .GetUserByUserId(userId, onPublicUserDataRetrieved);
     }
 

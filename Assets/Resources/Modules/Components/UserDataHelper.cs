@@ -41,7 +41,7 @@ public class UserDataHelper
         {
             return;
         }
-        apiClient = MultiRegistry.GetApiClient();
+        apiClient = AccelByteSDK.GetClientRegistry().GetApi();
         user = apiClient.GetApi<User, UserApi>();
     }
 }

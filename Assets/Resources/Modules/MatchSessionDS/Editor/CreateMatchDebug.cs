@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -62,7 +62,7 @@ public static class CreateMatchDebug
             var userName = GetUserNameFromEmail(email);
             var dob = DateTime.Now.AddYears(-22);
             Debug.Log($"create display name: {userName}");
-            MultiRegistry.GetApiClient().GetUser().Registerv2(email,
+            AccelByteSDK.GetClientRegistry().GetApi().GetUser().Registerv2(email,
                 userName.Replace('+', '_'), GetPasswordFromUserName(userName, _emailIndex),
                 userName.Replace('+', ' '), "US", dob, OnRegisteredUser);
             _emailIndex++;
@@ -83,8 +83,7 @@ public static class CreateMatchDebug
         else
         {
             var username = result.Value.username;
-            MultiRegistry
-                .GetApiClient()
+            AccelByteSDK.GetClientRegistry().GetApi()
                 .GetUser()
                 .LoginWithUsernameV3(username, GetPasswordFromUserName(username, _emailIndex),
                     OnLoginCompleted);
@@ -102,8 +101,7 @@ public static class CreateMatchDebug
         {
             var request = GetRequest();
             request.serverName = SystemInfo.deviceName;
-            MultiRegistry
-                .GetApiClient()
+            AccelByteSDK.GetClientRegistry().GetApi()
                 .GetSession()
                 .CreateGameSession(request, OnCreateMatchSession);
             IncrementTemplateIndex();
@@ -120,8 +118,7 @@ public static class CreateMatchDebug
         {
             Debug.Log($"success create match session");
         }
-        MultiRegistry
-            .GetApiClient()
+        AccelByteSDK.GetClientRegistry().GetApi()
             .GetUser()
             .Logout(OnLoggedOut);
     }
@@ -200,8 +197,7 @@ public static class CreateMatchDebug
             {
                 var email = _loadedEmails[i];
                 var userName = GetUserNameFromEmail(email);
-                MultiRegistry
-                    .GetApiClient()
+                AccelByteSDK.GetClientRegistry().GetApi()
                     .GetUser()
                     .LoginWithUsernameV3(userName.Replace('+', '_'),
                         userName + i, delegate (Result<TokenData, OAuthError> loginResult)
@@ -214,8 +210,7 @@ public static class CreateMatchDebug
                             {
                                 var req = GetRequest();
                                 req.serverName = SystemInfo.deviceName;
-                                MultiRegistry
-                                    .GetApiClient()
+                                AccelByteSDK.GetClientRegistry().GetApi()
                                     .GetSession()
                                     .CreateGameSession(req, delegate (Result<SessionV2GameSession> createMatchResult)
                                     {

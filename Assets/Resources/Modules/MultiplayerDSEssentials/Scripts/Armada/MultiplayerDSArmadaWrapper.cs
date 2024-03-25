@@ -28,9 +28,9 @@ public class MultiplayerDSArmadaWrapper: GameSessionEssentialsWrapper
 
     private void Start()
     {
-        ds = AccelByteServerPlugin.GetDedicatedServer();
-        dsm = MultiRegistry.GetServerApiClient().GetDedicatedServerManager();
-        dsHub = MultiRegistry.GetServerApiClient().GetDsHub();
+        ds = AccelByteSDK.GetServerRegistry().GetApi().GetDedicatedServer();
+        dsm = AccelByteSDK.GetServerRegistry().GetApi().GetDedicatedServerManager();
+        dsHub = AccelByteSDK.GetServerRegistry().GetApi().GetDsHub();
         
         ConnectionHandler.Initialization();
         isLocalServer = ConnectionHandler.IsUsingLocalDS();

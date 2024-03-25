@@ -28,7 +28,7 @@ public class StatsHelper : MonoBehaviour
 
     private void CheckHighestScoreStats(GameModeEnum gameMode, InGameMode inGameMode, List<PlayerState> playerStates)
     {
-        currentUserId = MultiRegistry.GetApiClient().session.UserId;
+        currentUserId = AccelByteSDK.GetClientRegistry().GetApi().session.UserId;
 
 #if UNITY_SERVER
             if (inGameMode is InGameMode.OnlineEliminationGameMode or InGameMode.CreateMatchEliminationGameMode)

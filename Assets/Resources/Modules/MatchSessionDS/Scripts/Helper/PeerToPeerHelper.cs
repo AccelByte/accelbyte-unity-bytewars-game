@@ -20,7 +20,7 @@ public class PeerToPeerHelper : MonoBehaviour
     private static void Init()
     {
         if (_isInitialized) return;
-        _apiClient = MultiRegistry.GetApiClient();
+        _apiClient = AccelByteSDK.GetClientRegistry().GetApi();
         // _transportManager.Initialize(_apiClient);
         _isInitialized = true;
     }

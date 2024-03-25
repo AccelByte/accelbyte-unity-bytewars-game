@@ -12,7 +12,7 @@ public class ManagingFriendsWrapper : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        _lobby = MultiRegistry.GetApiClient().GetLobby();
+        _lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
     }
 
     public void Unfriend(string userId, ResultCallback resultCallback)

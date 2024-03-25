@@ -24,8 +24,8 @@ public class PartyEssentialsWrapper : MonoBehaviour
 
     private void Start()
     {
-        session = MultiRegistry.GetApiClient().GetSession();
-        lobby = MultiRegistry.GetApiClient().GetLobby();
+        session = AccelByteSDK.GetClientRegistry().GetApi().GetSession();
+        lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
 
         LoginHandler.onLoginCompleted += data => SubscribeLobbyNotifications();
     }

@@ -15,8 +15,8 @@ public class StatsEssentialsWrapper : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        statistic = MultiRegistry.GetApiClient().GetStatistic();
-        serverStatistic = MultiRegistry.GetServerApiClient().GetStatistic();
+        statistic = AccelByteSDK.GetClientRegistry().GetApi().GetStatistic();
+        serverStatistic = AccelByteSDK.GetServerRegistry().GetApi().GetStatistic();
     }
 
     #region AB Service Functions

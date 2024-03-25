@@ -129,7 +129,7 @@ public class MatchmakingSessionP2PWrapper : MonoBehaviour
             }
             else
             {
-                var currentUserId = MultiRegistry.GetApiClient().session.UserId;
+                var currentUserId = AccelByteSDK.GetClientRegistry().GetApi().session.UserId;
                 //joinedGameSession.id is the same as matchSessionId
                 SessionCache.SetJoinedSessionIdAndLeaderUserId(joinedGameSession.id, joinedGameSession.leaderId);
                 UnbindEventListener();

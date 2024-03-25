@@ -20,7 +20,7 @@ public class P2PHelper
         }
         networkManager = NetworkManager.Singleton;
         transportManager = networkManager.gameObject.AddComponent<AccelByteNetworkTransportManager>();
-        var apiClient = MultiRegistry.GetApiClient();
+        var apiClient = AccelByteSDK.GetClientRegistry().GetApi();
         transportManager.Initialize(apiClient);
     }
 

@@ -14,8 +14,8 @@ public class PeriodicLeaderboardEssentialsWrapper : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        leaderboard = MultiRegistry.GetApiClient().GetLeaderboard();
-        statistic = MultiRegistry.GetApiClient().GetStatistic();
+        leaderboard = AccelByteSDK.GetClientRegistry().GetApi().GetLeaderboard();
+        statistic = AccelByteSDK.GetClientRegistry().GetApi().GetStatistic();
     }
 
     #region AB Service Functions

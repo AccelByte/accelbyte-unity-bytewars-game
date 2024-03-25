@@ -27,8 +27,8 @@ public class FriendEssentialsWrapper_Starter : MonoBehaviour
     void Start()
     {
         // Predefined code
-        _user = MultiRegistry.GetApiClient().GetUser();
-        _lobby = MultiRegistry.GetApiClient().GetLobby();
+        _user = AccelByteSDK.GetClientRegistry().GetApi().GetUser();
+        _lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
         LoginHandler.onLoginCompleted += tokenData =>
         {
             PlayerUserId = tokenData.user_id;

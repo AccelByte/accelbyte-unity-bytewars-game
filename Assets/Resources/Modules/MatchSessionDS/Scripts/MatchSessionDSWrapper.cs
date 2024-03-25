@@ -325,7 +325,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
 
     private void OnSessionDetailsRetrieved(Result<SessionV2GameSession> result)
     {
-        BytewarsLogger.Log($"OnSessionDetailsRetrieved currentUserId:{MultiRegistry.GetApiClient().session.UserId}");
+        BytewarsLogger.Log($"OnSessionDetailsRetrieved currentUserId:{AccelByteSDK.GetClientRegistry().GetApi().session.UserId}");
         MatchSessionHelper.LogResult(result);
     }
     #endregion Debug
