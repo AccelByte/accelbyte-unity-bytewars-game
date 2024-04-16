@@ -27,8 +27,10 @@ public class MatchmakingSessionP2PHandler_Starter : MenuCanvas
         if (wrapper == null)
         {
             wrapper = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionP2PWrapper_Starter>();
-            BindMatchmakingEvent();
         }
+
+        BindMatchmakingEvent();
+
         MatchmakingSessionServerTypeSelection.OnBackButtonCalled -= OnBackButtonFromServerSelection;
         MatchmakingSessionServerTypeSelection.OnBackButtonCalled += OnBackButtonFromServerSelection;
     }

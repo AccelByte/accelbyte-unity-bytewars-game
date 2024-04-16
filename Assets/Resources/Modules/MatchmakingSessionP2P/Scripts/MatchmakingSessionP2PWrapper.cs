@@ -28,6 +28,7 @@ public class MatchmakingSessionP2PWrapper : MonoBehaviour
         matchmakingSessionWrapper = TutorialModuleManager.Instance
             .GetModuleClass<MatchmakingSessionWrapper>();
         MatchmakingSessionServerTypeSelection.OnBackButtonCalled += UnbindEventListener;
+        GameManager.Instance.OnGameStateIsNone += LeaveP2PSession;
     }
 
     private void OnEnable()
@@ -67,8 +68,7 @@ public class MatchmakingSessionP2PWrapper : MonoBehaviour
         matchmakingSessionWrapper.CancelMatchmaking(matchTicketId);
         if (joinedGameSession != null)
         {
-            matchmakingSessionWrapper.OnLeaveSessionCompleteEvent += OnLeaveSessionComplete;
-            matchmakingSessionWrapper.LeaveSession(matchSessionId, tutorialType);
+            LeaveP2PSession();
         }
         Reset();
     }
@@ -80,6 +80,12 @@ public class MatchmakingSessionP2PWrapper : MonoBehaviour
             matchmakingSessionWrapper.OnLeaveSessionCompleteEvent -= OnLeaveSessionComplete;
             OnCancelMatchmakingComplete?.Invoke();
         }
+    }
+
+    private void LeaveP2PSession()
+    {
+        matchmakingSessionWrapper.OnLeaveSessionCompleteEvent += OnLeaveSessionComplete;
+        matchmakingSessionWrapper.LeaveSession(matchSessionId, tutorialType);
     }
 
     private void BindEventListener()
@@ -96,6 +102,7 @@ public class MatchmakingSessionP2PWrapper : MonoBehaviour
     {
         matchmakingSessionWrapper.OnStartMatchmakingCompleteEvent -= OnStartMatchmakingComplete;
         matchmakingSessionWrapper.OnCancelMatchmakingCompleteEvent -= OnSessionWrapperCancelMatchmakingComplete;
+        isEventsListened = false;
     }
 
     private void OnSessionMatchFound(string matchSessionId)

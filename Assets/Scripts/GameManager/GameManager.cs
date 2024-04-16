@@ -118,11 +118,14 @@ public class GameManager : NetworkBehaviour
 
     private void OnServerStopped(bool isHost)
     {
-        //NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnNetworkSceneEvent;
+        BytewarsLogger.Log("Host server stop");
+        connectedClients.Clear();
+        _serverHelper.Reset();
     }
 
     private void OnClientStopped(bool isHost)
     {
+        connectedClients.Clear();
         reconnect.OnClientStopped(isHost, _inGameState, _serverHelper,
             _clientHelper.ClientNetworkId, _inGameMode);
     }

@@ -27,13 +27,10 @@ public class MatchmakingSessionDSHandler_Starter : MenuCanvas
         if (matchmakingSessionDSWrapper == null)
         {
             matchmakingSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapper_Starter>();
+        } 
 
-            if (matchmakingSessionDSWrapper != null)
-            {
-                matchmakingSessionDSWrapper.BindEventListener();
-                BindMatchmakingEvent();
-            }
-        }
+        BindMatchmakingEvent();
+
         MatchmakingSessionServerTypeSelection.OnBackButtonCalled -= OnBackButtonFromServerSelection;
         MatchmakingSessionServerTypeSelection.OnBackButtonCalled += OnBackButtonFromServerSelection;
     }
@@ -46,6 +43,13 @@ public class MatchmakingSessionDSHandler_Starter : MenuCanvas
 
     private void BindMatchmakingEvent()
     {
+        if (matchmakingSessionDSWrapper == null)
+        {
+            return;
+        }
+
+        matchmakingSessionDSWrapper.BindEventListener();
+
         // listen event when match is found and ds available
         matchmakingSessionDSWrapper.OnMatchmakingFoundEvent += JoinSessionPanel;
         matchmakingSessionDSWrapper.OnDSAvailableEvent += TravelToGame;

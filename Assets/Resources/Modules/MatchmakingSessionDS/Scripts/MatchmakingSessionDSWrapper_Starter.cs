@@ -12,8 +12,10 @@ using static MatchmakingFallback;
 
 public class MatchmakingSessionDSWrapper_Starter : MatchmakingSessionWrapper
 {
+#if UNITY_SERVER
     private ServerMatchmakingV2 matchmakingV2Server;
     private ServerDSHub serverDSHub;
+#endif
     private MatchmakingFallback _matchmakingFallback = new MatchmakingFallback();
     private string matchTicket;
     private bool isGameStarted;
@@ -39,12 +41,15 @@ public class MatchmakingSessionDSWrapper_Starter : MatchmakingSessionWrapper
     private void Awake()
     {
         base.Awake();
+#if UNITY_SERVER
+#endif
 
     }
 
     private void Start()
     {
-
+#if UNITY_SERVER
+#endif
     }
 
     protected internal void BindEventListener()

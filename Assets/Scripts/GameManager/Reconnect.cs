@@ -144,35 +144,43 @@ public class Reconnect : MonoBehaviour
         Debug.Log($"OnClientStopped isHost:{isHost} clientNetworkId:{clientNetworkId}");
         if (isHost)
         {
-            //QuitToMainMenu();
+            serverHelper.Reset();
+            StartCoroutine(GameManager.Instance.QuitToMainMenu());
             return;
-        }
-        //TODO check is in game scene, check whether client intentionally click quit button
-        if (inGameState != InGameState.GameOver)
+        } 
+        else 
         {
-            if (serverHelper.ConnectedPlayerStates.TryGetValue(clientNetworkId, out var playerState))
+            //TODO check is in game scene, check whether client intentionally click quit button
+            if (inGameState != InGameState.GameOver)
             {
-                var initialData = new InitialConnectionData()
+                if (serverHelper.ConnectedPlayerStates.TryGetValue(clientNetworkId, out var playerState))
                 {
-                    inGameMode = inGameMode,
-                    sessionId = playerState.sessionId
-                };
-                if (!isIntentionallyDisconnect)
-                    TryReconnect(initialData);
-                bool isInGameScene = GameConstant.GameSceneBuildIndex == SceneManager.GetActiveScene().buildIndex;
-                GameManager.Instance.RemoveConnectedClient(clientNetworkId, isInGameScene);
+                    var initialData = new InitialConnectionData()
+                    {
+                        inGameMode = inGameMode,
+                        sessionId = playerState.sessionId
+                    };
+                    if (!isIntentionallyDisconnect)
+                        TryReconnect(initialData);
+                    bool isInGameScene = GameConstant.GameSceneBuildIndex == SceneManager.GetActiveScene().buildIndex;
+                    GameManager.Instance.RemoveConnectedClient(clientNetworkId, isInGameScene);
+                }
             }
+
+            bool isInMainMenu = GameConstant.MenuSceneBuildIndex == SceneManager.GetActiveScene().buildIndex;
+            if (isInMainMenu)
+            {
+                var menuCanvas = MenuManager.Instance.GetCurrentMenu();
+                if (menuCanvas && menuCanvas is MatchLobbyMenu lobby)
+                {
+                    lobby.ShowStatus("disconnected from server, trying to reconnect...");
+                }
+            }
+
+            serverHelper.Reset();
         }
 
-        bool isInMainMenu = GameConstant.MenuSceneBuildIndex == SceneManager.GetActiveScene().buildIndex;
-        if (isInMainMenu)
-        {
-            var menuCanvas = MenuManager.Instance.GetCurrentMenu();
-            if (menuCanvas && menuCanvas is MatchLobbyMenu lobby)
-            {
-                lobby.ShowStatus("disconnected from server, trying to reconnect...");
-            }
-        }
+
     }
 
     private bool isIntentionallyDisconnect;

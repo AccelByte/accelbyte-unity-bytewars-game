@@ -12,8 +12,10 @@ using static MatchmakingFallback;
 
 public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 {
+#if UNITY_SERVER
     private ServerMatchmakingV2 matchmakingV2Server;
     private ServerDSHub serverDSHub;
+#endif
     private MatchmakingFallback matchmakingFallback = new MatchmakingFallback();
     private string matchTicket;
     private bool isGameStarted;
@@ -39,8 +41,8 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     private void Awake()
     {
         base.Awake();
-        matchmakingV2Server = AccelByteSDK.GetServerRegistry().GetApi().GetMatchmakingV2();
 #if UNITY_SERVER
+        matchmakingV2Server = AccelByteSDK.GetServerRegistry().GetApi().GetMatchmakingV2();
         serverDSHub = AccelByteSDK.GetServerRegistry().GetApi().GetDsHub();
 #endif
     }

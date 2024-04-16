@@ -67,13 +67,11 @@ public class MatchmakingSessionDSHandler : MenuCanvas
         if (matchmakingSessionDSWrapper == null)
         {
             matchmakingSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapper>();
-
-            if (matchmakingSessionDSWrapper != null)
-            {
-                matchmakingSessionDSWrapper.BindEventListener();
-                BindMatchmakingEvent();
-            }
         }
+
+        BindMatchmakingEvent();
+
+
         MatchmakingSessionServerTypeSelection.OnBackButtonCalled -= OnBackButtonFromServerSelection;
         MatchmakingSessionServerTypeSelection.OnBackButtonCalled += OnBackButtonFromServerSelection;
     }
@@ -81,11 +79,17 @@ public class MatchmakingSessionDSHandler : MenuCanvas
     private void OnBackButtonFromServerSelection()
     {
         UnbindMatchmakingEvents();
-        matchmakingSessionDSWrapper?.UnbindEventListener();
     }
 
     private void BindMatchmakingEvent()
     {
+        if (matchmakingSessionDSWrapper == null)
+        {
+            return;
+        }
+
+        matchmakingSessionDSWrapper.BindEventListener();
+
         // listen event when match is found and ds available
         matchmakingSessionDSWrapper.OnMatchmakingFoundEvent += JoinSessionPanel;
         matchmakingSessionDSWrapper.OnDSAvailableEvent += TravelToGame;
@@ -105,13 +109,15 @@ public class MatchmakingSessionDSHandler : MenuCanvas
         {
             return;
         }
+        matchmakingSessionDSWrapper?.UnbindEventListener();
+
         matchmakingSessionDSWrapper.OnMatchmakingFoundEvent -= JoinSessionPanel;
         matchmakingSessionDSWrapper.OnDSAvailableEvent -= TravelToGame;
         matchmakingSessionDSWrapper.OnStartMatchmakingFailed -= FailedPanel;
         matchmakingSessionDSWrapper.OnMatchmakingJoinSessionFailedEvent += FailedPanel;
         matchmakingSessionDSWrapper.OnDSFailedRequestEvent -= FailedPanel;
         matchmakingSessionDSWrapper.OnSessionEnded -= FailedPanel;
-        matchmakingSessionDSWrapper.OnCancelMatchmakingCompleteEvent += OnCancelMatchmakingComplete;
+        matchmakingSessionDSWrapper.OnCancelMatchmakingCompleteEvent -= OnCancelMatchmakingComplete;
     }
 
     private void FailedPanel()
