@@ -165,8 +165,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Logging in
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: ac880de93cb4d4943b7d8bbce1c1644b, type: 2}
-  m_sharedMaterial: {fileID: -689041902876210438, guid: ac880de93cb4d4943b7d8bbce1c1644b,
+  m_fontAsset: {fileID: 11400000, guid: a272c33559323624da6a85c9c3b5d0e6, type: 2}
+  m_sharedMaterial: {fileID: 3286393154197270557, guid: a272c33559323624da6a85c9c3b5d0e6,
     type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -191,13 +191,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18
+  m_fontSize: 28
   m_fontSizeBase: 28
   m_fontWeight: 400
   m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 28
-  m_fontStyle: 0
+  m_fontStyle: 16
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 256
   m_textAlignment: 65535
@@ -613,12 +613,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d1f4cbc4d1b47547948e771ca981f3f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mainButtonsContainer: {fileID: 0}
   loadingImages:
   - {fileID: 8084009009930229198}
   - {fileID: 3713797749230179826}
   - {fileID: 9064928062742612918}
   - {fileID: 1454237503873841875}
   - {fileID: 2982224997438534107}
+  cancelBtn: {fileID: 0}
+  infoText: {fileID: 0}
+  timeoutContainer: {fileID: 0}
+  timeoutInfo: {fileID: 0}
 --- !u!1 &5009664193634396151
 GameObject:
   m_ObjectHideFlags: 0

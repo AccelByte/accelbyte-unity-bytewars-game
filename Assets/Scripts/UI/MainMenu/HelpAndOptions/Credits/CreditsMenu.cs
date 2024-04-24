@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,7 +10,6 @@ public class CreditsMenu : MenuCanvas
 
     private float waitTime = 1f;
     private float scrollSpeed = 0.125f;
-    private float scrollPosition = 1f;
 
     private void Start()
     {
@@ -25,23 +21,30 @@ public class CreditsMenu : MenuCanvas
 
     private void Update()
     {
-        if (waitTime <= 0 && scrollPosition >= 0)
-        {
-            scrollPosition -= scrollSpeed * Time.deltaTime;
-            scrollView.verticalNormalizedPosition = scrollPosition;
-        }
-        else
-        {
-            waitTime -= 1f * Time.deltaTime;
-        }
+        ScrollCredits(Time.deltaTime);
     }
 
     private void OnDisable()
     {
         // reset auto-scroll
         waitTime = 1f;
-        scrollPosition = 1f;
-        scrollView.verticalNormalizedPosition = scrollPosition;
+        scrollView.verticalNormalizedPosition = 1f;
+    }
+
+    private void ScrollCredits(float deltaTime)
+    {
+        if (ShouldWait())
+        {
+            waitTime -= 1f * deltaTime;
+            return;
+        }
+
+        if (HasReachedBottom())
+        {
+            return;
+        }
+        
+        scrollView.verticalNormalizedPosition -= scrollSpeed * deltaTime;
     }
 
     private void DisplayCredits()
@@ -74,4 +77,7 @@ public class CreditsMenu : MenuCanvas
     {
         return AssetEnum.CreditsMenuCanvas;
     }
+
+    private bool HasReachedBottom() => scrollView.verticalNormalizedPosition <= 0;
+    private bool ShouldWait() => waitTime > 0;
 }
