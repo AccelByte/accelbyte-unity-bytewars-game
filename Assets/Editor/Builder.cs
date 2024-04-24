@@ -1,3 +1,6 @@
+using System.IO;
+using AccelByte.Models;
+using Newtonsoft.Json;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
@@ -71,5 +74,99 @@ public class Builder
                 PlayerSettings.bundleVersion = gameVersion;
             }
         }
+    }
+
+    public static void GenerateSDKConfig()
+    {
+        string[] cmdArgs = System.Environment.GetCommandLineArgs();
+        var multiConfigs = new MultiConfigs();
+        var config = new Config();
+        var isServer = false;
+
+        foreach (string arg in cmdArgs)
+        {
+            if (arg.Contains("-namespace="))
+            {
+                var agsNamespace = arg.Replace("-namespace=", "");
+                config.Namespace = agsNamespace;
+                config.Expand(true);
+            }
+
+            if (arg.Contains("-baseUrl="))
+            {
+                var baseUrl = arg.Replace("-baseUrl=", "");
+                config.BaseUrl = baseUrl;
+                config.Expand(true);
+            }
+
+            if (arg.Contains("-redirectUri="))
+            {
+                var redirectUri = arg.Replace("-redirectUri=", "");
+                config.RedirectUri = redirectUri;
+                config.Expand(true);
+            }
+
+            if (arg.Contains("-publisherNamespace="))
+            {
+                var publisherNamespace = arg.Replace("-publisherNamespace=", "");
+                config.PublisherNamespace = publisherNamespace;
+                config.Expand(true);
+            }
+
+            if (arg.Contains("-server="))
+            {
+                bool isForServer = bool.Parse(arg.Replace("-server=", ""));
+                isServer = isForServer;
+            }
+        }
+        config.EnableAmsServerQos = true;
+        multiConfigs.Default = config;
+        multiConfigs.Expand(true);
+        
+        var fileName = isServer ? "AccelByteServerSDKConfig.json" : "AccelByteSDKConfig.json";
+        var json = JsonConvert.SerializeObject(multiConfigs);
+        File.WriteAllText($"Assets/Resources/{fileName}", json);
+        Debug.Log($"[Builder.GenerateSDKConfigJSON] Generate JSON Assets/Resources/{fileName}");
+
+        GenerateOAuthConfig();
+    }
+
+    public static void GenerateOAuthConfig()
+    {
+        string[] cmdArgs = System.Environment.GetCommandLineArgs();
+        var multiOAuthConfig = new MultiOAuthConfigs();
+        var oauthConfig = new OAuthConfig();
+        var isServer = false;
+
+        foreach (string arg in cmdArgs)
+        {
+            if (arg.Contains("-clientId="))
+            {
+                var clientId = arg.Replace("-clientId=", "");
+                oauthConfig.ClientId = clientId;
+                oauthConfig.Expand();
+            }
+
+            if (arg.Contains("-clientSecret="))
+            {
+                var clientSecret = arg.Replace("-clientSecret=", "");
+                oauthConfig.ClientSecret = clientSecret;
+                oauthConfig.Expand();
+            }
+
+            if (arg.Contains("-server="))
+            {
+                bool isForServer = bool.Parse(arg.Replace("-server=", ""));
+                isServer = isForServer;
+            }
+        }
+
+        multiOAuthConfig.Default = oauthConfig;
+        multiOAuthConfig.Expand();
+
+        var fileName = isServer ? "AccelByteServerSDKOAuthConfig.json" : "AccelByteSDKOAuthConfig.json";
+        var json = JsonConvert.SerializeObject(multiOAuthConfig);
+        File.WriteAllText($"Assets/Resources/{fileName}", json);
+        Debug.Log($"[Builder.GenerateSDKOAuthJSON] Generate JSON Assets/Resources/{fileName}");
     }
 }
