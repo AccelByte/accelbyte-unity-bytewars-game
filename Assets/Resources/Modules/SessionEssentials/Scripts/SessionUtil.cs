@@ -47,7 +47,7 @@ public static class SessionUtil
                 var className = Path.GetFileNameWithoutExtension(filePath);
                 var classType = Type.GetType(className);
                 if (classType == null) return null;
-                var fieldInfo = classType.GetField("_tutorialType", BindingFlags.Static |BindingFlags.Instance | BindingFlags.NonPublic);
+                var fieldInfo = classType.GetField("tutorialType", BindingFlags.Static |BindingFlags.Instance | BindingFlags.NonPublic);
                 var tutorialType = fieldInfo?.GetValue(classType);
                 return (TutorialType?)tutorialType;
         }

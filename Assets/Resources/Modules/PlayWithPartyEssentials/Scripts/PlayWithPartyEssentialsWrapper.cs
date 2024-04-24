@@ -12,6 +12,9 @@ public class PlayWithPartyEssentialsWrapper : MonoBehaviour
     public delegate void GameSessionInvitationDelegate(string sessionId);
     public static event GameSessionInvitationDelegate OnGameSessionInvitationReceived = delegate { };
 
+    public delegate void MatchmakingStartDelegate();
+    public static event MatchmakingStartDelegate OnMatchmakingStarted = delegate { };
+
     private Session session;
     private Lobby lobby;
 
@@ -28,6 +31,7 @@ public class PlayWithPartyEssentialsWrapper : MonoBehaviour
     private void SubscribeLobbyNotifications()
     {
         if (!lobby.IsConnected) lobby.Connect();
+        lobby.MatchmakingV2MatchmakingStarted += result => OnMatchmakingStarted.Invoke();
         lobby.SessionV2InvitedUserToGameSession += result => OnGameSessionInvitationReceived.Invoke(result.Value.sessionId); ;
     }
 

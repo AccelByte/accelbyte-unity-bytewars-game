@@ -53,10 +53,10 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
         _matchmakingV2.DeleteMatchmakingTicket(matchTicketId, result => OnCancelMatchmakingComplete(result, matchTicketId));
     }
 
-    protected internal void GetMatchmakingTicketDetails(string ticketId, bool isFallback = false)
+    protected internal void GetMatchmakingTicketDetails(string ticketId, bool isNotFallback = false)
     {
         _ticketId = ticketId; // cached ticket id
-        if (isFallback)
+        if (isNotFallback)
         {
             GetTicketDetailsPeriodically(ticketId);
         }

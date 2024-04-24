@@ -137,6 +137,12 @@ public class BrowseMatchMenuCanvas : MenuCanvas
     #endregion EventCallback
 
     #region ViewState
+
+    private void OnDisable()
+    {
+        HideLoadingBackToMainPanel();
+    }
+
     private void HideLoadingBackToMainPanel()
     {
         loadingPanel.gameObject.SetActive(false);

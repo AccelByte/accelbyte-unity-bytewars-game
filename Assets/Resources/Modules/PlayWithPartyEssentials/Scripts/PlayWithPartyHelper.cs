@@ -10,21 +10,73 @@ using UnityEngine.UI;
 
 public class PlayWithPartyHelper : MonoBehaviour
 {
+    private bool IsMatchmakingEventslistened = false;
     private PlayWithPartyEssentialsWrapper playWithPartyWrapper;
     private AuthEssentialsWrapper authWrapper;
+    private MatchmakingSessionDSWrapper matchmakingDSWrapper;
 
     private void Start()
     {
         playWithPartyWrapper = TutorialModuleManager.Instance.GetModuleClass<PlayWithPartyEssentialsWrapper>();
         authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
+        matchmakingDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapper>();
+
 
         // On Match Session's Join Button clicked event
         MatchSessionItem.OnJoinButtonDataSet += OnJoinButtonDataSet;
         MatchSessionItem.OnJoinButtonClicked += OnJoinButtonClicked;
 
         // Match Session with Party's lobby notifications event
+        PlayWithPartyEssentialsWrapper.OnMatchmakingStarted += SetupMatchmakingEvents;
         PlayWithPartyEssentialsWrapper.OnGameSessionInvitationReceived += OnInvitedToGameSession;
     }
+
+
+    #region Mathcmaking with party
+
+    private void SetupMatchmakingEvents()
+    {
+        IsMatchmakingEventslistened = true;
+        BindMatchmakingEvents(SessionConfigurationTemplateType.DS);
+        //TODO: BindMatchmakingEvents(SessionConfigurationTemplateType.P2P);
+    }
+
+    private void UnbindMatchmakingEvents(SessionResponsePayload sessionResponsePayload)
+    {
+        IsMatchmakingEventslistened = false;
+        matchmakingDSWrapper.UnbindEventListener();
+        matchmakingDSWrapper.OnDSAvailableEvent -= TravelToDS;
+    }
+
+    private void BindMatchmakingEvents(SessionConfigurationTemplateType sessionType)
+    {
+        if (sessionType is SessionConfigurationTemplateType.DS)
+        {
+            BytewarsLogger.Log("subscribe events from matchmaking ds");
+            matchmakingDSWrapper.BindEventListener();
+            matchmakingDSWrapper.OnDSAvailableEvent += TravelToDS;
+            matchmakingDSWrapper.OnLeaveSessionCompleteEvent += UnbindMatchmakingEvents;
+        } 
+        else
+        {
+            //TODO: add matchmaking P2P event handling
+        }
+    }
+
+    private void TravelToDS(SessionV2GameSession session)
+    {
+        switch (session.matchPool)
+        {
+            case "unity-teamdeathmatch-ds-ams":
+                matchmakingDSWrapper.TravelToDS(session, InGameMode.OnlineDeathMatchGameMode);
+                break;
+            case "unity-elimination-ds-ams":
+                matchmakingDSWrapper.TravelToDS(session, InGameMode.OnlineEliminationGameMode);
+                break;
+        }
+    }
+
+    #endregion
 
     #region Match Session with Party
 
@@ -64,20 +116,42 @@ public class PlayWithPartyHelper : MonoBehaviour
         BytewarsLogger.Log($"Result<SessionV2GameSession> {result.ToJsonString()}");
         if (!result.IsError)
         {
-            // get InGameMode based on session's configuration name
-            InGameMode currentGameMode = GetGameMode(result.Value.configuration.name);
-
             if (result.Value.configuration.type is SessionConfigurationTemplateType.DS)
+            {   
+                SetupMatchmakingAndCreateMatch(result);
+            } 
+            else
             {
-                MatchSessionDSWrapper matchSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionDSWrapper>();
-                matchSessionDSWrapper.JoinMatchSession(
-                    result.Value.id,
-                    currentGameMode,
-                    OnJoinMatchSessionCompleted(result.Value)
-                );
+                //TODO: SetupMatchmakingAndCreateMatch for P2P
             }
         }
     }
+
+    private void SetupMatchmakingAndCreateMatch(Result<SessionV2GameSession> result)
+    {
+        // check if the attributes contain key for create match session
+        if(result.Value.attributes.ContainsKey("cm")) 
+        {
+            // get InGameMode based on session's configuration name
+            InGameMode currentGameMode = GetGameMode(result.Value.configuration.name);
+
+            MatchSessionDSWrapper matchSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionDSWrapper>();
+            matchSessionDSWrapper.JoinMatchSession(
+                result.Value.id,
+                currentGameMode,
+                OnJoinMatchSessionCompleted(result.Value)
+            );
+        } 
+        else
+        {
+            if (!IsMatchmakingEventslistened)
+            {
+                BindMatchmakingEvents(result.Value.configuration.type);
+            }
+        }
+    }
+
+    
 
     private Action<string> OnJoinMatchSessionCompleted(SessionV2GameSession gameSessionData)
     {
@@ -92,9 +166,9 @@ public class PlayWithPartyHelper : MonoBehaviour
     {
         switch (configurationName)
         {
-            case MatchSessionConfig.UnitySessionEliminationDs or MatchSessionConfig.UnitySessionEliminationP2P:
+            case MatchSessionConfig.UnitySessionEliminationDs or MatchSessionConfig.UnitySessionEliminationP2P or MatchSessionConfig.UnitySessionEliminationDSAMS:
                 return InGameMode.CreateMatchEliminationGameMode;
-            case MatchSessionConfig.UnitySessionDeathMatchDs or MatchSessionConfig.UnitySessionDeathMatchP2P:
+            case MatchSessionConfig.UnitySessionDeathMatchDs or MatchSessionConfig.UnitySessionDeathMatchP2P or MatchSessionConfig.UnitySessionTeamDeathmatchDSAMS:
                 return InGameMode.CreateMatchDeathMatchGameMode;
             default:
                 return InGameMode.None;

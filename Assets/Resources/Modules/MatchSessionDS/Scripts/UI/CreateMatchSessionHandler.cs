@@ -112,6 +112,13 @@ public class CreateMatchSessionHandler : MenuCanvas
         errorPanel.gameObject.SetActive(false);
     }
 
+    private void HideLoadingBackToMainPanel()
+    {
+        createMatchPanel.gameObject.SetActive(true);
+        OnBackFromServerTypeBtnClicked();
+        loadingPanel.gameObject.SetActive(false);
+    }
+
     private void ShowError(string errorInfo)
     {
         loadingPanel.gameObject.SetActive(false);
@@ -150,6 +157,7 @@ public class CreateMatchSessionHandler : MenuCanvas
     private void OnDisable()
     {
         HideError();
+        HideLoadingBackToMainPanel();
     }
 
     public override GameObject GetFirstButton()

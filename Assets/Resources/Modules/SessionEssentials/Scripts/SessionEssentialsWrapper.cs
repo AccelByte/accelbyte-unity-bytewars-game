@@ -133,7 +133,7 @@ public class SessionEssentialsWrapper : MonoBehaviour
         else
         {
             BytewarsLogger.LogWarning($"{result.Error.Message}");
-            response.IsError = result.IsError;
+            response.Result = result;
         }
         OnCreateSessionCompleteEvent?.Invoke(response);
     }
@@ -156,7 +156,7 @@ public class SessionEssentialsWrapper : MonoBehaviour
         else
         {
             BytewarsLogger.LogWarning($"{result.Error.Message}");
-            response.IsError = result.IsError;
+            response.Result = result;
         }
         OnJoinSessionCompleteEvent?.Invoke(response);
     }
@@ -179,7 +179,7 @@ public class SessionEssentialsWrapper : MonoBehaviour
         else
         {
             BytewarsLogger.LogWarning($"{result.Error.Message}");
-            response.IsError = result.IsError;
+            response.Result = result;
         }
         OnLeaveSessionCompleteEvent?.Invoke(response);
     }
@@ -202,7 +202,7 @@ public class SessionEssentialsWrapper : MonoBehaviour
         else
         {
             BytewarsLogger.LogWarning($"{result.Error}");
-            response.IsError = result.IsError;
+            response.Result = result;
         }
         OnGetSessionDetailsCompleteEvent?.Invoke(response);
     }

@@ -114,7 +114,7 @@ public class MatchmakingSessionDSHandler : MenuCanvas
         matchmakingSessionDSWrapper.OnMatchmakingFoundEvent -= JoinSessionPanel;
         matchmakingSessionDSWrapper.OnDSAvailableEvent -= TravelToGame;
         matchmakingSessionDSWrapper.OnStartMatchmakingFailed -= FailedPanel;
-        matchmakingSessionDSWrapper.OnMatchmakingJoinSessionFailedEvent += FailedPanel;
+        matchmakingSessionDSWrapper.OnMatchmakingJoinSessionFailedEvent -= FailedPanel;
         matchmakingSessionDSWrapper.OnDSFailedRequestEvent -= FailedPanel;
         matchmakingSessionDSWrapper.OnSessionEnded -= FailedPanel;
         matchmakingSessionDSWrapper.OnCancelMatchmakingCompleteEvent -= OnCancelMatchmakingComplete;

@@ -28,7 +28,7 @@ public class MatchmakingSessionP2PWrapper : MonoBehaviour
         matchmakingSessionWrapper = TutorialModuleManager.Instance
             .GetModuleClass<MatchmakingSessionWrapper>();
         MatchmakingSessionServerTypeSelection.OnBackButtonCalled += UnbindEventListener;
-        GameManager.Instance.OnGameStateIsNone += LeaveP2PSession;
+        GameManager.Instance.OnClientLeaveSession += LeaveP2PSession;
     }
 
     private void OnEnable()

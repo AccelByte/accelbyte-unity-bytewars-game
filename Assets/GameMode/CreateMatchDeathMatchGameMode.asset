@@ -40,8 +40,8 @@ MonoBehaviour:
   - {r: 0.48627454, g: 1, b: 0.4431373, a: 1}
   - {r: 1, g: 0.9450981, b: 0.37254903, a: 1}
   gameMode: 3
-  playerPerTeamCount: 1
-  teamCount: 4
+  playerPerTeamCount: 4
+  teamCount: 2
   maxInFlightMissilesPerPlayer: 1
   lobbyCountdownSecond: -1
   beforeGameCountdownSecond: 5

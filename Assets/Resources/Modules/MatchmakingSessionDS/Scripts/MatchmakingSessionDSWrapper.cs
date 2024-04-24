@@ -19,16 +19,17 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     private MatchmakingFallback matchmakingFallback = new MatchmakingFallback();
     private string matchTicket;
     private bool isGameStarted;
-    private string sessionId;
+    private static string cachedSessionId;
     private bool isSessionActive;
     private bool isOnJoinSession;
     private bool isDSUpdateError;
     private bool onJoinEvent;
     private bool onDSAvailable;
+    private bool isEventsListened = false;
     private bool isFired = false;
     private const int queueTimeOffsetSec = 5;
 
-    private static readonly TutorialType _tutorialType = TutorialType.MatchmakingWithDS;
+    private static readonly TutorialType tutorialType = TutorialType.MatchmakingWithDS;
 
     protected internal event Action OnStartMatchmakingFailed;
     protected internal event Action<string> OnStartMatchmakingSucceedEvent;
@@ -54,13 +55,18 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         GameManager.Instance.OnGameStateIsNone += () => { isGameStarted = false; };
 #endif
 
+        GameManager.Instance.OnClientLeaveSession += OnClientQuit;
     }
 
     protected internal void BindEventListener()
     {
-        SetupMatchmakingEventListener(true, false);
-        base.OnStartMatchmakingCompleteEvent += OnStartMatchmakingComplete;
-        base.OnCancelMatchmakingCompleteEvent += OnCancelMatchmakingComplete;
+        if (!isEventsListened) 
+        {
+            isEventsListened = true;
+            SetupMatchmakingEventListener(true, false);
+            base.OnStartMatchmakingCompleteEvent += OnStartMatchmakingComplete;
+            base.OnCancelMatchmakingCompleteEvent += OnCancelMatchmakingComplete;
+        }
     }
 
     protected internal void UnbindEventListener()
@@ -69,6 +75,21 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         base.OnStartMatchmakingCompleteEvent -= OnStartMatchmakingComplete;
         base.OnCancelMatchmakingCompleteEvent -= OnCancelMatchmakingComplete;
         isFired = false;
+        isEventsListened = false;
+    }
+
+    private void OnClientQuit()
+    {
+        OnLeaveSessionCompleteEvent += OnLeaveSessionComplete;
+        LeaveSession(cachedSessionId);
+    }
+
+    private void OnLeaveSessionComplete(SessionResponsePayload payload)
+    {
+        if (payload.TutorialType == tutorialType)
+        {
+            OnLeaveSessionCompleteEvent -= OnLeaveSessionComplete;
+        }
     }
 
     #region Fallback
@@ -197,6 +218,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 
     private void OnJoiningMatch(string sessionId)
     {
+        cachedSessionId = sessionId;
         isOnJoinSession = true;
         JoinSession(sessionId);
     }
@@ -204,7 +226,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     private void OnCancelMatchmakingComplete()
     {
         matchTicket = null;
-        sessionId = null;
+        cachedSessionId = null;
         StopAllCoroutines();
     }
 
@@ -212,7 +234,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     {
         if (!response.IsError)
         {
-            if (response.TutorialType != _tutorialType)
+            if (response.TutorialType != tutorialType)
             {
                 return;
             }
@@ -244,7 +266,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     {
         if (!response.IsError)
         {
-            if (response.TutorialType != _tutorialType) return;
+            if (response.TutorialType != tutorialType) return;
 
             var session = response.Result.Value;
             var dsInfo = session.dsInformation;
@@ -333,6 +355,8 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
             UnBindOnSessionDSUpdateNotification();
 
             OnMatchmakingFoundEvent -= OnJoiningMatch;
+            OnMatchFoundFallbackEvent -= PostFallback;
+            OnJoinSessionCompleteEvent -= OnJoinedSession;
         }
 
         if (periodically)
