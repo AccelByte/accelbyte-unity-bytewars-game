@@ -74,8 +74,8 @@ MonoBehaviour:
   m_ChildAlignment: 4
   m_StartCorner: 0
   m_StartAxis: 0
-  m_CellSize: {x: 50, y: 23}
-  m_Spacing: {x: 5, y: 0}
+  m_CellSize: {x: 70, y: 23}
+  m_Spacing: {x: 0, y: 0}
   m_Constraint: 1
   m_ConstraintCount: 3
 --- !u!223 &4105448840738516494
@@ -855,6 +855,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_text
       value: SCORE
+      objectReference: {fileID: 0}
+    - target: {fileID: 3539066698636430879, guid: 07d12f5a5c14b494f8781ca95507566a,
+        type: 3}
+      propertyPath: m_fontSize
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 7726631579752261087, guid: 07d12f5a5c14b494f8781ca95507566a,
         type: 3}
