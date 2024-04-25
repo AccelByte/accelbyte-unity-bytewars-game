@@ -1,8 +1,11 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using AccelByte.Core;
 using AccelByte.Models;
 using TMPro;
 using UnityEngine;
@@ -23,6 +26,7 @@ public class SessionMenuHandler_Starter : MenuCanvas
     [SerializeField] private RectTransform failedPanel;
     
     [SerializeField] private RectTransform footerPanel;
+    [SerializeField] private TMP_Text sessionIdText;
     
     private List<RectTransform> _panels = new List<RectTransform>();
 
@@ -177,27 +181,24 @@ public class SessionMenuHandler_Starter : MenuCanvas
 
     private void Helper(SessionResponsePayload response, SessionMenuView sessionMenuView)
     {
-        if (!response.IsError)
-        {
-            switch (sessionMenuView)
-            {
-                case SessionMenuView.Joining:
-                    CurrentView = SessionMenuView.Joining;
-                    BytewarsLogger.Log($"{response.Result.Value.id}");
-                    _sessionResponsePayload = response;
-                    break;
-                case SessionMenuView.Joined:
-                    CurrentView = SessionMenuView.Joined;
-                    BytewarsLogger.Log($"{response.Result.Value.id}");
-                    var text = joinedPanel.gameObject.GetComponentInChildren<TMP_Text>();
-                    text.text = $"joined session {_sessionResponsePayload.Result.Value.id}";
-                    break;
-            }
-        }
-        else
+        if (response.IsError)
         {
             CurrentView = SessionMenuView.Failed;
-            Debug.Log($"{JsonUtility.ToJson(response.Result.Value)}");
+            BytewarsLogger.LogWarning($"{response.Result.Error.Message}");
+            return;
+        }
+        
+        BytewarsLogger.Log(response.Result.Value.id);
+        
+        CurrentView = sessionMenuView;
+        switch (sessionMenuView)
+        {
+            case SessionMenuView.Joining:
+                _sessionResponsePayload = response;
+                break;
+            case SessionMenuView.Joined:
+                sessionIdText.text = _sessionResponsePayload.Result.Value.id;
+                break;
         }
     }
     
