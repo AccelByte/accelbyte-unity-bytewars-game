@@ -22,7 +22,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
     private static readonly WaitForSeconds waitOneSec = new WaitForSeconds(1);
     private const int MaxCheckDSStatusCount = 10;
     private static int checkDSStatusCount = 0;
-
+    private string currentUserId;
     private void Awake()
     {
         base.Awake();
@@ -32,6 +32,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
     // Start is called before the first frame update
     void Start()
     {
+        LoginHandler.onLoginCompleted += SetCurrentUserID;
         Lobby.SessionV2GameSessionMemberChanged += OnV2GameSessionMemberChanged;
         GameManager.Instance.OnClientLeaveSession += LeaveGameSession;
         LoginHandler.onLoginCompleted += OnLoginSuccess;
@@ -39,6 +40,11 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
         OnJoinCustomSessionCompleteEvent += OnJoinMatchSessionComplete;
         OnCreateCustomMatchSessionCompleteEvent += OnCreateGameSessionResult;
         OnLeaveCustomSessionCompleteEvent += OnLeaveGameSession;
+    }
+
+    private void SetCurrentUserID(TokenData tokenData)
+    {
+        currentUserId = tokenData.user_id;
     }
 
     #region CreateCustomMatchSession
@@ -94,6 +100,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
             BytewarsLogger.Log($"create session result: {result.Value.ToJsonString()}");
             if (isCreateMatchSessionCancelled)
             {
+                onCreatedMatchSession?.Invoke("Match session creation cancelled");
                 return;
             }
             gameSessionV2 = result.Value;
@@ -106,6 +113,12 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
 
     private IEnumerator CheckSessionDetails()
     {
+        if (isCreateMatchSessionCancelled)
+        {
+            onCreatedMatchSession?.Invoke("Match session creation cancelled");
+            yield break;
+        }
+
         if (gameSessionV2 == null)
         {
             onCreatedMatchSession?.Invoke("Error Unable to create session");
@@ -123,6 +136,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
             onCreatedMatchSession?.Invoke("Match session creation cancelled");
             return;
         }
+
         if (result.IsError)
         {
             string errorMessage = result.Error.Message;
@@ -183,6 +197,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
             var gameSession = result.Value;
             if (gameSession.configuration.type == SessionConfigurationTemplateType.DS)
             {
+                BytewarsLogger.Log($" {SessionConfigurationTemplateType.DS} {result.ToJsonString()}");
                 if (isJoinMatchSessionCancelled)
                 {
                     return;
@@ -195,6 +210,20 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
                 else
                 {
                     Lobby.SessionV2DsStatusChanged += OnV2DSStatusChanged;
+                }
+            }
+            if (gameSession.configuration.type == SessionConfigurationTemplateType.P2P)
+            {
+                BytewarsLogger.Log($" {SessionConfigurationTemplateType.P2P} {result.ToJsonString()}");
+                if (isJoinMatchSessionCancelled)
+                {
+                    return;
+                }
+                UpdateCachedGameSession(gameSession);
+                if (result.Value.leaderId != currentUserId)
+                {
+                    GameData.ServerSessionID = gameSession.id;
+                    P2PHelper.StartAsP2PClient(gameSession.leaderId, requestedGameMode, gameSession.id);
                 }
             }
         }

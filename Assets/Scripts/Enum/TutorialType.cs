@@ -18,5 +18,6 @@ public enum TutorialType
     MultiplayerDSEssentials = 15,
     PartyEssentials = 17,
     PlayWithPartyEssentials = 18,
-    MatchmakingSession = 103
+    MatchmakingSession = 103,
+    MatchSessionWithP2P = 19,
 }

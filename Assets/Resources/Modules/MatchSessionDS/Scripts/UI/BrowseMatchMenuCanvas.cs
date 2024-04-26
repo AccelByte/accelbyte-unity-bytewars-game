@@ -138,8 +138,17 @@ public class BrowseMatchMenuCanvas : MenuCanvas
 
     #region ViewState
 
+    private void OnEnable()
+    {   
+        if (browseMatchSessionWrapper != null) 
+        {
+            BrowseMatchSession();
+        }
+    }
+
     private void OnDisable()
     {
+        HideError();
         HideLoadingBackToMainPanel();
     }
 

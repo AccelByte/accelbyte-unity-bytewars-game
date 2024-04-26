@@ -26,7 +26,8 @@ public class PlayOnlineMenu : MenuCanvas
 #if !BYTEWARS_DEBUG
         var isCreateSessionBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.SessionEssentials);
         var isQuickPlayBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithDS);
-        var isCreateBrowseMatchBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithDS);
+        var isCreateBrowseMatchBtnActive = (TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithDS) 
+            || TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithP2P));
 
         createSessionButton.gameObject.SetActive(isCreateSessionBtnActive);
         quickPlayButton.gameObject.SetActive(isQuickPlayBtnActive);

@@ -21,6 +21,7 @@ public class CreateMatchSessionHandler : MenuCanvas
     private InGameMode gameMode = InGameMode.None;
     private MatchSessionServerType selectedSessionServerType = MatchSessionServerType.DedicatedServer;
     private MatchSessionDSWrapper matchSessionDSWrapper;
+    private MatchSessionP2PWrapper matchSessionP2PWrapper;
 
     // Start is called before the first frame update
     private void Awake()
@@ -31,11 +32,14 @@ public class CreateMatchSessionHandler : MenuCanvas
     private void Start()
     {
         matchSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionDSWrapper>();
-            
+        matchSessionP2PWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionP2PWrapper>(); 
+
         createEliminationBtn.onClick.AddListener(OnCreateEliminationBtnClicked);
         createTeamDeathMatchBtn.onClick.AddListener(OnTeamDeathMatchBtnClicked);
         backBtn.onClick.AddListener(MenuManager.Instance.OnBackPressed);
+        dsBtn.gameObject.SetActive(matchSessionDSWrapper != null);
         dsBtn.onClick.AddListener(OnDSBtnClicked);
+        p2pBtn.gameObject.SetActive(matchSessionP2PWrapper != null);
         p2pBtn.onClick.AddListener(OnP2PBtnClicked);
         backFromServerTypeBtn.onClick.AddListener(OnBackFromServerTypeBtnClicked);
         selectServerPanel.HideRight();
@@ -65,8 +69,17 @@ public class CreateMatchSessionHandler : MenuCanvas
     private void CreateMatchSession()
     {
         ShowLoading("Creating Match Session...", CancelCreateMatch);
-        matchSessionDSWrapper.Create(gameMode, 
-            selectedSessionServerType, OnCreatedMatchSession);
+        switch (selectedSessionServerType)
+        {
+            case MatchSessionServerType.DedicatedServer or MatchSessionServerType.DedicatedServerAMS:
+                matchSessionDSWrapper.Create(gameMode, 
+                    selectedSessionServerType, OnCreatedMatchSession);
+                break;
+            case MatchSessionServerType.PeerToPeer:
+                matchSessionP2PWrapper.CreateP2P(gameMode, 
+                    selectedSessionServerType, OnCreatedMatchSession);
+                break;
+        }
     }
 
     private static void OnCreatedMatchSession(string errorMessage)
@@ -104,7 +117,7 @@ public class CreateMatchSessionHandler : MenuCanvas
         shownRectTransform = SlideShowLeft(createMatchPanel, selectServerPanel);
     }
 
-    private void ShowLoading(string loadingInfo, UnityAction cancelCallback=null)
+    private void ShowLoading(string loadingInfo, UnityAction cancelCallback=null, bool cancelBtn = true)
     {
         if(shownRectTransform!=null)
             shownRectTransform.gameObject.SetActive(false);
@@ -134,10 +147,24 @@ public class CreateMatchSessionHandler : MenuCanvas
 
     private void CancelCreateMatch()
     {
-        if(shownRectTransform!=null)
-            shownRectTransform.gameObject.SetActive(true);
         loadingPanel.gameObject.SetActive(false);
-        matchSessionDSWrapper.CancelCreateMatchSession();
+        switch (selectedSessionServerType)
+        {
+            case MatchSessionServerType.DedicatedServerAMS:
+                matchSessionDSWrapper.CancelCreateMatchSession();
+                break;
+            case MatchSessionServerType.PeerToPeer:
+                matchSessionP2PWrapper.CancelCreateMatchSessionP2P();
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void CancelCreateMatchP2P()
+    {
+        loadingPanel.gameObject.SetActive(false);
+        matchSessionP2PWrapper.CancelCreateMatchSessionP2P();
     }
 
     private RectTransform SlideShowLeft(PanelGroup toHide, PanelGroup toShow)

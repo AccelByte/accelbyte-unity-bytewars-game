@@ -1,3 +1,7 @@
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using System.Collections;
 using System.Linq;
@@ -8,6 +12,10 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+
+#if UNITY_EDITOR
+using ParrelSync;
+#endif
 
 public class LoginHandler : MenuCanvas
 {
@@ -120,6 +128,13 @@ public class LoginHandler : MenuCanvas
     private void AutoLoginCmd()
     {
         string[] cmdArgs = Environment.GetCommandLineArgs();
+
+#if UNITY_EDITOR
+        if (ClonesManager.IsClone())
+        {
+            cmdArgs = ClonesManager.GetArgument().Split();
+        }
+#endif
         string username = "";
         string password = "";
 
@@ -141,11 +156,20 @@ public class LoginHandler : MenuCanvas
         {
             _authWrapper.LoginWithUsername(username, password, OnLoginCompleted);
         }
+        
     }
     
     private void OnLoginWithDeviceIdButtonClicked()
     {
-        if (Environment.GetCommandLineArgs().Contains("-AUTH_TYPE=ACCELBYTE"))
+        bool argCheckingLoginWithUsername = Environment.GetCommandLineArgs().Contains("-AUTH_TYPE=ACCELBYTE");
+
+#if UNITY_EDITOR
+        if (ClonesManager.IsClone())
+        {
+            argCheckingLoginWithUsername = ClonesManager.GetArgument().Contains("-AUTH_TYPE=ACCELBYTE");
+        }
+#endif
+        if (argCheckingLoginWithUsername)
         {
             AutoLoginCmd();
         }
