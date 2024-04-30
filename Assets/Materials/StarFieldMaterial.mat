@@ -12,8 +12,8 @@ Material:
     type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords: []
-  m_LightmapFlags: 0
-  m_EnableInstancingVariants: 1
+  m_LightmapFlags: 2
+  m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 1999
   stringTagMap: {}
@@ -108,25 +108,25 @@ Material:
     - _SrcBlend: 1
     - _StarGridScale: 180
     - _StarNoiseScale: 2500
-    - _StarOutputGlow: 80
+    - _StarOutputGlow: 50
     - _StarRotation: 7
-    - _StarScale: 180
+    - _StarScale: 100
     - _Surface: 0
     - _Thinness: 0.9
-    - _VignetteFalloff: 1.9
-    - _VignetteIntensity: 28.36
+    - _VignetteFalloff: 2
+    - _VignetteIntensity: 75
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _EndGradientColour: {r: 0.22352937, g: 0, b: 0.5686274, a: 0}
+    - _EndGradientColour: {r: 0.06503407, g: 0, b: 0.33962262, a: 0}
     - _LineColour: {r: 1, g: 0, b: 0, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
-    - _StarNoiseRange: {r: 0.53, g: 0.75, b: 0, a: 0}
+    - _StarNoiseRange: {r: 0.53, g: 0.73, b: 0, a: 0}
     - _StarNoiseRemap: {r: 0.55, g: 0.75, b: 0, a: 0}
-    - _StarOutputRange: {r: -1.7, g: 1, b: 0, a: 0}
+    - _StarOutputRange: {r: -1.75, g: 1.01, b: 0, a: 0}
     - _StartGradientColour: {r: 0.14150941, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
 --- !u!114 &4109382657469731389
