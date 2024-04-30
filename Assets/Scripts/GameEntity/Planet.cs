@@ -9,7 +9,8 @@ public class Planet : GameEntityAbs
     #if !UNITY_SERVER || BYTEWARS_DEBUG
     public float m_glowPulseRate = 2.0f;
     public float m_glowPulseScale = 3.0f;
-    float m_baseGlow = 1.0f;
+    float m_baseGlowMin = 0.8f;
+    float m_baseGlowMax = 1.0f;
     float m_glowMultiplier = 1.0f;
     #endif
     [SerializeField] private float m_mass;
@@ -27,14 +28,16 @@ public class Planet : GameEntityAbs
         _renderer.enabled = false;
         _renderer.material = null;
 #else
-        m_baseGlow = _renderer.material.GetFloat("_Glow");
+        m_baseGlowMin = _renderer.material.GetFloat("_GlowMin");
+        m_baseGlowMax = _renderer.material.GetFloat("_GlowMax");
 #endif
     }
 #if !UNITY_SERVER
     void Update()
     {
         m_glowMultiplier = Mathf.Lerp(m_glowMultiplier, 1.0f, m_glowPulseRate * Time.deltaTime);        
-        _renderer.material.SetFloat("_Glow", m_baseGlow * m_glowMultiplier);
+        _renderer.material.SetFloat("_GlowMin", m_baseGlowMin * m_glowMultiplier); 
+        _renderer.material.SetFloat("_GlowMax", m_baseGlowMax * m_glowMultiplier);
     }
 #endif
     public override void OnHitByMissile()

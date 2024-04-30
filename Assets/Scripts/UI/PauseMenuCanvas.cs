@@ -8,6 +8,7 @@ public class PauseMenuCanvas : MenuCanvas
     [SerializeField] private Button resumeBtn;
     [SerializeField] private Button restartBtn;
     [SerializeField] private Button quitBtn;
+
     void Start()
     {
         resumeBtn.onClick.AddListener(OnClickResumeBtn);
@@ -19,11 +20,12 @@ public class PauseMenuCanvas : MenuCanvas
     {
         StartCoroutine(GameManager.Instance.QuitToMainMenu());
     }
+
     private void OnClickResumeBtn()
     {
         if (NetworkManager.Singleton.IsListening)
         {
-            MenuManager.Instance.CloseMenuPanel();
+            MenuManager.Instance.CloseInGameMenu();
         }
         else
         {
