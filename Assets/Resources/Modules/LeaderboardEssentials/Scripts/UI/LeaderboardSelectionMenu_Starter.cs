@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using AccelByte.Core;
 using AccelByte.Models;
 using Extensions;
+using Newtonsoft.Json;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -22,12 +21,9 @@ public class LeaderboardSelectionMenu_Starter : MenuCanvas
     {
         backButton.onClick.AddListener(OnBackButtonClicked);
 
-        // Put your code here
-    }
-
-    private void OnDisable()
-    {
         leaderboardListPanel.DestroyAllChildren();
+
+        // Put your code here
     }
 
     private void OnBackButtonClicked()
@@ -43,5 +39,14 @@ public class LeaderboardSelectionMenu_Starter : MenuCanvas
     public override AssetEnum GetAssetEnum()
     {
         return AssetEnum.LeaderboardSelectionMenuCanvas_Starter;
+    }
+    
+    private bool IsLeaderboardDataCached(LeaderboardDataV3[] newData)
+    {
+        string newDataSerialized = JsonConvert.SerializeObject(newData);
+        
+        // Put your code here
+
+        return false;
     }
 }

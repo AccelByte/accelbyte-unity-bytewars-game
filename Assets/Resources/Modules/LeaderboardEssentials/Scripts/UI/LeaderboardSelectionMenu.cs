@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using AccelByte.Core;
 using AccelByte.Models;
 using Extensions;
+using Newtonsoft.Json;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,9 +18,13 @@ public class LeaderboardSelectionMenu : MenuCanvas
     public static string chosenLeaderboardCode;
     public static Dictionary<string, string[]> leaderboardCycleIds;
 
+    private string leaderboardDataSerialized;
+
     private void Start()
     {
         backButton.onClick.AddListener(OnBackButtonClicked);
+
+        leaderboardListPanel.DestroyAllChildren();
 
         leaderboardWrapper = TutorialModuleManager.Instance.GetModuleClass<LeaderboardEssentialsWrapper>();
 
@@ -30,14 +33,12 @@ public class LeaderboardSelectionMenu : MenuCanvas
 
     private void OnEnable()
     {
-        if (!leaderboardWrapper) return;
+        if (!leaderboardWrapper) 
+        {
+            return;
+        }
 
         DisplayLeaderboardList();
-    }
-
-    private void OnDisable()
-    {
-        leaderboardListPanel.DestroyAllChildren();
     }
 
     private void ChangeToLeaderboardCycleMenu(string newLeaderboardCode)
@@ -48,9 +49,19 @@ public class LeaderboardSelectionMenu : MenuCanvas
 
     private void OnGetLeaderboardListCompleted(Result<LeaderboardPagedListV3> result)
     {
-        if (result.IsError) return;
+        if (result.IsError) 
+        {
+            return;
+        }
 
+        if (IsLeaderboardDataCached(result.Value.Data))
+        {
+            return;
+        }
+        
         leaderboardCycleIds = new Dictionary<string, string[]>();
+        leaderboardListPanel.DestroyAllChildren();
+
         foreach (LeaderboardDataV3 leaderboardData in result.Value.Data)
         {
             if (!leaderboardData.Name.Contains("Unity")) continue;
@@ -84,5 +95,19 @@ public class LeaderboardSelectionMenu : MenuCanvas
     public override AssetEnum GetAssetEnum()
     {
         return AssetEnum.LeaderboardSelectionMenuCanvas;
+    }
+
+    private bool IsLeaderboardDataCached(LeaderboardDataV3[] newData)
+    {
+        string newDataSerialized = JsonConvert.SerializeObject(newData);
+        
+        bool isCached = leaderboardDataSerialized != null && leaderboardDataSerialized == newDataSerialized;
+        if (isCached)
+        {
+            return true;
+        }
+        
+        leaderboardDataSerialized = newDataSerialized;
+        return false;
     }
 }
