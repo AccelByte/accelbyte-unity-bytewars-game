@@ -161,7 +161,9 @@ public class Reconnect : MonoBehaviour
                         sessionId = playerState.sessionId
                     };
                     if (!isIntentionallyDisconnect)
+                    {
                         TryReconnect(initialData);
+                    }
                     bool isInGameScene = GameConstant.GameSceneBuildIndex == SceneManager.GetActiveScene().buildIndex;
                     GameManager.Instance.RemoveConnectedClient(clientNetworkId, isInGameScene);
                 }
@@ -173,14 +175,13 @@ public class Reconnect : MonoBehaviour
                 var menuCanvas = MenuManager.Instance.GetCurrentMenu();
                 if (menuCanvas && menuCanvas is MatchLobbyMenu lobby)
                 {
-                    lobby.ShowStatus("disconnected from server, trying to reconnect...");
+                    if(!isIntentionallyDisconnect) 
+                    {
+                        lobby.ShowStatus("disconnected from server, trying to reconnect...");
+                    }
                 }
-            }
-
-            serverHelper.Reset();
+            }            
         }
-
-
     }
 
     private bool isIntentionallyDisconnect;

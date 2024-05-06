@@ -55,7 +55,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         GameManager.Instance.OnGameStateIsNone += () => { isGameStarted = false; };
 #endif
 
-        GameManager.Instance.OnClientLeaveSession += OnClientQuit;
+        GameManager.Instance.OnClientLeaveSession += OnClientLeave;
     }
 
     protected internal void BindEventListener()
@@ -78,7 +78,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         isEventsListened = false;
     }
 
-    private void OnClientQuit()
+    public void OnClientLeave()
     {
         OnLeaveSessionCompleteEvent += OnLeaveSessionComplete;
         LeaveSession(cachedSessionId);

@@ -131,17 +131,26 @@ public class GameManager : NetworkBehaviour
 
     #endregion
 
-    private void OnServerStopped(bool isHost)
+    private void OnServerStopped(bool isHostStopped)
     {
-        BytewarsLogger.Log("Host server stop");
+        if (isHostStopped)
+        {
+            BytewarsLogger.Log("Hosting server has stopped");
+            _inGameMode = InGameMode.None;
+        }
+        
         connectedClients.Clear();
         _serverHelper.Reset();
     }
 
-    private void OnClientStopped(bool isHost)
+    private void OnClientStopped(bool isHostStopped)
     {
-        connectedClients.Clear();
-        reconnect.OnClientStopped(isHost, _inGameState, _serverHelper,
+        if (isHostStopped) 
+        {
+            connectedClients.Clear();
+        }
+        
+        reconnect.OnClientStopped(isHostStopped, _inGameState, _serverHelper,
             _clientHelper.ClientNetworkId, _inGameMode);
     }
 
@@ -283,12 +292,13 @@ public class GameManager : NetworkBehaviour
     public void RemoveConnectedClient(ulong clientNetworkId, bool isInGameScene, bool isResetMissile = true)
     {
         connectedClients.Remove(clientNetworkId);
-        if (!Players.TryGetValue(clientNetworkId, out Player player))
+
+        if (!Players.TryGetValue(clientNetworkId, out Player player) && isInGameScene)
         {
             return;
         }
 
-        if (!IsServer)
+        if (!IsServer && isInGameScene)
         {
             player.gameObject.SetActive(false);
             Players.Remove(clientNetworkId);

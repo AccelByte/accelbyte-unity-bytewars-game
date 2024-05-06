@@ -256,6 +256,7 @@ public class MenuManager : MonoBehaviour
     {
         if (IsMainMenuScene())
         {
+            ChangeToMenu(AssetEnum.MainMenuCanvas);
             return;
         }
         

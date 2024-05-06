@@ -2,6 +2,8 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
+using System.Collections;
+using System.Threading.Tasks;
 using AccelByte.Models;
 using UnityEngine;
 
@@ -92,6 +94,7 @@ public class MatchmakingSessionDSHandler : MenuCanvas
 
         // listen event when match is found and ds available
         matchmakingSessionDSWrapper.OnMatchmakingFoundEvent += JoinSessionPanel;
+        matchmakingSessionDSWrapper.OnJoinSessionCompleteEvent += WaitingForDSPanel;
         matchmakingSessionDSWrapper.OnDSAvailableEvent += TravelToGame;
 
         // listen event when failed
@@ -112,6 +115,7 @@ public class MatchmakingSessionDSHandler : MenuCanvas
         matchmakingSessionDSWrapper?.UnbindEventListener();
 
         matchmakingSessionDSWrapper.OnMatchmakingFoundEvent -= JoinSessionPanel;
+        matchmakingSessionDSWrapper.OnJoinSessionCompleteEvent -= WaitingForDSPanel;
         matchmakingSessionDSWrapper.OnDSAvailableEvent -= TravelToGame;
         matchmakingSessionDSWrapper.OnStartMatchmakingFailed -= FailedPanel;
         matchmakingSessionDSWrapper.OnMatchmakingJoinSessionFailedEvent -= FailedPanel;
@@ -139,8 +143,24 @@ public class MatchmakingSessionDSHandler : MenuCanvas
 
     private void JoinSessionPanel(string sessionId)
     {
-        ShowLoading("Joining Match", "Joining Match is timed out", joinSessionTimeoutSec);
+        ShowLoading("Joining Match", "Joining Match is timed out", joinSessionTimeoutSec, matchmakingSessionDSWrapper.OnClientLeave);
     }
+
+    private async void WaitingForDSPanel(SessionResponsePayload payload)
+    {
+        if (payload.TutorialType != TutorialType.MatchmakingWithDS)
+        {
+            return;
+        }
+        await Delay();
+        ShowLoading("Waiting For DS", "DS Waiting is timed out", joinSessionTimeoutSec, matchmakingSessionDSWrapper.OnClientLeave);
+    }
+
+    private async Task Delay()
+    {
+        await Task.Delay(1500);
+    }
+
 
     private void CancelDSMatchmaking()
     {
