@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
@@ -276,7 +276,7 @@ public class Player : GameEntityAbs
 
     void OnOpenPauseMenu()
     {
-        GameManager.Instance.TriggerPauseLocalGame();
+        GameManager.Instance.InGamePause.ToggleGamePause();
         if (GameManager.Instance.InGameState == InGameState.LocalPause)
         {
             SetNormalisedRotateSpeed(0);
