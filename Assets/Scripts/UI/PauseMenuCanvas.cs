@@ -1,5 +1,7 @@
-using System;
-using Unity.Netcode;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,29 +10,26 @@ public class PauseMenuCanvas : MenuCanvas
     [SerializeField] private Button resumeBtn;
     [SerializeField] private Button restartBtn;
     [SerializeField] private Button quitBtn;
+    
+    private bool isRestartBtnShown;
 
-    void Start()
+    private void Start()
     {
+        isRestartBtnShown = true;
+
         resumeBtn.onClick.AddListener(OnClickResumeBtn);
         restartBtn.onClick.AddListener(GameManager.Instance.RestartLocalGame);
         quitBtn.onClick.AddListener(OnQuitBtnClick);
     }
 
-    private void OnQuitBtnClick()
+    private void OnEnable()
     {
-        StartCoroutine(GameManager.Instance.QuitToMainMenu());
+        restartBtn.gameObject.SetActive(isRestartBtnShown);
     }
 
-    private void OnClickResumeBtn()
+    private void OnDisable()
     {
-        if (NetworkManager.Singleton.IsListening)
-        {
-            MenuManager.Instance.CloseInGameMenu();
-        }
-        else
-        {
-            GameManager.Instance.TriggerPauseLocalGame();
-        }
+        isRestartBtnShown = true;
     }
 
     public override GameObject GetFirstButton()
@@ -43,15 +42,14 @@ public class PauseMenuCanvas : MenuCanvas
         return AssetEnum.PauseMenuCanvas;
     }
 
-    private bool isRestartBtnShown=true;
-    private void OnEnable()
+    private void OnQuitBtnClick()
     {
-        restartBtn.gameObject.SetActive(isRestartBtnShown);
+        StartCoroutine(GameManager.Instance.QuitToMainMenu());
     }
 
-    private void OnDisable()
+    private void OnClickResumeBtn()
     {
-        isRestartBtnShown = true;
+        GameManager.Instance.InGamePause.ToggleGamePause();
     }
 
     public void DisableRestartBtn()

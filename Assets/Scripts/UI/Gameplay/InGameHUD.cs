@@ -1,46 +1,64 @@
-using System;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
 public class InGameHUD : MonoBehaviour
 {
+    #region Fields and Properties
+
     [SerializeField] private PlayerHUD[] _playerHUDs;
-    [SerializeField] private TMPro.TextMeshProUGUI _timeLabel;
+    [SerializeField] private TextMeshProUGUI _timeLabel;
+
     public TextMeshProUGUI gameStatusText;
     public RectTransform gameStatusContainer;
+
+    #endregion
+
+    #region Lifecycle Methods
+
+    private void OnEnable()
+    {
+        SetVisible(true);
+    }
+
+    #endregion
+
+    #region Initialization Methods
+
+    public void Init(TeamState[] teamStates, PlayerState[] playerStates)
+    {
+        foreach (TeamState teamState in teamStates)
+        {
+            var hud = _playerHUDs[teamState.teamIndex];
+            hud.Init(teamState, playerStates);
+        }
+    }
+
+    #endregion
+
+    #region UI Update Methods
 
     public void SetTime(int timeInSecond)
     {
         _timeLabel.text = timeInSecond.ToString();
     }
 
-    public void Init(TeamState[] teamStates, PlayerState[] playerStates)
-    {
-        for (int i = 0; i < teamStates.Length; i++)
-        {
-            var teamState = teamStates[i];
-            var hud = _playerHUDs[teamState.teamIndex];
-            hud.Init(teamState, playerStates);
-        }
-    }
-
     public void UpdateKillsAndScore(PlayerState playerState, PlayerState[] players)
     {
-        var hud = _playerHUDs[playerState.teamIndex];
-        float score = 0;
-        int killCount = 0;
-        foreach (var pState in players)
-        {
-            if (pState.teamIndex == playerState.teamIndex)
-            {
-                score += pState.score;
-                killCount += pState.killCount;
-            }
-        }
+        PlayerHUD hud = _playerHUDs[playerState.teamIndex];
+        
+        List<PlayerState> teamPlayers = players.Where(p => p.teamIndex == playerState.teamIndex).ToList();
+        
+        int killCount = teamPlayers.Sum(p => p.killCount);
+        int score = (int)teamPlayers.Sum(p => p.score);
+        
         hud.SetKillsValue(killCount);
-        hud.SetScoreValue((int)score);
+        hud.SetScoreValue(score);
     }
 
     public void SetLivesValue(int teamIndex, int lives)
@@ -48,29 +66,17 @@ public class InGameHUD : MonoBehaviour
         _playerHUDs[teamIndex].SetLivesValue(lives);
     }
 
-    public void Reset()
-    {
-        _timeLabel.text = "0";
-        foreach (var playerHUD in _playerHUDs)
-        {
-            playerHUD.Reset();
-        }
-        HideGameStatusContainer();
-    }
-
-    readonly TimeSpan _oneSecond = TimeSpan.FromSeconds(1);
-    
-
     public void UpdatePreGameCountdown(int second)
     {
-        if(!gameStatusContainer.gameObject.activeSelf)
+        if (!gameStatusContainer.gameObject.activeSelf)
+        {
             gameStatusContainer.gameObject.SetActive(true);
+        }
+
         if (second == 0)
         {
             gameStatusText.text = "Game Started";
             HideGameStatusContainer();
-            // LeanTween.alpha(gameStatusContainer, 0, 1)
-            //     .setOnComplete(OnGameStatusContainerFullyHidden);
         }
         else
         {
@@ -80,17 +86,45 @@ public class InGameHUD : MonoBehaviour
     
     public void UpdateShutdownCountdown(string prefix, int second)
     {
-        if(!gameStatusContainer.gameObject.activeSelf)
+        if (!gameStatusContainer.gameObject.activeSelf)
+        {
             gameStatusContainer.gameObject.SetActive(true);
-        gameStatusText.text = prefix+second;
+        }
+
+        gameStatusText.text = prefix + second;
+
         if (second == 0)
         {
            HideGameStatusContainer();
         }
     }
 
+    #endregion
+
+    #region Reset and Visibility Methods
+
+    public void Reset()
+    {
+        _timeLabel.text = "0";
+
+        foreach (PlayerHUD playerHUD in _playerHUDs)
+        {
+            playerHUD.Reset();
+        }
+
+        HideGameStatusContainer();
+        SetVisible(true);
+    }
+
     public void HideGameStatusContainer()
     {
         gameStatusContainer.gameObject.SetActive(false);
     }
+
+    public void SetVisible(bool isVisible)
+    {
+        GetComponent<Canvas>().enabled = isVisible;
+    }
+
+    #endregion
 }

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
@@ -5,16 +9,20 @@ using UnityEngine.InputSystem;
 
 public class GameClientController : NetworkBehaviour
 {
-    private InGameState _serverGameState;
-    public bool isGameSceneLoaded;
     [SerializeField] private PlayerInput playerInput;
 
+    public bool isGameSceneLoaded;
+
+    private InGameState _serverGameState;
+    
     public void StartOnlineGame()
     {
-        if (IsOwner)
+        if (!IsOwner)
         {
-            LoadSceneServerRpc();
+            return;
         }
+
+        LoadSceneServerRpc();
     }
 
     [ServerRpc]
@@ -25,11 +33,14 @@ public class GameClientController : NetworkBehaviour
 
     void OnRotateShip(InputValue amount)
     {
-        if (GameManager.Instance.InGameState == InGameState.GameOver)
+        if (GameManager.Instance.InGameState is InGameState.GameOver)
+        {
             return;
-        float rotateValue = amount.Get<float>();
+        }
+
         if (IsOwner && IsAlive())
         {
+            float rotateValue = amount.Get<float>();
             RotateShipServerRpc(OwnerClientId, rotateValue);
             RotateShip(OwnerClientId, rotateValue);
         }
@@ -37,7 +48,6 @@ public class GameClientController : NetworkBehaviour
 
     void OnFire(InputValue amount)
     {
-        
         if (IsOwner && IsAlive())
         {
             FireMissileServerRpc(OwnerClientId);
@@ -47,12 +57,23 @@ public class GameClientController : NetworkBehaviour
     void OnChangePower(InputValue amount)
     {
         if (GameManager.Instance.InGameState == InGameState.GameOver)
+        {
             return;
+        }
+
         if (IsOwner && IsAlive())
         {
             var power = amount.Get<float>();
             ChangePowerServerRpc(OwnerClientId, power);
             ChangePower(OwnerClientId, power);
+        }
+    }
+    
+    private void OnOpenPauseMenu()
+    {
+        if (IsOwner && GameManager.Instance.InGamePause.CanPauseGame())
+        {
+            GameManager.Instance.InGamePause.ToggleGamePause();
         }
     }
 
@@ -73,30 +94,14 @@ public class GameClientController : NetworkBehaviour
     private void SyncPowerClientRpc(ulong clientNetworkId, float amount)
     {
         if (IsHost)
+        {
             return;
+        }
+
         if (GameManager.Instance.Players.TryGetValue(clientNetworkId, out var player))
         {
             player.ChangePowerLevelDirectly(amount);
         }
-    }
-    
-    void OnOpenPauseMenu()
-    {
-        var gameState = GameManager.Instance.InGameState;
-        if (IsOwner && 
-            gameState is InGameState.Playing or InGameState.ShuttingDown)
-        {
-            var menuCanvas = MenuManager.Instance.ShowInGameMenu(AssetEnum.PauseMenuCanvas);
-            if (menuCanvas is PauseMenuCanvas pauseMenuCanvas)
-            {
-                pauseMenuCanvas.DisableRestartBtn();
-            }
-        }
-    }
-
-    private bool IsPaused()
-    {
-        return MenuManager.Instance.GetCurrentMenu().GetAssetEnum() == AssetEnum.PauseMenuCanvas;
     }
 
     [ServerRpc]
@@ -110,20 +115,27 @@ public class GameClientController : NetworkBehaviour
     {
         RotateShip(clientNetworkId, amount);
     }
+
     private void RotateShip(ulong clientNetworkId, float amount)
     {
         var game = GameManager.Instance;
-        if (game.Players.TryGetValue(clientNetworkId, out var player))
+        if (!game.Players.TryGetValue(clientNetworkId, out Player player))
         {
-            player.SetNormalisedRotateSpeed(amount);
-            if (IsServer)
-            {
-                RotateShipClientRpc(clientNetworkId, amount);
-                if (amount == 0)
-                {
-                    SyncShipRotationClientRpc(clientNetworkId, player.transform.rotation);
-                }
-            }
+            return;
+        }
+
+        player.SetNormalisedRotateSpeed(amount);
+        
+        if (!IsServer)
+        {
+            return;
+        }
+        
+        RotateShipClientRpc(clientNetworkId, amount);
+        
+        if (amount == 0)
+        {
+            SyncShipRotationClientRpc(clientNetworkId, player.transform.rotation);
         }
     }
 
@@ -131,7 +143,10 @@ public class GameClientController : NetworkBehaviour
     private void RotateShipClientRpc(ulong clientNetworkId, float amount)
     {
         if (IsHost)
+        {
             return;
+        }
+
         RotateShip(clientNetworkId, amount);
     }
     
@@ -139,7 +154,10 @@ public class GameClientController : NetworkBehaviour
     private void SyncShipRotationClientRpc(ulong clientNetworkId, Quaternion rotation)
     {
         if (IsHost)
+        {
             return;
+        }
+
         if (GameManager.Instance.Players.TryGetValue(clientNetworkId, out var player))
         {
             player.transform.rotation = rotation;
@@ -155,27 +173,34 @@ public class GameClientController : NetworkBehaviour
     private void FireMissile(ulong clientNetworkId)
     {
         var game = GameManager.Instance;
-        if (game.InGameState == InGameState.Playing)
+        if (game.InGameState is not InGameState.Playing)
         {
-            if (game.Players.TryGetValue(clientNetworkId, out var player))
+            return;
+        }
+
+        if (!game.Players.TryGetValue(clientNetworkId, out Player player))
+        {
+            return;
+        }
+
+        if (IsAlive(player))
+        {
+            var missileState = player.LocalFireMissile();
+            if (missileState != null && IsServer)
             {
-                if (player.PlayerState.lives > 0)
-                {
-                    var missileState = player.LocalFireMissile();
-                    if (missileState!=null && IsServer)
-                    {
-                        FireMissileClientRpc(clientNetworkId, missileState);
-                    }
-                }
+                FireMissileClientRpc(clientNetworkId, missileState);
             }
         }
     }
-    
+
     [ClientRpc]
     private void FireMissileClientRpc(ulong clientNetworkId, MissileFireState missileFireState)
     {
         if (IsHost)
+        {
             return;
+        }
+
         if (GameManager.Instance.Players.TryGetValue(clientNetworkId, out var player)
             && GameManager.Instance.ConnectedPlayerStates.TryGetValue(clientNetworkId, out var playerState))
         {
@@ -186,39 +211,47 @@ public class GameClientController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         playerInput.enabled = IsOwner;
-        if (IsClient && IsOwner)
+        
+        if (IsOwner && IsClient)
         {
-            //client send user data to server
-            if (GameData.CachedPlayerState != null)
+            if (GameData.CachedPlayerState == null)
             {
-                UpdatePlayerStateServerRpc(NetworkManager.Singleton.LocalClientId, GameData.CachedPlayerState);
+                return;
             }
+
+            //client send user data to server
+            UpdatePlayerStateServerRpc(NetworkManager.Singleton.LocalClientId, GameData.CachedPlayerState);
         }
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void UpdatePlayerStateServerRpc(ulong clientNetworkId, PlayerState clientPlayerState, string clientUserId = "")
+    private void UpdatePlayerStateServerRpc(ulong clientNetworkId, PlayerState clientPlayerState)
     {
-        if (GameManager.Instance.ConnectedPlayerStates.TryGetValue(clientNetworkId, out var playerState))
+        GameManager gameManager = GameManager.Instance;
+        if (gameManager.ConnectedPlayerStates.TryGetValue(clientNetworkId, out PlayerState playerState))
         {
             playerState.avatarUrl = clientPlayerState.avatarUrl;
             playerState.playerName = clientPlayerState.playerName;
-            playerState.playerId = clientUserId; //playerState.playerId = clientPlayerState.playerId;
-            var g = GameManager.Instance;
-            g.UpdatePlayerStatesClientRpc(g.ConnectedTeamStates.Values.ToArray(),
-                g.ConnectedPlayerStates.Values.ToArray());
+            playerState.playerId = clientPlayerState.playerId;
+
+            gameManager.UpdatePlayerStatesClientRpc(
+                gameManager.ConnectedTeamStates.Values.ToArray(),
+                gameManager.ConnectedPlayerStates.Values.ToArray());
         }
     }
     
-    
-
-    private bool IsAlive()
+    private bool IsAlive(Player player = null)
     {
-        if (!IsPaused() &&
-            GameManager.Instance.ConnectedPlayerStates.TryGetValue(OwnerClientId, out var playerState))
+        if (player != null)
+        {
+            return player.PlayerState.lives > 0;
+        }
+        
+        if (GameManager.Instance.ConnectedPlayerStates.TryGetValue(OwnerClientId, out PlayerState playerState))
         {
             return playerState.lives > 0;
         }
+        
         return false;
     }
 }

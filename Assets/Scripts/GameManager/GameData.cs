@@ -1,16 +1,15 @@
-using System;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System.Collections.Generic;
 
 public static class GameData
 {
-    public static GameModeSO GameModeSo;
-    public static PlayerState CachedPlayerState = new PlayerState();
-    public static ServerType ServerType = ServerType.Offline;
-    /// <summary>
-    /// match/game/party session id that dedicated server claimed by
-    /// always set by server
-    /// </summary>
-    public static string ServerSessionID = "";
+    public static GameModeSO GameModeSo { get; set; }
+    public static PlayerState CachedPlayerState { get; set; } = new();
+    public static ServerType ServerType { get; set; } = ServerType.Offline;
+    public static string ServerSessionID { get; set; }
 }
 
 public enum ServerType
@@ -19,56 +18,61 @@ public enum ServerType
     OnlineDedicatedServer,
     OnlinePeer2Peer
 }
+
 /// <summary>
-/// connecting wrappers (the class that access Accelbyte API) and game user interface
+/// This class is used to cache session data from AccelByte SDK
 /// </summary>
 public static class SessionCache
 {
-    private static readonly Dictionary<string, CachedSession> k_CachedSessions = 
-        new Dictionary<string, CachedSession>();
+    private static readonly Dictionary<string, SessionData> CachedSessions = new();
     private static string _currentPlayerJoinedSessionId;
+
     public static void SetJoinedSessionIdAndLeaderUserId(string sessionId, string leaderId)
     {
         _currentPlayerJoinedSessionId = sessionId;
         SetSessionLeaderId(sessionId, leaderId);
     }
-    public static void SetJoinedSessionId(string sessionId)
-    {
-        _currentPlayerJoinedSessionId = sessionId;
-    }
+    
+    public static void SetJoinedSessionId(string sessionId) => _currentPlayerJoinedSessionId = sessionId;
+
     public static void SetSessionLeaderId(string sessionId, string sessionLeaderId)
     {
-        if (k_CachedSessions.TryGetValue(sessionId, out var cachedSession))
+        if (CachedSessions.TryGetValue(sessionId, out SessionData sessionData))
         {
-            cachedSession.SessionLeaderUserId = sessionLeaderId;
+            sessionData.SessionLeaderUserId = sessionLeaderId;
+            
+            return;
         }
-        else
+
+        SessionData newSessionData = new()
         {
-            k_CachedSessions.Add(sessionId, 
-                new CachedSession(){Id = sessionId, SessionLeaderUserId = sessionLeaderId});
-        }
+            SessionId = sessionId,
+            SessionLeaderUserId = sessionLeaderId
+        };
+
+        CachedSessions.Add(sessionId, newSessionData);
     }
 
     public static string GetJoinedSessionLeaderUserId()
     {
-        if (!String.IsNullOrEmpty(_currentPlayerJoinedSessionId))
+        if (string.IsNullOrEmpty(_currentPlayerJoinedSessionId))
         {
-            if (k_CachedSessions.TryGetValue(_currentPlayerJoinedSessionId, out var cachedSession))
-            {
-                return cachedSession.SessionLeaderUserId;
-            }
+            return string.Empty;
         }
-        return "";
+
+        if (!CachedSessions.TryGetValue(_currentPlayerJoinedSessionId, out SessionData sessionData))
+        {
+            return string.Empty;
+        }
+
+        return sessionData.SessionLeaderUserId;
     }
+
+    public static bool IsSessionLeader() => GameData.CachedPlayerState.playerId.Equals(GetJoinedSessionLeaderUserId());
 }
 
-public struct CachedSession
+public struct SessionData
 {
-    public CachedSession(string id, string sessionLeaderUserId)
-    {
-        Id = id;
-        SessionLeaderUserId = sessionLeaderUserId;
-    }
-    public string Id;
-    public string SessionLeaderUserId;
+    public string SessionId { get; set; }
+    public string SessionLeaderUserId { get; set; }
 }

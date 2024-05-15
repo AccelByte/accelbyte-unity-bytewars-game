@@ -9,23 +9,24 @@ using UnityEngine.SceneManagement;
 
 public class Reconnect : MonoBehaviour
 {
-    public void ConnectAsClient(UnityTransport unityTransport, string address, ushort port, 
+    public void ConnectAsClient(UnityTransport unityTransport, string address, ushort port,
         InitialConnectionData initialConnectionData)
     {
         if (unityTransport)
         {
             SetNetworkManagerData(unityTransport, address, port, initialConnectionData);
             NetworkManager.Singleton.StartClient();
+            BytewarsLogger.Log($"start as client connect to {address}:{port}");
             //after called StartClient() NetworkManager will call OnClientConnected if the client connected to server successfully
             //TODO set error connect to server callback
         }
         else
         {
-            Debug.LogError("can't start as client, unity transport is null");
+            BytewarsLogger.LogWarning("can't start as client, unity transport is null");
         }
     }
 
-    private void SetNetworkManagerData(UnityTransport unityTransport, string address, ushort port, 
+    private void SetNetworkManagerData(UnityTransport unityTransport, string address, ushort port,
         InitialConnectionData initialConnectionData)
     {
         unityTransport.ConnectionData.Address = address;
@@ -35,7 +36,7 @@ public class Reconnect : MonoBehaviour
         NetworkManager.Singleton.NetworkConfig.ConnectionData = connectionData;
         NetworkManager.Singleton.NetworkConfig.NetworkTransport = unityTransport;
     }
-    public void StartAsHost(UnityTransport unityTransport, string address, ushort port, 
+    public void StartAsHost(UnityTransport unityTransport, string address, ushort port,
         InitialConnectionData initialConnectionData)
     {
         if (unityTransport)
@@ -86,13 +87,13 @@ public class Reconnect : MonoBehaviour
         {
             if (GameData.GameModeSo.lobbyCountdownSecond > -1)
             {
-                serverHelper.StartCoroutineCountdown(this, 
-                    GameData.GameModeSo.lobbyCountdownSecond, 
+                serverHelper.StartCoroutineCountdown(this,
+                    GameData.GameModeSo.lobbyCountdownSecond,
                     game.OnLobbyCountdownServerUpdated);
             }
             //most variable exists only on IsServer bracket
             bool isInGameScene = GameConstant.GameSceneBuildIndex == SceneManager.GetActiveScene().buildIndex;
-            game.SendConnectedPlayerStateClientRpc( serverHelper.ConnectedTeamStates.Values.ToArray(), 
+            game.SendConnectedPlayerStateClientRpc(serverHelper.ConnectedTeamStates.Values.ToArray(),
                 serverHelper.ConnectedPlayerStates.Values.ToArray(), inGameMode, isInGameScene);
             var playerObj = NetworkManager.Singleton.ConnectedClients[clientNetworkId].PlayerObject;
             var gameClient = playerObj.GetComponent<GameClientController>();
@@ -100,13 +101,13 @@ public class Reconnect : MonoBehaviour
             {
                 connectedClients.Add(clientNetworkId, gameClient);
                 Debug.Log($"clientNetworkId: {clientNetworkId} connected");
-                if (isInGameScene && inGameState!=InGameState.GameOver)
+                if (isInGameScene && inGameState != InGameState.GameOver)
                 {
                     if (players.TryGetValue(clientNetworkId, out var serverPlayer))
                     {
                         serverPlayer.UpdateMissilesState();
                         game.ReAddReconnectedPlayerClientRpc(clientNetworkId, serverPlayer.GetFiredMissilesId(),
-                            serverHelper.ConnectedTeamStates.Values.ToArray(), 
+                            serverHelper.ConnectedTeamStates.Values.ToArray(),
                             serverHelper.ConnectedPlayerStates.Values.ToArray());
                     }
                     //gameplay already started
@@ -136,40 +137,49 @@ public class Reconnect : MonoBehaviour
             }
         }
     }
-    
+
     public void OnClientStopped(bool isHost, InGameState inGameState, ServerHelper serverHelper, ulong clientNetworkId,
         InGameMode inGameMode)
     {
         Debug.Log($"OnClientStopped isHost:{isHost} clientNetworkId:{clientNetworkId}");
         if (isHost)
         {
-            //QuitToMainMenu();
+            serverHelper.Reset();
+            StartCoroutine(GameManager.Instance.QuitToMainMenu());
             return;
         }
-        //TODO check is in game scene, check whether client intentionally click quit button
-        if (inGameState != InGameState.GameOver)
+        else
         {
-            if (serverHelper.ConnectedPlayerStates.TryGetValue(clientNetworkId, out var playerState))
+            //TODO check is in game scene, check whether client intentionally click quit button
+            if (inGameState != InGameState.GameOver)
             {
-                var initialData = new InitialConnectionData()
+                if (serverHelper.ConnectedPlayerStates.TryGetValue(clientNetworkId, out var playerState))
                 {
-                    inGameMode = inGameMode,
-                    sessionId = playerState.sessionId
-                };
-                if(!isIntentionallyDisconnect)
-                    TryReconnect(initialData);
-                bool isInGameScene = GameConstant.GameSceneBuildIndex == SceneManager.GetActiveScene().buildIndex;
-                GameManager.Instance.RemoveConnectedClient(clientNetworkId, isInGameScene);
+                    var initialData = new InitialConnectionData()
+                    {
+                        inGameMode = inGameMode,
+                        sessionId = playerState.sessionId
+                    };
+                    if (!isIntentionallyDisconnect)
+                    {
+                        TryReconnect(initialData);
+                    }
+                    bool isInGameScene = GameConstant.GameSceneBuildIndex == SceneManager.GetActiveScene().buildIndex;
+                    GameManager.Instance.RemoveConnectedClient(clientNetworkId, isInGameScene);
+                }
             }
-        }
 
-        bool isInMainMenu = GameConstant.MenuSceneBuildIndex == SceneManager.GetActiveScene().buildIndex;
-        if (isInMainMenu)
-        {
-            var menuCanvas = MenuManager.Instance.GetCurrentMenu();
-            if (menuCanvas && menuCanvas is MatchLobbyMenu lobby)
+            bool isInMainMenu = GameConstant.MenuSceneBuildIndex == SceneManager.GetActiveScene().buildIndex;
+            if (isInMainMenu)
             {
-                lobby.ShowStatus("disconnected from server, trying to reconnect...");
+                var menuCanvas = MenuManager.Instance.GetCurrentMenu();
+                if (menuCanvas && menuCanvas is MatchLobbyMenu lobby)
+                {
+                    if (!isIntentionallyDisconnect)
+                    {
+                        lobby.ShowStatus("disconnected from server, trying to reconnect...");
+                    }
+                }
             }
         }
     }
@@ -178,13 +188,13 @@ public class Reconnect : MonoBehaviour
     public IEnumerator ClientDisconnectIntentionally()
     {
         isIntentionallyDisconnect = true;
-        yield return  DisconnectSafely();
+        yield return DisconnectSafely();
     }
 
     private IEnumerator DisconnectSafely()
     {
-        if (NetworkManager.Singleton.IsListening && 
-            NetworkManager.Singleton.IsClient && 
+        if (NetworkManager.Singleton.IsListening &&
+            NetworkManager.Singleton.IsClient &&
             !NetworkManager.Singleton.ShutdownInProgress)
         {
             NetworkManager.Singleton.Shutdown();
@@ -194,9 +204,9 @@ public class Reconnect : MonoBehaviour
 
     public bool IsServerShutdownOnLobby(int connectedClientCount)
     {
-        if (connectedClientCount<1)
+        if (connectedClientCount < 1)
         {
-            if (GameData.GameModeSo!=null && 
+            if (GameData.GameModeSo != null &&
                 GameData.GameModeSo.lobbyShutdownCountdown > -1)
             {
                 return true;
@@ -207,8 +217,8 @@ public class Reconnect : MonoBehaviour
 
     public IEnumerator ShutdownServer(Action onServerShutdownFinished)
     {
-        if (NetworkManager.Singleton.IsListening && 
-            NetworkManager.Singleton.IsServer && 
+        if (NetworkManager.Singleton.IsListening &&
+            NetworkManager.Singleton.IsServer &&
             !NetworkManager.Singleton.ShutdownInProgress)
         {
             NetworkManager.Singleton.Shutdown();
