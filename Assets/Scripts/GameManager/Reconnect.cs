@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -77,7 +77,7 @@ public class Reconnect : MonoBehaviour
     }
     public void OnClientConnected(ulong clientNetworkId, bool isOwner, bool isServer, bool isClient, bool isHost,
         ServerHelper serverHelper, InGameMode inGameMode,
-        Dictionary<ulong, GameClientController> connectedClients, InGameState inGameState,
+        Dictionary<ulong, GameClientController> connectedClients, InGameState inGameState, ServerType serverType,
         Dictionary<ulong, Player> players, int gameTimeLeft, ClientHelper clientHelper)
     {
         Debug.Log($"OnClientConnected IsServer:{isServer} isOwner:{isOwner} clientNetworkId:{clientNetworkId}");
@@ -94,7 +94,7 @@ public class Reconnect : MonoBehaviour
             //most variable exists only on IsServer bracket
             bool isInGameScene = GameConstant.GameSceneBuildIndex == SceneManager.GetActiveScene().buildIndex;
             game.SendConnectedPlayerStateClientRpc(serverHelper.ConnectedTeamStates.Values.ToArray(),
-                serverHelper.ConnectedPlayerStates.Values.ToArray(), inGameMode, isInGameScene);
+                serverHelper.ConnectedPlayerStates.Values.ToArray(), inGameMode, serverType, isInGameScene);
             var playerObj = NetworkManager.Singleton.ConnectedClients[clientNetworkId].PlayerObject;
             var gameClient = playerObj.GetComponent<GameClientController>();
             if (gameClient)

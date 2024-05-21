@@ -2,6 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
+using System;
 using AccelByte.Models;
 using UnityEngine;
 
@@ -52,7 +53,7 @@ public class MatchmakingSessionDSHandler_Starter : MenuCanvas
 
         // listen event when match is found and ds available
         matchmakingSessionDSWrapper.OnMatchmakingFoundEvent += JoinSessionPanel;
-        matchmakingSessionDSWrapper.OnDSAvailableEvent += TravelToGame;
+        matchmakingSessionDSWrapper.OnDSAvailableEvent += TravelToDS;
 
         // listen event when failed
         matchmakingSessionDSWrapper.OnStartMatchmakingFailed += FailedPanel;
@@ -70,7 +71,7 @@ public class MatchmakingSessionDSHandler_Starter : MenuCanvas
             return;
         }
         matchmakingSessionDSWrapper.OnMatchmakingFoundEvent -= JoinSessionPanel;
-        matchmakingSessionDSWrapper.OnDSAvailableEvent -= TravelToGame;
+        matchmakingSessionDSWrapper.OnDSAvailableEvent -= TravelToDS;
         matchmakingSessionDSWrapper.OnStartMatchmakingFailed -= FailedPanel;
         matchmakingSessionDSWrapper.OnMatchmakingJoinSessionFailedEvent += FailedPanel;
         matchmakingSessionDSWrapper.OnDSFailedRequestEvent -= FailedPanel;
@@ -80,19 +81,21 @@ public class MatchmakingSessionDSHandler_Starter : MenuCanvas
 
     private void FailedPanel()
     {
+        UnbindMatchmakingEvents();
         ShowError("Cannot find Match");
     }
 
     private void OnCancelMatchmakingComplete()
     {
+        UnbindMatchmakingEvents();
         HideLoading();
     }
 
-    private void TravelToGame(SessionV2GameSession session)
+    private void TravelToDS(SessionV2GameSession session)
     {
-        matchmakingSessionDSWrapper.TravelToDS(session, selectedGameMode);
         UnbindMatchmakingEvents();
         matchmakingSessionDSWrapper.UnbindEventListener();
+        matchmakingSessionDSWrapper.TravelToDS(session, selectedGameMode);
     }
 
     private void JoinSessionPanel(string sessionId)

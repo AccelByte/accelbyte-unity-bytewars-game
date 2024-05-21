@@ -1,4 +1,4 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -74,6 +74,8 @@ public class LoadingMenuCanvas : MenuCanvas
 
     public void Show(string loadingInfo, LoadingTimeoutInfo loadingTimeoutInfo = null, UnityAction cancelCallback = null)
     {
+        cancelBtn.onClick.RemoveAllListeners();
+
         cancelProcessCallback = cancelCallback;
         infoText.text = loadingInfo;
         if (cancelCallback != null)
@@ -127,9 +129,9 @@ public class LoadingMenuCanvas : MenuCanvas
             }
             else
             {
+                gameObject.SetActive(false);
                 MenuManager.Instance.ShowInfo(timeoutReachedInfo, "Timeout");
                 cancelProcessCallback?.Invoke();
-                gameObject.SetActive(false);
             }
         }
     }

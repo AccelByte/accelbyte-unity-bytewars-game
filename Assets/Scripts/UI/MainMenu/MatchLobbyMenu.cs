@@ -62,19 +62,19 @@ public class MatchLobbyMenu : MenuCanvas
     private static void OnStartButtonClicked()
     {
         var playerObj = NetworkManager.Singleton.LocalClient.PlayerObject;
-        
+
         if (!playerObj)
         {
             return;
         }
-        
+
         var gameController = playerObj.GetComponent<GameClientController>();
         if (gameController)
         {
             gameController.StartOnlineGame();
         }
     }
-    
+
     private void OnQuitButtonClicked()
     {
         StartCoroutine(LeaveSessionAndQuit());
@@ -110,8 +110,13 @@ public class MatchLobbyMenu : MenuCanvas
         ResetPlayerEntries();
         
         PopulatePlayerEntries();
-        
-        startButton.gameObject.SetActive(SessionCache.IsSessionLeader());
+
+        /* If P2P, only show the start button if the player is the session leader.
+         * Otherwise, always show the start button on other server mode. */
+        startButton.gameObject.SetActive(
+            GameData.ServerType.Equals(ServerType.OnlinePeer2Peer) ?
+            GameManager.Instance.IsHost :
+            true);
     }
     
     private void PopulatePlayerEntries()

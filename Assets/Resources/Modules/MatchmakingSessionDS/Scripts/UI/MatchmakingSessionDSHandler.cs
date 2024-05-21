@@ -1,9 +1,8 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-using System.Collections;
-using System.Threading.Tasks;
+using System;
 using AccelByte.Models;
 using UnityEngine;
 
@@ -73,7 +72,6 @@ public class MatchmakingSessionDSHandler : MenuCanvas
 
         BindMatchmakingEvent();
 
-
         MatchmakingSessionServerTypeSelection.OnBackButtonCalled -= OnBackButtonFromServerSelection;
         MatchmakingSessionServerTypeSelection.OnBackButtonCalled += OnBackButtonFromServerSelection;
     }
@@ -95,7 +93,7 @@ public class MatchmakingSessionDSHandler : MenuCanvas
         // listen event when match is found and ds available
         matchmakingSessionDSWrapper.OnMatchmakingFoundEvent += JoinSessionPanel;
         matchmakingSessionDSWrapper.OnJoinSessionCompleteEvent += WaitingForDSPanel;
-        matchmakingSessionDSWrapper.OnDSAvailableEvent += TravelToGame;
+        matchmakingSessionDSWrapper.OnDSAvailableEvent += TravelToDS;
 
         // listen event when failed
         matchmakingSessionDSWrapper.OnStartMatchmakingFailed += FailedPanel;
@@ -113,10 +111,10 @@ public class MatchmakingSessionDSHandler : MenuCanvas
             return;
         }
         matchmakingSessionDSWrapper?.UnbindEventListener();
-
+        
         matchmakingSessionDSWrapper.OnMatchmakingFoundEvent -= JoinSessionPanel;
         matchmakingSessionDSWrapper.OnJoinSessionCompleteEvent -= WaitingForDSPanel;
-        matchmakingSessionDSWrapper.OnDSAvailableEvent -= TravelToGame;
+        matchmakingSessionDSWrapper.OnDSAvailableEvent -= TravelToDS;
         matchmakingSessionDSWrapper.OnStartMatchmakingFailed -= FailedPanel;
         matchmakingSessionDSWrapper.OnMatchmakingJoinSessionFailedEvent -= FailedPanel;
         matchmakingSessionDSWrapper.OnDSFailedRequestEvent -= FailedPanel;
@@ -126,46 +124,49 @@ public class MatchmakingSessionDSHandler : MenuCanvas
 
     private void FailedPanel()
     {
+        UnbindMatchmakingEvents();
         ShowError("Cannot find Match");
     }
 
     private void OnCancelMatchmakingComplete()
     {
+        UnbindMatchmakingEvents();
         HideLoading();
     }
 
-    private void TravelToGame(SessionV2GameSession session)
+    private void TravelToDS(SessionV2GameSession session)
     {
-        matchmakingSessionDSWrapper.TravelToDS(session, selectedGameMode);
         UnbindMatchmakingEvents();
         matchmakingSessionDSWrapper.UnbindEventListener();
+        matchmakingSessionDSWrapper.TravelToDS(session, selectedGameMode);
     }
 
     private void JoinSessionPanel(string sessionId)
     {
-        ShowLoading("Joining Match", "Joining Match is timed out", joinSessionTimeoutSec, matchmakingSessionDSWrapper.OnClientLeave);
+        ShowLoading("Joining Match", "Joining Match is timed out", joinSessionTimeoutSec, ClientLeaveGameSession);
     }
 
-    private async void WaitingForDSPanel(SessionResponsePayload payload)
+    private void WaitingForDSPanel(SessionResponsePayload payload)
     {
         if (payload.TutorialType != TutorialType.MatchmakingWithDS)
         {
             return;
         }
-        await Delay();
-        ShowLoading("Waiting For DS", "DS Waiting is timed out", joinSessionTimeoutSec, matchmakingSessionDSWrapper.OnClientLeave);
+        ShowLoading("Waiting For DS", "DS Waiting is timed out", joinSessionTimeoutSec, ClientLeaveGameSession);
     }
-
-    private async Task Delay()
-    {
-        await Task.Delay(1500);
-    }
-
 
     private void CancelDSMatchmaking()
     {
         matchmakingSessionDSWrapper.CancelDSMatchmaking();
         ShowLoading("Cancelling Match", "Cancelling match is timed out", cancelMatchmakingTimeoutSec);
+    }
+
+    private void ClientLeaveGameSession()
+    {
+        UnbindMatchmakingEvents();
+
+        HideLoading();
+        matchmakingSessionDSWrapper.OnClientLeave();
     }
 
     #region MenuCanvas

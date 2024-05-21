@@ -1,6 +1,8 @@
-using AccelByte.Core;
+﻿using AccelByte.Core;
 using AccelByte.Models;
 using AccelByte.Server;
+using System;
+using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -59,12 +61,15 @@ public class GameSessionEssentialsWrapper : SessionEssentialsWrapper
     }
 
     //overload TravelToDS
-    protected internal void TravelToDS(SessionV2GameSession sessionV2Game, InGameMode gameMode)
+    protected internal async void TravelToDS(SessionV2GameSession sessionV2Game, InGameMode gameMode)
     {
         if (NetworkManager.Singleton.IsListening)
         {
             return;
         }
+
+        await GameManager.ShowTravelingLoading();
+
         ushort port = GetPort(sessionV2Game.dsInformation);
         string ip = sessionV2Game.dsInformation.server.ip;
         InitialConnectionData initialData = new InitialConnectionData()

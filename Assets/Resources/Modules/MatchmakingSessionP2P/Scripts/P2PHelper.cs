@@ -1,8 +1,10 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
 using AccelByte.Core;
+using System;
+using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -24,20 +26,27 @@ public class P2PHelper
         transportManager.Initialize(apiClient);
     }
 
-    public static void StartAsHost(InGameMode gameMode, string matchSessionId)
+    public static async void StartAsHost(InGameMode gameMode, string matchSessionId)
     {
+        Debug.Log($"{ClassName} Start P2P Host");
+
+        await GameManager.ShowTravelingLoading();
+
+        GameData.ServerType = ServerType.OnlinePeer2Peer;
         SetP2PNetworkTransport(gameMode, matchSessionId);
         networkManager.StartHost();
-        Debug.Log($"{ClassName} Start P2P Host");
         GameManager.StartListenNetworkSceneEvent();
     }
 
-    public static void StartAsP2PClient(string hostUserId, InGameMode gameMode, string matchSessionId)
+    public static async void StartAsP2PClient(string hostUserId, InGameMode gameMode, string matchSessionId)
     {
+        Debug.Log($"{ClassName} Start P2P Client hostUserId: {hostUserId}");
+
+        await GameManager.ShowTravelingLoading();
+
         SetP2PNetworkTransport(gameMode, matchSessionId);
         transportManager.SetTargetHostUserId(hostUserId);
         networkManager.StartClient();
-        Debug.Log($"{ClassName} Start P2P Client hostUserId: {hostUserId}");
     }
 
     private static void SetP2PNetworkTransport(InGameMode gameMode, string matchSessionId)

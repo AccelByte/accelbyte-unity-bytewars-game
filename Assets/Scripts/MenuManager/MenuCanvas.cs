@@ -1,4 +1,4 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -72,6 +72,12 @@ public abstract class MenuCanvas : MonoBehaviour
         }
     }
 
+    protected void ShowLoading(string loadingMessage)
+    {
+        MenuManager.Instance.HideInfo();
+        MenuManager.Instance.ShowLoading(loadingMessage, null, null);
+    }
+
     protected void ShowLoading(string loadingMessage,
         string timeoutReachedMessage, int timeoutInSecond,
         UnityAction cancelCallback = null)
@@ -93,8 +99,8 @@ public abstract class MenuCanvas : MonoBehaviour
         MenuManager.Instance.ShowInfo(errorMessage, "Error");
     }
 
-    protected void HideLoading()
+    protected void HideLoading(bool showActiveMenuImmediately = true)
     {
-        MenuManager.Instance.HideLoading();
+        MenuManager.Instance.HideLoading(showActiveMenuImmediately);
     }
 }
