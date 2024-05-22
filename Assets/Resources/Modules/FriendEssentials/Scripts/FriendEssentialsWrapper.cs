@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using System.Linq;
 using AccelByte.Api;
@@ -7,314 +11,335 @@ using UnityEngine;
 
 public class FriendEssentialsWrapper : MonoBehaviour
 {
-    private User _user;
-    private Lobby _lobby;
+    private User user;
+    private UserProfiles userProfiles;
+    private Lobby lobby;
 
     public string PlayerUserId { get; private set; }
-    private static Friends _friends;
-    private static Friends _outgoingFriends;
+    public string PlayerFriendCode { get; private set; }
 
     public static event Action OnRejected;
     public static event Action OnIncomingAdded;
     public static event Action OnAccepted;
-    
-    // Start is called before the first frame update
-    void Start()
+
+    private void Awake()
     {
-        _user = AccelByteSDK.GetClientRegistry().GetApi().GetUser();
-        _lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
-        LoginHandler.onLoginCompleted += tokenData =>
-        {
-            PlayerUserId = tokenData.user_id;
-        };
-        LoginHandler.onLoginCompleted += tokenData => LoginToLobby();
-        LoginHandler.onLoginCompleted += tokenData => ListenIncomingFriendRequest();
-        LoginHandler.onLoginCompleted += tokenData => ListenRejectedRequest();
-        LoginHandler.onLoginCompleted += tokenData => ListenAcceptedRequest();
+        user = AccelByteSDK.GetClientRegistry().GetApi().GetUser();
+        userProfiles = AccelByteSDK.GetClientRegistry().GetApi().GetUserProfiles();
+        lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
+
+        AuthEssentialsWrapper.OnUserProfileReceived += userProfile => PlayerFriendCode = userProfile.publicId;
+
+        LoginHandler.onLoginCompleted += _ => CheckLobbyConnection();
+        LoginHandler.onLoginCompleted += _ => ListenIncomingFriendRequest();
+        LoginHandler.onLoginCompleted += _ => ListenRejectedRequest();
+        LoginHandler.onLoginCompleted += _ => ListenAcceptedRequest();
+        LoginHandler.onLoginCompleted += tokenData => PlayerUserId = tokenData.user_id;
     }
 
-    private void LoginToLobby()
+    private void CheckLobbyConnection()
     {
-        if (!_lobby.IsConnected)
+        if (!lobby.IsConnected)
         {
-            _lobby.Connect();
+            lobby.Connect();
         }
     }
-    
+
+    #region Add Friends
+
     public void LoadIncomingFriendRequests(ResultCallback<Friends> resultCallback)
     {
-        _lobby.ListIncomingFriends(result =>
-        {
-            if (!result.IsError) {
-                Debug.Log($"Succes to load incoming friend request");
-            } else {
-                Debug.LogWarning($"Error ListIncomingFriends, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
-            }
-            resultCallback?.Invoke(result);
-        });
-    }
-    
-    public void DeclineFriend(string userID, ResultCallback resultCallback)
-    {
-        _lobby.RejectFriend(userID, result =>
+        lobby.ListIncomingFriends(result =>
         {
             if (!result.IsError)
             {
-                Debug.Log($"success to reject friend request {userID}");
+                BytewarsLogger.Log("Successfully loaded incoming friend requests");
             }
             else
             {
-                Debug.LogWarning($"{result.Error.Message}");
+                BytewarsLogger.LogWarning($"Error ListIncomingFriends, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
-            
-            resultCallback?.Invoke(result);
 
+            resultCallback?.Invoke(result);
         });
     }
 
-    public void AcceptFriend(string userID, ResultCallback resultCallback)
+    public void DeclineFriend(string userId, ResultCallback resultCallback)
     {
-        _lobby.AcceptFriend(userID, result =>
+        lobby.RejectFriend(userId, result =>
         {
             if (!result.IsError)
             {
-                Debug.Log($"Success to accept friend {userID}");
+                BytewarsLogger.Log($"Successfully rejected friend request with User Id: {userId}");
             }
             else
             {
-                Debug.LogWarning($"{result.Error.Message}");
+                BytewarsLogger.LogWarning($"{result.Error.Message}");
             }
-            
+
             resultCallback?.Invoke(result);
         });
     }
-    
-    public void CancelFriendRequests(string userID, ResultCallback resultCallback)
+
+    public void AcceptFriend(string userId, ResultCallback resultCallback)
     {
-        _lobby.CancelFriendRequest(userID, result =>
+        lobby.AcceptFriend(userId, result =>
         {
             if (!result.IsError)
             {
-                Debug.Log($"Success to cancel outgoing friend request {userID}");
+                BytewarsLogger.Log($"Successfully accepted friend request with User Id: {userId}");
             }
             else
             {
-                Debug.LogWarning($"{result.Error.Message}");
+                BytewarsLogger.LogWarning($"{result.Error.Message}");
             }
-            
+
             resultCallback?.Invoke(result);
-        });
-    }
-
-    #region Module-8a
-
-    public void GetUserByDisplayName(string displayName, ResultCallback<PagedPublicUsersInfo> resultCallback)
-    {
-        var searcRules = SearchType.DISPLAYNAME;
-        _user.SearchUsers(displayName, searcRules, result =>
-        {
-            if (!result.IsError) {
-                Debug.Log($"Success to search users with displayname {displayName}");
-                resultCallback?.Invoke(result);
-            } 
-            else
-            {
-                Debug.LogWarning($"Error SearchUsers, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
-            }
         });
     }
 
     public void LoadOutgoingFriendRequests(ResultCallback<Friends> resultCallback = null)
     {
-        _lobby.ListOutgoingFriends(result => {
-            if (!result.IsError) {
-                //Save outgoing value to _outgoingFriends
-                _outgoingFriends = result.Value;
-            } else {
-                Debug.LogWarning($"Error ListOutgoingFriends, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+        lobby.ListOutgoingFriends(result =>
+        {
+            if (!result.IsError)
+            {
+                BytewarsLogger.Log("Successfully loaded outgoing friend requests");
             }
+            else
+            {
+                BytewarsLogger.LogWarning("Error ListOutgoingFriends," +
+                                          $" Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+            }
+
             resultCallback?.Invoke(result);
+        });
+    }
+
+    public void CancelFriendRequests(string userId, ResultCallback resultCallback)
+    {
+        lobby.CancelFriendRequest(userId, result =>
+        {
+            if (!result.IsError)
+            {
+                BytewarsLogger.Log($"Successfully canceled outgoing friend request with User Id: {userId}");
+            }
+            else
+            {
+                BytewarsLogger.LogWarning($"{result.Error.Message}");
+            }
+
+            resultCallback?.Invoke(result);
+        });
+    }
+
+    public void GetBulkUserInfo(string[] usersId, ResultCallback<ListBulkUserInfoResponse> resultCallback)
+    {
+        user.BulkGetUserInfo(usersId, result =>
+        {
+            if (!result.IsError)
+            {
+                BytewarsLogger.Log($"Successfully retrieved bulk user info {!result.IsError}");
+
+                resultCallback?.Invoke(result);
+            }
+            else
+            {
+                BytewarsLogger.LogWarning($"{result.Error.Message}");
+            }
+        });
+    }
+    
+    private void ListenIncomingFriendRequest()
+    {
+        lobby.OnIncomingFriendRequest += result =>
+        {
+            if (!result.IsError)
+            {
+                OnIncomingAdded?.Invoke();
+            }
+            else
+            {
+                BytewarsLogger.LogWarning($"{result.Error.Message}");
+            }
+        };
+    }
+    
+    private void ListenRejectedRequest()
+    {
+        lobby.FriendRequestRejected += result =>
+        {
+            if (!result.IsError)
+            {
+                OnRejected?.Invoke();
+            }
+            else
+            {
+                BytewarsLogger.LogWarning($"Error OnUnfriend, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+            }
+        };
+    }
+    
+    private void ListenAcceptedRequest()
+    {
+        lobby.FriendRequestAccepted += result =>
+        {
+            if (!result.IsError)
+            {
+                OnAccepted?.Invoke();
+            }
+            else
+            {
+                BytewarsLogger.LogWarning($"Error OnUnfriend, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+            }
+        };
+    }
+
+    #endregion Add Friends
+
+    #region Search for Players
+
+    public void GetUserByExactDisplayName(string displayName, ResultCallback<PublicUserInfo> resultCallback)
+    {
+        const SearchType searchBy = SearchType.DISPLAYNAME;
+
+        user.SearchUsers(displayName, searchBy, result =>
+        {
+            if (result.IsError)
+            {
+                BytewarsLogger.LogWarning($"Error SearchUsers, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+
+                resultCallback?.Invoke(Result<PublicUserInfo>.CreateError(result.Error.Code, result.Error.Message));
+                return;
+            }
+
+            PublicUserInfo userByExactDisplayName = result.Value.data.FirstOrDefault(publicUserInfo => 
+                publicUserInfo.displayName.Equals(displayName, StringComparison.CurrentCultureIgnoreCase));
+
+            if (userByExactDisplayName == null)
+            {
+                BytewarsLogger.LogWarning($"User with display name {displayName} not found.");
+
+                resultCallback?.Invoke(Result<PublicUserInfo>.CreateError(ErrorCode.UserNotFound, "User not found."));
+                return;
+            }
+
+            BytewarsLogger.Log($"Successfully found users for display name: {displayName}");
+
+            resultCallback?.Invoke(Result<PublicUserInfo>.CreateOk(userByExactDisplayName));
         });
     }
 
     public void GetFriendshipStatus(string userId, ResultCallback<FriendshipStatus> resultCallback)
     {
-        _lobby.GetFriendshipStatus(userId, result =>
+        lobby.GetFriendshipStatus(userId, result =>
         {
             if (!result.IsError)
             {
-                Debug.Log($"success to get friendship status for {userId}");
+                BytewarsLogger.Log($"Successfully retrieved friendship status for {userId}");
             }
             else
             {
-                Debug.LogWarning($"{result.Error.Message}");
+                BytewarsLogger.LogWarning($"{result.Error.Message}");
             }
-            
+
             resultCallback.Invoke(result);
         });
     }
-    
-    public void GetFriendList(ResultCallback<Friends> resultCallback = null)
-    {
-        _lobby.LoadFriendsList(result =>
-        {
-            if (!result.IsError)
-            {
-                Debug.Log($"Success to get friend list");
-            }
-            else
-            {
-                Debug.LogWarning(
-                    $"Error LoadFriendsList, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
-            }
-            resultCallback?.Invoke(result);
-        });
-    }
-    
 
-    public void ListenIncomingFriendRequest()
+    public void GetUserByFriendCode(string friendCode, ResultCallback<PublicUserData> resultCallback)
     {
-        _lobby.OnIncomingFriendRequest += result =>
+        userProfiles.GetUserProfilePublicInfoByPublicId(friendCode, result =>
         {
             if (!result.IsError)
             {
-                Debug.Log($"Successfully listened for incoming friend request");
-                OnIncomingAdded?.Invoke();
-            }
-            else
-            {
-                Debug.LogWarning($"{result.Error.Message}");
-            }
-        };
-    }
-    
-    public void ListenRejectedRequest()
-    {
-        _lobby.FriendRequestRejected += result =>
-        {
-            if (!result.IsError) {
-                Debug.Log($"Successfully listened for outgoing friend request rejection");
-                OnRejected?.Invoke();
-            } else {
-                Debug.LogWarning($"Error OnUnfriend, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
-            }
-        };
-    }
-    
-    public void ListenAcceptedRequest()
-    {
-        _lobby.FriendRequestAccepted += result =>
-        {
-            if (!result.IsError) {
-                Debug.Log($"Successfully listened for outgoing friend request acceptance");
-                OnAccepted?.Invoke();
-            } else {
-                Debug.LogWarning($"Error OnUnfriend, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
-            }
-        };
-    }
+                BytewarsLogger.Log("Successfully retrieved user profile public info by public id.");
 
-    public void GetBulkUserInfo(string[] usersId, ResultCallback<ListBulkUserInfoResponse> resultCallback)
-    {
-        _user.BulkGetUserInfo(usersId, result =>
-        {
-            if (!result.IsError)
-            {
-                Debug.Log($"success to retrieve bulk user info {!result.IsError}");
-                resultCallback?.Invoke(result);
+                GetUserByUserId(result.Value.userId, resultCallback);
             }
             else
             {
-                Debug.LogWarning($"{result.Error.Message}");
+                BytewarsLogger.LogWarning("Error GetUserProfilePublicInfoByPublicId, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+
+                resultCallback?.Invoke(Result<PublicUserData>.CreateError(result.Error.Code, result.Error.Message));
             }
         });
     }
-    
-    public void GetUserAvatar(string userId, ResultCallback<Texture2D> resultCallback)
+
+    private void GetUserByUserId(string userId, ResultCallback<PublicUserData> resultCallback)
     {
-        _user.GetUserAvatar(userId, result =>
+        user.GetUserByUserId(userId, result =>
         {
             if (!result.IsError)
             {
-                Debug.Log($"Success to retrieve Avatar for User {userId}");
+                BytewarsLogger.Log("Successfully retrieved user by user id.");
             }
             else
             {
-                Debug.LogWarning($"Unable to retrieve Avatar for User {userId} : {result.Error}");
+                BytewarsLogger.LogWarning("Error GetUserByUserId, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
+
             resultCallback?.Invoke(result);
         });
     }
 
     public void SendFriendRequest(string userId, ResultCallback resultCallback)
     {
-        _lobby.RequestFriend(userId, result =>
+        lobby.RequestFriend(userId, result =>
         {
             if (!result.IsError)
             {
-                Debug.Log("Sent Friends Request");
+                BytewarsLogger.Log("Successfully sent Friends Request");
                 resultCallback?.Invoke(result);
             }
             else
             {
-                Debug.LogWarning($"Failed to send a friends request: error code: {result.Error.Code} message: {result.Error.Message}");
+                BytewarsLogger.LogWarning($"Failed to send a friends request: error code: {result.Error.Code} message: {result.Error.Message}");
             }
         });
     }
 
-    #endregion
-    
-    #region Utilities
-    
-    public bool IsAlreadyFriend(string userId)
+    public void GetUserAvatar(string userId, ResultCallback<Texture2D> resultCallback)
     {
-        var isFriend = _friends.friendsId.Any(x => x == userId);
-        return isFriend;
-    }
-    
-    public bool CheckOutGoingFriendRequest(string userId)
-    {
-        var isInOutgoingList = _outgoingFriends.friendsId.Any(x => x == userId);
-
-        if (isInOutgoingList)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    public void GetUserData(string userId)
-    {
-        _user.GetUserByUserId(userId, result =>
+        user.GetUserAvatar(userId, result =>
         {
             if (!result.IsError)
             {
-                Debug.Log($"{userId}, {result.Value.avatarUrl}");
+                BytewarsLogger.Log($"Successfully retrieved Avatar for User Id: {userId}");
             }
             else
             {
-                Debug.LogWarning($"{result.IsError}, {result.Error.Message}");
+                BytewarsLogger.LogWarning($"Unable to retrieve Avatar for User {userId} : {result.Error}");
             }
+
+            resultCallback?.Invoke(result);
         });
     }
-    
-    public void GetOwnData(string userId)
+
+    #endregion Search for Players
+
+    #region Friend List
+
+    public void GetFriendList(ResultCallback<Friends> resultCallback = null)
     {
-        _user.GetUserByUserId(userId, result =>
+        lobby.LoadFriendsList(result =>
         {
             if (!result.IsError)
             {
-                Debug.Log($"{userId}, {result.Value.avatarUrl}");
+                BytewarsLogger.Log("Successfully loaded friends list");
             }
             else
             {
-                Debug.LogWarning($"{result.IsError}, {result.Error.Message}");
+                BytewarsLogger.LogWarning(
+                    $"Error LoadFriendsList, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
+
+            resultCallback?.Invoke(result);
         });
     }
-    
-    #endregion
+
+    #endregion Friend List
 }

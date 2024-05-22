@@ -1,128 +1,129 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 using AccelByte.Core;
 using AccelByte.Models;
+using Extensions;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using Logger = System.Reflection.MethodBase;
+using Image = UnityEngine.UI.Image;
 
 public class FindFriendsMenuHandler_Starter : MenuCanvas
 {
-    //Predefined 8a
+    [Header("Find Friends Components"), SerializeField] private GameObject friendEntryPrefab;
+    [SerializeField] private TMP_Text friendCode;
+    [SerializeField] private Button friendCodeCopyButton;
     [SerializeField] private TMP_InputField friendSearchBar;
-    [SerializeField] private RectTransform friendListContent;
-    
-    //Predefined 8a
-    [SerializeField] private RectTransform defaultPanel;
+
+    [Header("View Panels"), SerializeField] private RectTransform defaultPanel;
     [SerializeField] private RectTransform loadingPanel;
     [SerializeField] private RectTransform loadingFailedPanel;
-    [SerializeField] private RectTransform loadingSuccessPanel;
-    [SerializeField] private Button backButton;
+    [SerializeField] private RectTransform resultContentPanel;
 
-    //Predefined 8a
-    private List<RectTransform> _panels = new List<RectTransform>();
-    private Dictionary<string, RectTransform> _usersResult = new Dictionary<string, RectTransform>();
-    
+    [Header("Menu Components"), SerializeField] private Button backButton;
+
+    private const string FriendCodeCopiedMessage = "Copied!";
+    private const string FriendCodePreloadMessage = "...";
+
+    private GameObject userResult;
+
     //copy from Putting It All Together step 1
 
-    
-    #region ViewportContent
-
-    //Predefined 8a
-    enum FindFriendsView
+    private enum FindFriendsView
     {
         Default,
         Loading,
         LoadFailed,
         LoadSuccess
     }
-    //Predefined 8a
+
+    private FindFriendsView currentView = FindFriendsView.Default;
+
     private FindFriendsView CurrentView
     {
-        get => CurrentView;
-        set => ViewSwitcher(value);
-    }
-    //Predefined 8a
-    private void ViewSwitcher(FindFriendsView value)
-    {
-        switch (value)
+        get => currentView;
+        set
         {
-            case FindFriendsView.Default:
-                SwitcherHelper(defaultPanel);
-                break;
-            case FindFriendsView.Loading:
-                SwitcherHelper(loadingPanel);
-                break;
-            case FindFriendsView.LoadFailed:
-                SwitcherHelper(loadingFailedPanel);
-                break;
-            case FindFriendsView.LoadSuccess:
-                SwitcherHelper(loadingSuccessPanel);
-                break;
+            defaultPanel.gameObject.SetActive(value == FindFriendsView.Default);
+            loadingPanel.gameObject.SetActive(value == FindFriendsView.Loading);
+            loadingFailedPanel.gameObject.SetActive(value == FindFriendsView.LoadFailed);
+            resultContentPanel.gameObject.SetActive(value == FindFriendsView.LoadSuccess);
+            currentView = value;
         }
     }
-    //Predefined 8a
-    private void SwitcherHelper(Transform panel)
+
+    private void Awake()
     {
-        panel.gameObject.SetActive(true);
-        _panels.Except(new []{panel})
-            .ToList().ForEach(x => x.gameObject.SetActive(false));
+        CurrentView = FindFriendsView.Default;
+
+        backButton.onClick.AddListener(OnBackButtonClicked);
+        friendCodeCopyButton.onClick.AddListener(OnFriendCodeCopyButtonClicked);
+        //copy from Ready The UI step 1
     }
 
-    #endregion
-    
-    void Start()
+    private void Start()
     {
-        //Predefined 8a
-        _panels = new List<RectTransform>()
-        {
-            defaultPanel, 
-            loadingPanel, 
-            loadingFailedPanel, 
-            loadingSuccessPanel, 
-        };
-        
-        backButton.onClick.AddListener(OnBackButtonClicked);
-        //copy from Ready The UI step 1
         //copy from Putting It All Together step 2
     }
-    
-    #region ButtonAction
 
-    private void OnBackButtonClicked()
-    {
-        MenuManager.Instance.OnBackPressed();
-    }
-    
     private void OnDisable()
     {
         ClearSearchPanel();
+
+        CurrentView = FindFriendsView.Default;
     }
 
+    #region ButtonAction
+
+    private static void OnBackButtonClicked()
+    {
+        MenuManager.Instance.OnBackPressed();
+    }
+
+    private async void OnFriendCodeCopyButtonClicked()
+    {
+        GUIUtility.systemCopyBuffer = friendCode.text;
+        TMP_Text buttonText = friendCodeCopyButton.GetComponentInChildren<TMP_Text>();
+
+        string originalText = buttonText.text;
+        buttonText.SetText(FriendCodeCopiedMessage);
+        friendCodeCopyButton.interactable = false;
+
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
+        buttonText.SetText(originalText);
+        friendCodeCopyButton.interactable = true;
+    }
+
+    #endregion
+
+    #region Search for Players Module
+
+    #region View Management
+
     /// <summary>
-    /// Clean search panel
+    /// Clear results in search panel
     /// </summary>
     private void ClearSearchPanel()
     {
-        friendSearchBar.text = "";
-        GetComponentsInChildren<FriendResultPanelHandler>().ToList().ForEach(x => Destroy(x.gameObject));
-        _usersResult.Clear();
+        friendSearchBar.text = string.Empty;
+
+        resultContentPanel.DestroyAllChildren();
+
+        if (userResult != null)
+        {
+            Destroy(userResult);
+        }
     }
 
-    private void OnFriendButtonClicked()
-    {
-        MenuManager.Instance.ChangeToMenu(AssetEnum.FindFriendsMenuCanvas);
-    }
+    #endregion View Management
 
-    #endregion
-    
-    #region 8a
-    
-
-    
-    #endregion
+    #endregion Search for Players Module
 
     #region MenuCanvasOverride
 

@@ -1,8 +1,11 @@
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using System.Linq;
 
-
-public class TutorialModuleUtil
+public static class TutorialModuleUtil
 {
     public static bool IsAccelbyteSDKInstalled()
     {
@@ -16,5 +19,17 @@ public class TutorialModuleUtil
             return true;
         }
         return false;
+    }
+
+    public static string GetLocalTimeOffsetFromUTC()
+    {
+        TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow);
+        if (offset == TimeSpan.Zero)
+        {
+            return "UTC";
+        }
+        
+        char prefix = offset < TimeSpan.Zero ? '-' : '+';
+        return prefix + offset.ToString("hh\\:mm");
     }
 }

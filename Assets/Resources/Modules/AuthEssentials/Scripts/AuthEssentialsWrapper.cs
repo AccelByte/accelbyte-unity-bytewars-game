@@ -1,6 +1,8 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
+using System;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -11,17 +13,22 @@ public class AuthEssentialsWrapper : MonoBehaviour
     // AccelByte's Multi Registry references
     private ApiClient apiClient;
     private User user;
-    
+    private UserProfiles userProfiles;
+
     // required variables to login with other platform outside AccelByte
-    private PlatformType _platformType;
-    private string _platformToken;
+    private PlatformType platformType;
+    private string platformToken;
 
     public TokenData userData;
+    public UserProfile UserProfile { get; private set; }
 
-    void Start()
+    public static event Action<UserProfile> OnUserProfileReceived = delegate { };
+
+    private void Awake()
     {
         apiClient = AccelByteSDK.GetClientRegistry().GetApi();
         user = apiClient.GetApi<User, UserApi>();
+        userProfiles = apiClient.GetApi<UserProfiles, UserProfilesApi>();
     }
 
     #region AB Service Functions
@@ -31,32 +38,30 @@ public class AuthEssentialsWrapper : MonoBehaviour
         switch (loginMethod)
         {
             case LoginType.DeviceId:
-                _platformType = PlatformType.Device;
-                _platformToken = SystemInfo.deviceUniqueIdentifier;
+                platformType = PlatformType.Device;
+                platformToken = SystemInfo.deviceUniqueIdentifier;
+                break;
+            case LoginType.Steam:
+                break;
+            default:
                 break;
         }
-        
-        Debug.Log("[AuthEssentials] Trying to login with device id: "+ SystemInfo.deviceUniqueIdentifier);
-        
-        user.LoginWithOtherPlatform(_platformType, _platformToken, result => OnLoginCompleted(result, resultCallback));
+
+        BytewarsLogger.Log($"[AuthEssentials] Trying to login with device id: {SystemInfo.deviceUniqueIdentifier}");
+
+        user.LoginWithOtherPlatform(platformType, platformToken, result => OnLoginCompleted(result, resultCallback));
     }
-    
+
     public void LoginWithUsername(string username, string password, ResultCallback<TokenData, OAuthError> resultCallback)
     {
         user.LoginWithUsernameV3(username, password, result => OnLoginCompleted(result, resultCallback), false);
-    }
-    
-    private void GetUserPublicData(string receivedUserId)
-    {
-        GameData.CachedPlayerState.playerId = receivedUserId;
-        user.GetUserByUserId(receivedUserId, OnGetUserPublicDataFinished);
     }
 
     public void GetUserByUserId(string userId, ResultCallback<PublicUserData> resultCallback)
     {
         user.GetUserByUserId(userId, result => OnGetUserByUserId(result, resultCallback));
     }
-    
+
     /// <summary>
     /// Get user info of some users in bulk
     /// </summary>
@@ -66,14 +71,33 @@ public class AuthEssentialsWrapper : MonoBehaviour
     {
         user.BulkGetUserInfo(userIds, result => OnBulkGetUserInfoCompleted(result, resultCallback));
     }
-    
+
     public void GetUserAvatar(string userId, ResultCallback<Texture2D> resultCallback)
     {
         user.GetUserAvatar(userId, result => OnGetUserAvatarCompleted(result, resultCallback));
     }
 
+    private void GetUserProfile()
+    {
+        apiClient.GetApi<UserProfiles, UserProfilesApi>().GetUserProfile(result => OnGetUserProfileCompleted(result));
+    }
+
+    private void CreateUserProfile()
+    {
+        string twoLetterLanguageCode = System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
+        string timeZoneId = TutorialModuleUtil.GetLocalTimeOffsetFromUTC();
+
+        CreateUserProfileRequest createUserProfileRequest = new()
+        {
+            language = twoLetterLanguageCode,
+            timeZone = timeZoneId,
+        };
+
+        userProfiles.CreateUserProfile(createUserProfileRequest, result => OnCreateUserProfileCompleted(result));
+    }
+
     #endregion
-    
+
     #region Callback Functions
 
     /// <summary>
@@ -85,44 +109,32 @@ public class AuthEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Login user successful.");
+            BytewarsLogger.Log("Login user successful.");
+
             GameData.CachedPlayerState.playerId = result.Value.user_id;
             userData = result.Value;
+
+            GetUserProfile();
         }
         else
         {
-            Debug.Log($"Login user failed. Message: {result.Error.error}");
+            BytewarsLogger.Log($"Login user failed. Message: {result.Error.error}");
         }
 
         customCallback?.Invoke(result);
-    }
-    
-    private void OnGetUserPublicDataFinished(Result<PublicUserData> result)
-    {
-        if (result.IsError)
-        {
-            Debug.Log($"[AuthEssentialsWrapper] error OnGetUserPublicDataFinished:{result.Error.Message}");
-        }
-        else
-        {
-            var publicUserData = result.Value;
-            GameData.CachedPlayerState.playerId = publicUserData.userId;
-            GameData.CachedPlayerState.avatarUrl = publicUserData.avatarUrl;
-            GameData.CachedPlayerState.playerName = publicUserData.displayName;
-        }
     }
 
     private void OnGetUserByUserId(Result<PublicUserData> result, ResultCallback<PublicUserData> customCallback = null)
     {
         if (!result.IsError)
         {
-            Debug.Log("Successfully get the user public data!");
+            BytewarsLogger.Log("Successfully get the user public data!");
         }
         else
         {
-            Debug.Log($"Unable to get the user public data. Message: {result.Error.Message}");
+            BytewarsLogger.Log($"Unable to get the user public data. Message: {result.Error.Message}");
         }
-        
+
         customCallback?.Invoke(result);
     }
 
@@ -135,28 +147,66 @@ public class AuthEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Successfully bulk get the user info!");
+            BytewarsLogger.Log("Successfully bulk get the user info!");
         }
         else
         {
-            Debug.Log($"Unable to bulk get the user info. Message: {result.Error.Message}");
+            BytewarsLogger.Log($"Unable to bulk get the user info. Message: {result.Error.Message}");
         }
-        
+
         customCallback?.Invoke(result);
     }
-    
+
     private void OnGetUserAvatarCompleted(Result<Texture2D> result, ResultCallback<Texture2D> customCallback = null)
     {
         if (!result.IsError)
         {
-            Debug.Log($"Successfully retrieve the user avatar! ");
+            BytewarsLogger.Log($"Successfully retrieve the user avatar! ");
         }
         else
         {
-            Debug.LogWarning($"Unable to retrieve the user avatar. Message: {result.Error}");
+            BytewarsLogger.LogWarning($"Unable to retrieve the user avatar. Message: {result.Error}");
         }
-        
+
         customCallback?.Invoke(result);
+    }
+
+    private void OnGetUserProfileCompleted(Result<UserProfile> result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log("Successfully retrieved self user profile!");
+
+            UserProfile = result.Value;
+            OnUserProfileReceived?.Invoke(UserProfile);
+        }
+        else
+        {
+            BytewarsLogger.Log($"Unable to retrieve self user profile. Message: {result.Error.Message}");
+
+            //TODO: Nicky (5/15/2024) Change the condition to check for
+            //      the correct error code when implemented in the SDK.
+            const string userProfileNotFoundCode = "11440";
+            if (result.Error.Code.ToString() is userProfileNotFoundCode)
+            {
+                CreateUserProfile();
+            }
+        }
+    }
+
+    private void OnCreateUserProfileCompleted(Result<UserProfile> result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log("Successfully created self user profile!");
+
+            UserProfile = result.Value;
+            OnUserProfileReceived?.Invoke(UserProfile);
+        }
+        else
+        {
+            BytewarsLogger.Log($"Unable to create self user profile. Message: {result.Error.Message}");
+        }
     }
 
     #endregion
