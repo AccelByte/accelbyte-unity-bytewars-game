@@ -16,12 +16,23 @@ public class Builder
     [MenuItem("Build/Build Windows64 Client")]
     public static void BuildWindowsClient()
     {
+        string[] cmdArgs = System.Environment.GetCommandLineArgs();
+        string locationPathName = "../Build/Client/ByteWars.exe";
+        foreach (string arg in cmdArgs)
+        {
+            if (arg.Contains("-setBuildPath="))
+            {
+                string buildPath = arg.Replace("-setBuildPath=", "");
+                locationPathName = buildPath;
+            }
+        }
+
         EditorUserBuildSettings.standaloneBuildSubtarget = StandaloneBuildSubtarget.Player;
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64);
         var options = new BuildPlayerOptions
         {
             scenes = scenes,
-            locationPathName = "../Build/Client/ByteWars.exe",
+            locationPathName = locationPathName,
             target = BuildTarget.StandaloneWindows64,
             options = BuildOptions.None
         };
@@ -40,12 +51,24 @@ public class Builder
     [MenuItem("Build/Build Server")]
     public static void BuildLinuxServer()
     {
+        string[] cmdArgs = System.Environment.GetCommandLineArgs();
+        string locationPathName = "../Build/Server/ByteWarsServer.x86_64";
+        
+        foreach (string arg in cmdArgs)
+        {
+            if (arg.Contains("-setBuildPath="))
+            {
+                string buildPath = arg.Replace("-setBuildPath=", "");
+                locationPathName = buildPath;
+            }
+        }
+
         EditorUserBuildSettings.standaloneBuildSubtarget = StandaloneBuildSubtarget.Server;
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.LinuxHeadlessSimulation, BuildTarget.StandaloneLinux64);
         var options = new BuildPlayerOptions
         {
             scenes = scenes,
-            locationPathName = "../Build/Server/ByteWarsServer.x86_64",
+            locationPathName = locationPathName,
             target = BuildTarget.StandaloneLinux64,
             subtarget = (int)StandaloneBuildSubtarget.Server,
             options = BuildOptions.None
