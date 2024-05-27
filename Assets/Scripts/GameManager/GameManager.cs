@@ -68,7 +68,9 @@ public class GameManager : NetworkBehaviour
     private MenuManager _menuManager;
     private int _gameTimeLeft;
 
-    public static readonly int TravelingDelay = 2; 
+    public static readonly int TravelingDelay = 2;
+
+    public bool IsDedicatedServer { get { return IsServer && !IsHost && !IsClient; } }
 
     #region Initialization and Lifecycle
 
@@ -486,9 +488,7 @@ public class GameManager : NetworkBehaviour
         GameData.GameModeSo = gameModeSo;
         _gameMode = gameModeSo.gameMode;
 
-        OnStartingGameClientRpc();
-
-        await Task.Delay(TimeSpan.FromSeconds(TravelingDelay));
+        await ShowTravelingLoading();
 
         SceneManager.LoadScene(GameConstant.GameSceneBuildIndex);
     }
@@ -557,7 +557,7 @@ public class GameManager : NetworkBehaviour
             return false;
         }
 
-        if (_hud)
+        if (!IsDedicatedServer && _hud)
         {
             _hud.HideGameStatusContainer();
         }
@@ -572,7 +572,10 @@ public class GameManager : NetworkBehaviour
         switch (state)
         {
             case InGameState.None:
-                _hud.gameObject.SetActive(false);
+                if (!IsDedicatedServer && _hud)
+                {
+                    _hud.gameObject.SetActive(false);
+                }
                 ResetLevel();
 #if !UNITY_SERVER
                 OnGameStateIsNone?.Invoke();
@@ -580,14 +583,14 @@ public class GameManager : NetworkBehaviour
                 break;
 
             case InGameState.Initializing:
-                if (_hud)
+                if (!IsDedicatedServer && _hud)
                 {
                     _hud.gameObject.SetActive(false);
                 }
                 break;
 
             case InGameState.PreGameCountdown:
-                if (_hud)
+                if (!IsDedicatedServer && _hud)
                 {
                     _hud.gameObject.SetActive(true);
                     _hud.SetTime(remainingGameDuration);
@@ -604,7 +607,11 @@ public class GameManager : NetworkBehaviour
                 break;
 
             case InGameState.Playing:
-                _hud.gameObject.SetActive(true);
+                if (!IsDedicatedServer && _hud)
+                {
+                    _hud.gameObject.SetActive(true);
+                }
+                
                 _serverHelper.CancelCountdown();
                 _serverHelper.StartCoroutineCountdown(this, 
                     remainingGameDuration,
@@ -612,7 +619,11 @@ public class GameManager : NetworkBehaviour
                 break;
 
             case InGameState.ShuttingDown:
-                _hud.gameObject.SetActive(true);
+                if (!IsDedicatedServer && _hud)
+                {
+                    _hud.gameObject.SetActive(true);
+                }
+                
                 _serverHelper.CancelCountdown();
                 _serverHelper.StartCoroutineCountdown(this, 
                     GameData.GameModeSo.beforeShutDownCountdownSecond, 
@@ -620,7 +631,10 @@ public class GameManager : NetworkBehaviour
                 break;
 
             case InGameState.LocalPause:
-                _hud.gameObject.SetActive(false);
+                if (!IsDedicatedServer && _hud)
+                {
+                    _hud.gameObject.SetActive(false);
+                }
                 break;
 
             case InGameState.GameOver:
@@ -636,17 +650,19 @@ public class GameManager : NetworkBehaviour
                         OnGameOverShutDownCountdown);
                 }
 
-                if (InGamePause.IsPausing())
+                if (!IsDedicatedServer)
                 {
-                    InGamePause.ToggleGamePause();
+                    if (InGamePause.IsPausing())
+                    {
+                        InGamePause.ToggleGamePause();
+                    }
+
+                    _hud.gameObject.SetActive(false);
+                    _menuManager.ShowInGameMenu(AssetEnum.GameOverMenuCanvas);
                 }
-
-                _hud.gameObject.SetActive(false);
-                _menuManager.ShowInGameMenu(AssetEnum.GameOverMenuCanvas);
-
                 break;
         }
-
+        
         if (state == InGameState.LocalPause)
         {
             Time.timeScale = 0;
@@ -683,7 +699,7 @@ public class GameManager : NetworkBehaviour
         {
             _hud.HideGameStatusContainer();
         }
-        
+
         InGameState = inGameState;
         if (inGameState == InGameState.Initializing)
         {
@@ -695,7 +711,7 @@ public class GameManager : NetworkBehaviour
             {
                 InGamePause.ToggleGamePause();
             }
-            
+
             _hud.gameObject.SetActive(false);
             _menuManager.ShowInGameMenu(AssetEnum.GameOverMenuCanvas);
         }

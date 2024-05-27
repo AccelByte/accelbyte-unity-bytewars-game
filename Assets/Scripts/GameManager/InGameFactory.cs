@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using AccelByte.Core;
@@ -104,46 +104,54 @@ public class InGameFactory
     {
         List<Player> ships = new List<Player>();
         int levelObjectCount = levelObjects.Count;
-        int playerIndex = 0;
+        
         if (teamStates.Count < 1)
-            return ships;
-        int playerPerTeamCount = playerStates.Count/teamStates.Count;
-        for (int a = 0; a < teamStates.Count; a++)
         {
-            for (int i = 0; i < playerPerTeamCount; i++)
+            BytewarsLogger.LogWarning("Cannot spawn player ships. Not enough team.");
+            return ships;
+        }
+
+        foreach (KeyValuePair<ulong, PlayerState> playerState in playerStates)
+        {
+            for (int i = 0; i < gameModeSo.numRetriesToPlacePlayer; i++)
             {
-                for (int j = 0; j < gameModeSo.numRetriesToPlacePlayer; j++)
+                int randomIndex = Random.Range(0, availablePos.Count);
+                Vector3 randomPosition = availablePos[randomIndex];
+                availablePos.RemoveAt(randomIndex);
+
+                if (!GameUtility.HasLineOfSightToOtherShip(instantiatedGEs, randomPosition, instantiatedShips))
                 {
-                    int randomIndex = Random.Range(0, availablePos.Count);
-                    var randomPosition = availablePos[randomIndex];
-                    availablePos.RemoveAt(randomIndex);
-                    if (!GameUtility.HasLineOfSightToOtherShip(instantiatedGEs, randomPosition, instantiatedShips))
-                    {
-                        Debug.Log($"player-{playerIndex} team-{a} placed in {j} attempts");
-                        var playerState = playerStates.ElementAt(playerIndex).Value;
-                        playerState.position = randomPosition;
-                        var newShip = SpawnLocalPlayer(gameModeSo, objectPooling, 
-                            teamStates.ElementAt(a).Value.teamColour, playerState);
-                        if (newShip != null)
-                        {
-                            ships.Add(newShip);
-                            instantiatedShips.Add(playerState.clientNetworkId, newShip);
-                            levelObjects.Add(new LevelObject()
-                            {
-                                m_prefabName = gameModeSo.playerPrefab.name,
-                                m_position = randomPosition,
-                                m_rotation = Quaternion.identity,
-                                ID = levelObjectCount+playerIndex
-                            });
-                        }
-                        playerIndex++;
-                        break;
-                    }
+                    PlayerState tempPlayerState = playerState.Value;
+                    tempPlayerState.position = randomPosition;
+
+                    Debug.Log($"player-{tempPlayerState.playerIndex} team-{tempPlayerState.teamIndex} placed at {randomPosition} in {i} attempts");
                     
+                    Player newShip = SpawnLocalPlayer(
+                        gameModeSo, 
+                        objectPooling, 
+                        teamStates.ElementAt(tempPlayerState.teamIndex).Value.teamColour, 
+                        tempPlayerState);
+
+                    if (newShip != null)
+                    {
+                        ships.Add(newShip);
+                        instantiatedShips.Add(tempPlayerState.clientNetworkId, newShip);
+                        levelObjects.Add(new LevelObject()
+                        {
+                            m_prefabName = gameModeSo.playerPrefab.name,
+                            m_position = randomPosition,
+                            m_rotation = Quaternion.identity,
+                            ID = levelObjectCount + tempPlayerState.playerIndex
+                        });
+                    }
+
+                    break;
                 }
             }
         }
+
         instantiatedGEs.AddRange(instantiatedShips.Values);
+        
         return ships;
     }
 

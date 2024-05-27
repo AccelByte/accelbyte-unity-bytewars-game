@@ -124,8 +124,8 @@ public class MatchLobbyMenu : MenuCanvas
         ulong clientNetworkId = GameManager.Instance.ClientNetworkId;
         Dictionary<ulong, PlayerState> playerStates = GameManager.Instance.ConnectedPlayerStates;
         Dictionary<int, TeamState> teamStates = GameManager.Instance.ConnectedTeamStates;
-        
-        foreach (KeyValuePair<ulong, PlayerState> kvp in playerStates)
+
+        foreach (KeyValuePair<ulong, PlayerState> kvp in playerStates.OrderBy(pair => pair.Value.teamIndex))
         {
             PlayerState playerState = kvp.Value;
             bool isCurrentPlayer = playerState.clientNetworkId == clientNetworkId;

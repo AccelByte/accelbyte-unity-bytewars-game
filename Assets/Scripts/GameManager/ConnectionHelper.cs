@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
@@ -65,7 +65,12 @@ public class ConnectionHelper
         }
         if (isNewPlayer)
         {
-            serverHelper.CreateNewPlayerState(request.ClientNetworkId, gameModeSo);
+            if (serverHelper.CreateNewPlayerState(request.ClientNetworkId, gameModeSo) == null)
+            {
+                string reason = $"Game is full, player connection is rejected.";
+                RejectConnection(response, reason);
+                return null;
+            }
         }
         else
         {
