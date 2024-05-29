@@ -23,7 +23,12 @@ public class MatchLobbyMenu : MenuCanvas
     {
         Refresh();
     }
-    
+
+    private void OnDisable()
+    {
+        statusContainer.SetActive(false);
+    }
+
     private void Awake()
     {
         GameManager.OnGameStateChanged += OnGameStateChanged;

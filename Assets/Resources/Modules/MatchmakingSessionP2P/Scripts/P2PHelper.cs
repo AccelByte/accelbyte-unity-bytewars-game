@@ -32,7 +32,9 @@ public class P2PHelper
 
         await GameManager.ShowTravelingLoading();
 
+        GameManager.Instance.ResetCache();
         GameData.ServerType = ServerType.OnlinePeer2Peer;
+
         SetP2PNetworkTransport(gameMode, matchSessionId);
         networkManager.StartHost();
         GameManager.StartListenNetworkSceneEvent();
@@ -43,6 +45,9 @@ public class P2PHelper
         Debug.Log($"{ClassName} Start P2P Client hostUserId: {hostUserId}");
 
         await GameManager.ShowTravelingLoading();
+
+        GameManager.Instance.ResetCache();
+        GameData.ServerType = ServerType.OnlinePeer2Peer;
 
         SetP2PNetworkTransport(gameMode, matchSessionId);
         transportManager.SetTargetHostUserId(hostUserId);

@@ -68,7 +68,7 @@ public class GameManager : NetworkBehaviour
     private MenuManager _menuManager;
     private int _gameTimeLeft;
 
-    public static readonly int TravelingDelay = 2;
+    public static readonly int TravelingDelay = 1;
 
     public bool IsDedicatedServer { get { return IsServer && !IsHost && !IsClient; } }
 
@@ -237,6 +237,14 @@ public class GameManager : NetworkBehaviour
         _hud.Init(teamStates.Values.ToArray(), playerStates.Values.ToArray());
     }
     
+    public void ResetCache()
+    {
+        _gameMode = GameModeEnum.MainMenu;
+        _inGameMode = InGameMode.None;
+        connectedClients.Clear();
+        _serverHelper.Reset();
+    }
+
     #endregion
     
     #region Connection Management
@@ -248,16 +256,15 @@ public class GameManager : NetworkBehaviour
             BytewarsLogger.Log("Hosting server has stopped");
             _inGameMode = InGameMode.None;
         }
-        
-        connectedClients.Clear();
-        _serverHelper.Reset();
+
+        ResetCache();
     }
 
     private void OnClientStopped(bool isHostStopped)
     {
         if (isHostStopped) 
         {
-            connectedClients.Clear();
+            ResetCache();
         }
         
         reconnect.OnClientStopped(isHostStopped, InGameState, _serverHelper,
@@ -515,7 +522,9 @@ public class GameManager : NetworkBehaviour
         }
 
         OnClientLeaveSession?.Invoke();
-        
+
+        ResetCache();
+
         _menuManager.CloseInGameMenu();
         _menuManager.ChangeToMainMenu();
     }

@@ -144,7 +144,7 @@ public class Reconnect : MonoBehaviour
         Debug.Log($"OnClientStopped isHost:{isHost} clientNetworkId:{clientNetworkId}");
         if (isHost)
         {
-            serverHelper.Reset();
+            GameManager.Instance.ResetCache();
             StartCoroutine(GameManager.Instance.QuitToMainMenu());
             return;
         } 
