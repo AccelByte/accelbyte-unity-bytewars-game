@@ -22,6 +22,7 @@ public class ConnectionHelper
             RejectConnection(response, reason);
             return null;
         }
+
         int serverWaitSec = 0;
         while(String.IsNullOrEmpty(GameData.ServerSessionID))
         {
@@ -35,6 +36,7 @@ public class ConnectionHelper
                 return null;
             }
         }
+
         if (isNewPlayer &&
             !String.IsNullOrEmpty(initialData.serverSessionId) &&
             !initialData.serverSessionId.Equals(GameData.ServerSessionID))
@@ -45,6 +47,7 @@ public class ConnectionHelper
         }
 
         GameModeSO gameModeSo = availableInGameMode[clientRequestedGameModeIndex];
+        
         if (inGameMode==InGameMode.None)
         {
             result = new ConnectionApprovalResult()
@@ -63,6 +66,7 @@ public class ConnectionHelper
                 return null;
             }
         }
+
         if (isNewPlayer)
         {
             if (serverHelper.CreateNewPlayerState(request.ClientNetworkId, gameModeSo) == null)
@@ -77,7 +81,7 @@ public class ConnectionHelper
             //handle reconnection
             if (inGameState != InGameState.GameOver)
             {
-                Debug.Log($"player sessionId:{initialData.sessionId} try to reconnect");
+                BytewarsLogger.Log($"player sessionId : {initialData.sessionId} try to reconnect");
                 Player player = serverHelper.AddReconnectPlayerState(initialData.sessionId, 
                     request.ClientNetworkId, 
                     availableInGameMode[clientRequestedGameModeIndex]);
@@ -119,7 +123,7 @@ public class ConnectionHelper
         response.Pending = false;
         return result;
     }
-    
+
     private void RejectConnection(NetworkManager.ConnectionApprovalResponse response, string reason)
     {
         response.Reason = reason;

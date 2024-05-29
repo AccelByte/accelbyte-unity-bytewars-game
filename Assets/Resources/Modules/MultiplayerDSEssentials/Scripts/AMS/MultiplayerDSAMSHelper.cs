@@ -10,7 +10,7 @@ using UnityEngine;
 public class MultiplayerDSAMSHelper : MonoBehaviour
 {
     private MultiplayerDSAMSWrapper amsWrapper;
-    private MatchmakingSessionDSWrapper matchmakingDSWrapper;
+    private MatchmakingSessionDSWrapperServer matchmakingDSWrapperServer;
 
 #if UNITY_SERVER
 
@@ -22,10 +22,11 @@ public class MultiplayerDSAMSHelper : MonoBehaviour
         }
 
         amsWrapper = TutorialModuleManager.Instance.GetModuleClass<MultiplayerDSAMSWrapper>();
-        matchmakingDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapper>();
+        matchmakingDSWrapperServer = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapperServer>();
 
-        matchmakingDSWrapper.MatchMakingServerClaim();
-        matchmakingDSWrapper.BackFillProposal();
+        matchmakingDSWrapperServer.BackFillProposal();
+        matchmakingDSWrapperServer.OnServerSessionUpdate();
+
         GameManager.Instance.OnDeregisterServer += ShutdownDS;
 
         LoginServer();
@@ -72,6 +73,8 @@ public class MultiplayerDSAMSHelper : MonoBehaviour
 
     private void ShutdownDS()
     {
+        amsWrapper.Disconnect();
+
         BytewarsLogger.Log($"Shutting down DS..");
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.ExitPlaymode();

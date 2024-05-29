@@ -13,14 +13,11 @@ public class PlayWithPartyHelper : MonoBehaviour
     private bool IsMatchmakingEventslistened = false;
     private PlayWithPartyEssentialsWrapper playWithPartyWrapper;
     private AuthEssentialsWrapper authWrapper;
-    private MatchmakingSessionDSWrapper matchmakingDSWrapper;
 
     private void Start()
     {
         playWithPartyWrapper = TutorialModuleManager.Instance.GetModuleClass<PlayWithPartyEssentialsWrapper>();
         authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
-        matchmakingDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapper>();
-
 
         // On Match Session's Join Button clicked event
         MatchSessionItem.OnJoinButtonDataSet += OnJoinButtonDataSet;
@@ -41,21 +38,11 @@ public class PlayWithPartyHelper : MonoBehaviour
         //TODO: BindMatchmakingEvents(SessionConfigurationTemplateType.P2P);
     }
 
-    private void UnbindMatchmakingEvents(SessionResponsePayload sessionResponsePayload)
-    {
-        IsMatchmakingEventslistened = false;
-        matchmakingDSWrapper.UnbindEventListener();
-        matchmakingDSWrapper.OnDSAvailableEvent -= TravelToDS;
-    }
-
     private void BindMatchmakingEvents(SessionConfigurationTemplateType sessionType)
     {
         if (sessionType is SessionConfigurationTemplateType.DS)
         {
             BytewarsLogger.Log("subscribe events from matchmaking ds");
-            matchmakingDSWrapper.BindEventListener();
-            matchmakingDSWrapper.OnDSAvailableEvent += TravelToDS;
-            matchmakingDSWrapper.OnLeaveSessionCompleteEvent += UnbindMatchmakingEvents;
         } 
         else
         {
@@ -68,10 +55,8 @@ public class PlayWithPartyHelper : MonoBehaviour
         switch (session.matchPool)
         {
             case "unity-teamdeathmatch-ds-ams":
-                matchmakingDSWrapper.TravelToDS(session, InGameMode.OnlineDeathMatchGameMode);
                 break;
             case "unity-elimination-ds-ams":
-                matchmakingDSWrapper.TravelToDS(session, InGameMode.OnlineEliminationGameMode);
                 break;
         }
     }
@@ -166,9 +151,9 @@ public class PlayWithPartyHelper : MonoBehaviour
     {
         switch (configurationName)
         {
-            case MatchSessionConfig.UnitySessionEliminationDs or MatchSessionConfig.UnitySessionEliminationP2P or MatchSessionConfig.UnitySessionEliminationDSAMS:
+            case GameSessionConfig.UnitySessionEliminationDs or GameSessionConfig.UnitySessionEliminationP2P or GameSessionConfig.UnitySessionEliminationDSAMS:
                 return InGameMode.CreateMatchEliminationGameMode;
-            case MatchSessionConfig.UnitySessionDeathMatchDs or MatchSessionConfig.UnitySessionDeathMatchP2P or MatchSessionConfig.UnitySessionTeamDeathmatchDSAMS:
+            case GameSessionConfig.UnitySessionDeathMatchDs or GameSessionConfig.UnitySessionDeathMatchP2P or GameSessionConfig.UnitySessionTeamDeathmatchDSAMS:
                 return InGameMode.CreateMatchDeathMatchGameMode;
             default:
                 return InGameMode.None;

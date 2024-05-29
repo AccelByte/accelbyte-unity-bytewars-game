@@ -1,4 +1,4 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -39,13 +39,13 @@ public class MatchSessionP2PWrapper : MatchSessionWrapper
 
     #region CreateCustomMatchSession
     public void CreateP2P(InGameMode gameMode,
-        MatchSessionServerType sessionServerType,
+        GameSessionServerType sessionServerType,
         Action<string> onCreatedMatchSession)
     {
         isCreateMatchSessionCancelled = false;
         requestedGameMode = gameMode;
         gameSessionV2 = null;
-        var config = MatchSessionConfig.MatchRequests;
+        var config = GameSessionConfig.SessionCreateRequest;
         if (!config.TryGetValue(gameMode, out var matchTypeDict))
         {
             return;
@@ -117,7 +117,7 @@ public class MatchSessionP2PWrapper : MatchSessionWrapper
             yield break;
         }
 
-        Session.GetGameSessionDetailsBySessionId(gameSessionV2.id, OnSessionDetailsCheckFinished);
+        session.GetGameSessionDetailsBySessionId(gameSessionV2.id, OnSessionDetailsCheckFinished);
     }
 
     private void OnSessionDetailsCheckFinished(Result<SessionV2GameSession> result)
@@ -193,10 +193,6 @@ public class MatchSessionP2PWrapper : MatchSessionWrapper
     private void OnLoginSuccess(TokenData tokenData)
     {
         MatchSessionHelper.GetCurrentUserPublicData(tokenData.user_id);
-        if (!Lobby.IsConnected)
-        {
-            Lobby.Connect();
-        }
     }
     #endregion
 

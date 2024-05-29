@@ -14,7 +14,6 @@ public static class BrowseMatchSessionEventListener
     {
         _displayedGameSessions = displayedGameSessions;
         _lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
-        if(!_lobby.IsConnected)_lobby.Connect();
         _lobby.SessionV2GameSessionUpdated += OnV2GameSessionUpdated;
         _lobby.SessionV2UserRejectedGameSessionInvitation += OnV2UserRejectedGameSessionInvitation;
         MatchSessionDSWrapper.OnGameSessionUpdated += OnGameSessionUpdated;

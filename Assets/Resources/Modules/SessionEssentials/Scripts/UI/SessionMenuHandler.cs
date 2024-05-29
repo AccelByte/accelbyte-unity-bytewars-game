@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using AccelByte.Core;
 using AccelByte.Models;
 using TMPro;
 using UnityEngine;
@@ -18,26 +19,20 @@ public class SessionMenuHandler : MenuCanvas
     [SerializeField] private Button backFailedButton;
     [SerializeField] private Button leaveButton;
     [SerializeField] private Button cancelButton;
-    
     [SerializeField] private RectTransform defaultPanel;
     [SerializeField] private RectTransform creatingPanel;
     [SerializeField] private RectTransform joiningPanel;
     [SerializeField] private RectTransform joinedPanel;
     [SerializeField] private RectTransform failedPanel;
-    
     [SerializeField] private RectTransform footerPanel;
     [SerializeField] private TMP_Text sessionIdText;
     
-    private List<RectTransform> _panels = new List<RectTransform>();
-
-    private SessionRequestPayload _sessionRequestPayload;
+    private List<RectTransform> panels = new List<RectTransform>();
     
-    private SessionResponsePayload _sessionResponsePayload;
+    private string cachedSessionId;
     
-    private SessionEssentialsWrapper _sessionEssentialsWrapper;
+    private SessionEssentialsWrapper sessionEssentialsWrapper;
     
-    private static readonly TutorialType _tutorialType = TutorialType.SessionEssentials;
-
     public enum SessionMenuView
     {
         Default,
@@ -78,7 +73,7 @@ public class SessionMenuHandler : MenuCanvas
     private void switcherHelper(RectTransform panel, SessionMenuView value)
     {
         panel.gameObject.SetActive(true);
-        _panels.Except(new []{panel})
+        panels.Except(new []{panel})
             .ToList().ForEach(x => x.gameObject.SetActive(false));
         if (value != SessionMenuView.Default)
         {
@@ -91,7 +86,7 @@ public class SessionMenuHandler : MenuCanvas
 
     private void Awake()
     {
-        _panels = new List<RectTransform>()
+        panels = new List<RectTransform>()
         {
             defaultPanel,
             creatingPanel,
@@ -100,16 +95,16 @@ public class SessionMenuHandler : MenuCanvas
             failedPanel
         };
         
-        _sessionEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<SessionEssentialsWrapper>();
+        sessionEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<SessionEssentialsWrapper>();
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        if (_sessionEssentialsWrapper == null)
+        if (sessionEssentialsWrapper == null)
         {
-            _sessionEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<SessionEssentialsWrapper>();
-            BindToWrapperEvent();
+            sessionEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<SessionEssentialsWrapper>();
+            SubcribeSessionEvents();
         }
         
         createEliminationButton.onClick.AddListener(OnEliminationButtonClicked);
@@ -129,12 +124,17 @@ public class SessionMenuHandler : MenuCanvas
         MenuManager.Instance.OnBackPressed();
     }
 
-    private void OnLeaveSessionCompleted(SessionResponsePayload response)
+    private void OnLeaveSessionCompleted(Result<SessionV2GameSession> result)
     {
-        if (response.IsError) return;
-        IsTutorialTypeMatch(_sessionResponsePayload.TutorialType);
-        _sessionResponsePayload = null;
-        MenuManager.Instance.OnBackPressed();
+        if (!result.IsError)
+        {
+            MenuManager.Instance.OnBackPressed();
+        } 
+        else
+        {
+            BytewarsLogger.LogWarning($"{result.Error.Message}");
+            MenuManager.Instance.OnBackPressed();
+        }
     }
 
     private void OnCancelButtonClicked()
@@ -145,65 +145,65 @@ public class SessionMenuHandler : MenuCanvas
 
     private void OnLeaveSessionButtonClicked()
     {
-        _sessionEssentialsWrapper.LeaveSession(_sessionResponsePayload.Result.Value.id);
-    }
-
-    private void IsTutorialTypeMatch(TutorialType? tutorialType)
-    {
-        if (_tutorialType != tutorialType)
-        {
-            BytewarsLogger.LogWarning($"{tutorialType} is not match with {_tutorialType}");
-            return;
-        }
-        BytewarsLogger.Log($"{tutorialType} is match with {_tutorialType}");
+        sessionEssentialsWrapper.LeaveSession(cachedSessionId);
     }
     
-    private void OnCreateSessionCompleted(SessionResponsePayload response)
+    private void OnCreateSessionCompleted(Result<SessionV2GameSession> result)
     {
-        if (!response.IsError)
+        if (!result.IsError)
         {
             CurrentView = SessionMenuView.Joining;
-            StartCoroutine(DelayCallback(sessionView => Helper(response, sessionView)));
+            StartCoroutine(DelayCallback(sessionView => Helper(result, sessionView)));
+        }
+        else
+        {
+            CurrentView = SessionMenuView.Failed;
         }
     }
 
-    private void Helper(SessionResponsePayload response, SessionMenuView sessionMenuView)
+    private void Helper(Result<SessionV2GameSession> result, SessionMenuView sessionMenuView)
     {
-        if (response.IsError)
+        if (result.IsError)
         {
             CurrentView = SessionMenuView.Failed;
-            BytewarsLogger.LogWarning($"{response.Result.Error.Message}");
+            BytewarsLogger.LogWarning($"{result.Error.Message}");
             return;
         }
 
-        BytewarsLogger.Log(response.Result.Value.id);
+        BytewarsLogger.Log(result.Value.id);
         
         CurrentView = sessionMenuView;
         switch (sessionMenuView)
         {
             case SessionMenuView.Joining:
-                _sessionResponsePayload = response;
+                cachedSessionId = result.Value.id;
                 break;
             case SessionMenuView.Joined:
-                sessionIdText.text = _sessionResponsePayload.Result.Value.id;
+                sessionIdText.text = result.Value.id;
                 break;
         }
     }
     
     private void OnEliminationButtonClicked()
     {
-        var sessionRequest = new SessionRequestPayload
+        Dictionary<InGameMode, 
+        Dictionary<GameSessionServerType, 
+        SessionV2GameSessionCreateRequest>> sessionConfig = GameSessionConfig.SessionCreateRequest;
+        
+        if (!sessionConfig.TryGetValue(InGameMode.None, out var matchTypeDict))
         {
-            SessionType = SessionType.none,
-            InGameMode = InGameMode.None,
-            SessionTemplateName = "unity-elimination-none",
-            TutorialType = TutorialType.SessionEssentials
-        };
+            return;
+        }
+
+        if (!matchTypeDict.TryGetValue(GameSessionServerType.None, out var request))
+        {
+            return;
+        }
 
         CurrentView = SessionMenuView.Creating;
         var button = creatingPanel.gameObject.GetComponentInChildren<Button>();
         button.gameObject.SetActive(true);
-        _sessionEssentialsWrapper.CreateSession(sessionRequest);
+        sessionEssentialsWrapper.CreateSession(request);
     }
     
     private IEnumerator DelayCallback(Action<SessionMenuView> action)
@@ -217,22 +217,22 @@ public class SessionMenuHandler : MenuCanvas
     private void OnEnable()
     {
         CurrentView = SessionMenuView.Default;
-        if (_sessionEssentialsWrapper == null)
+        if (sessionEssentialsWrapper == null)
         {
             return;
         }
         
-        BindToWrapperEvent();
+        SubcribeSessionEvents();
     }
 
     private void OnDisable()
     {
-        if (_sessionEssentialsWrapper == null)
+        if (sessionEssentialsWrapper == null)
         {
             return;
         }
 
-        UnbindToWrapperEvent();
+        UnSubcribeSessionEvents();
     }
 
     public override GameObject GetFirstButton()
@@ -247,16 +247,16 @@ public class SessionMenuHandler : MenuCanvas
 
     #region EventListener
 
-    private void BindToWrapperEvent()
+    private void SubcribeSessionEvents()
     {
-        _sessionEssentialsWrapper.OnCreateSessionCompleteEvent += OnCreateSessionCompleted;
-        _sessionEssentialsWrapper.OnLeaveSessionCompleteEvent += OnLeaveSessionCompleted;
+        sessionEssentialsWrapper.OnCreateSessionCompleteEvent += OnCreateSessionCompleted;
+        sessionEssentialsWrapper.OnLeaveSessionCompleteEvent += OnLeaveSessionCompleted;
     }
 
-    private void UnbindToWrapperEvent()
+    private void UnSubcribeSessionEvents()
     {
-        _sessionEssentialsWrapper.OnCreateSessionCompleteEvent -= OnCreateSessionCompleted;
-        _sessionEssentialsWrapper.OnLeaveSessionCompleteEvent -= OnLeaveSessionCompleted;
+        sessionEssentialsWrapper.OnCreateSessionCompleteEvent -= OnCreateSessionCompleted;
+        sessionEssentialsWrapper.OnLeaveSessionCompleteEvent -= OnLeaveSessionCompleted;
     }
 
     #endregion

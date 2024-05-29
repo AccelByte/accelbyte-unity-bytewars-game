@@ -56,19 +56,30 @@ public class ServerHelper
         BytewarsLogger.Log($"Added player {playerName} teamIndex:{teamIndex} clientNetworkId:{clientNetworkId}");
 
         // Add new player state if not yet.
-        if (!_connectedPlayerState.TryGetValue(clientNetworkId, out PlayerState oPState))
+        if (!_connectedPlayerState.ContainsKey(clientNetworkId))
         {
             _connectedPlayerState.Add(clientNetworkId, playerState);
+            BytewarsLogger.Log($"Nani Kore: {_connectedPlayerState.Count}");
+        }
+        else
+        {
+            BytewarsLogger.Log($"Nani Kore Wow: {_connectedPlayerState.Count}");
         }
 
         // Add new team state if not yet.
-        if (!_connectedTeamState.TryGetValue(teamIndex, out TeamState ti))
+        if (!_connectedTeamState.ContainsKey(teamIndex))
         {
             _connectedTeamState.Add(teamIndex, new TeamState
             {
                 teamColour = gameMode.teamColours[teamIndex],
                 teamIndex = teamIndex
             });
+
+            BytewarsLogger.Log($"Nani Kore: {_connectedTeamState.Count}");
+        }
+        else
+        {
+            BytewarsLogger.Log($"Nani Kore Wow: {_connectedTeamState.Count}");
         }
 
         return playerState;
@@ -166,24 +177,6 @@ public class ServerHelper
 
     private void RemovePlayerStateDirectly(ulong clientNetworkId, int teamIndex, bool removeTeamIfEmpty)
     {
-        // Auto remove team if empty.
-        if (removeTeamIfEmpty)
-        {
-            int otherTeamMemberCount = 0;
-            foreach (var keyValuePair in _connectedPlayerState)
-            {
-                int tIndex = keyValuePair.Value.teamIndex;
-                if (teamIndex == tIndex)
-                {
-                    otherTeamMemberCount++;
-                }
-            }
-            if (otherTeamMemberCount == 0)
-            {
-                _connectedTeamState.Remove(teamIndex);
-            }
-        }
-
         _connectedPlayerState.Remove(clientNetworkId);
     }
 

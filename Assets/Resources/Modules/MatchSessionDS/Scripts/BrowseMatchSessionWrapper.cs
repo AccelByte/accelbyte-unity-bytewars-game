@@ -1,6 +1,6 @@
-﻿// // Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
-// // This is licensed software from AccelByte Inc, for limitations
-// // and restrictions contact your company contract manager.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 using System;
 using System.Collections.Generic;
@@ -30,7 +30,7 @@ public class BrowseMatchSessionWrapper : MatchSessionWrapper
         nextPage = "";
         isBrowseMatchSessionsCanceled = false;
         onQueryMatchSessionFinished = onSessionRetrieved;
-        BrowseCustomMatchSession(MatchSessionConfig.CreatedMatchSessionAttribute);
+        BrowseCustomMatchSession(CreateMatchConfig.CreatedMatchSessionAttribute);
     }
 
     public void CancelBrowseMatchSessions()
@@ -56,7 +56,7 @@ public class BrowseMatchSessionWrapper : MatchSessionWrapper
             {
                 var req = GenerateRequestFromNextPage(nextPage);
                 onQueryNextPageMatchSessionFinished = onQueryNextMatchSessionsFinished;
-                Session?.QueryGameSession(req, OnQueryNextPageFinished);
+                session?.QueryGameSession(req, OnQueryNextPageFinished);
             }
         }
     }
@@ -80,7 +80,7 @@ public class BrowseMatchSessionWrapper : MatchSessionWrapper
     private static Dictionary<string, object> GenerateRequestFromNextPage(string nextPageUrl)
     {
         isQueryingNextMatchSessions = true;
-        var result = MatchSessionConfig.CreatedMatchSessionAttribute;
+        var result = CreateMatchConfig.CreatedMatchSessionAttribute;
         var fullUrl = nextPageUrl.Split('?');
         if (fullUrl.Length < 2)
             return result;

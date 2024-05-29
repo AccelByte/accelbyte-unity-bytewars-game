@@ -9,7 +9,7 @@ using UnityEngine;
 public class MultiplayerDSAMSHelper_Starter: MonoBehaviour
 {
     private MultiplayerDSAMSWrapper_Starter amsWrapper;
-    private MatchmakingSessionDSWrapper matchmakingDSWrapper;
+    private MatchmakingSessionDSWrapperServer matchmakingDSWrapperServer;
     
 #if UNITY_SERVER
 
@@ -17,8 +17,11 @@ public class MultiplayerDSAMSHelper_Starter: MonoBehaviour
     {
         BytewarsLogger.Log("Starting server using AMS..");
         amsWrapper = TutorialModuleManager.Instance.GetModuleClass<MultiplayerDSAMSWrapper_Starter>();
-        matchmakingDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapper>();
+        matchmakingDSWrapperServer = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapperServer>();
         
+        matchmakingDSWrapperServer.BackFillProposal();
+        matchmakingDSWrapperServer.OnServerSessionUpdate();
+
         GameManager.Instance.OnDeregisterServer += delegate {};
     }
     

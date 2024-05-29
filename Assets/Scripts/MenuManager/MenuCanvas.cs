@@ -80,7 +80,7 @@ public abstract class MenuCanvas : MonoBehaviour
 
     protected void ShowLoading(string loadingMessage,
         string timeoutReachedMessage, int timeoutInSecond,
-        UnityAction cancelCallback = null)
+        UnityAction cancelCallback = null, bool showButton = true)
     {
         MenuManager.Instance.HideInfo();
         MenuManager.Instance.ShowLoading(loadingMessage,
@@ -90,13 +90,19 @@ public abstract class MenuCanvas : MonoBehaviour
                 TimeoutReachedError = timeoutReachedMessage,
                 TimeoutSec = timeoutInSecond
             },
-            cancelCallback);
+            cancelCallback, showButton);
     }
 
     protected void ShowError(string errorMessage)
     {
         MenuManager.Instance.HideLoading();
         MenuManager.Instance.ShowInfo(errorMessage, "Error");
+    }
+
+    protected void ShowInfo(string infoMessage, string infoTitle="Information")
+    {
+        MenuManager.Instance.HideLoading();
+        MenuManager.Instance.ShowInfo(infoMessage, infoTitle);
     }
 
     protected void HideLoading(bool showActiveMenuImmediately = true)

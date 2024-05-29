@@ -7,7 +7,7 @@ public class BrowseMatchItemModel
 {
     public InGameMode GameMode { get; private set; }
     public string MatchSessionId { get; private set; }
-    public MatchSessionServerType SessionServerType { get; private set; }
+    public GameSessionServerType SessionServerType { get; private set; }
     public string MatchCreatorName { get; private set; }
     public string MatchCreatorAvatarURL { get; private set; }
     public int MaxPlayerCount { get; private set; }
@@ -80,35 +80,35 @@ public class BrowseMatchItemModel
     private void SetMatchTypeAndServerType(SessionV2GameSession gameSession)
     {
         var gameSessionName = gameSession.configuration.name;
-        if (gameSessionName.Equals(MatchSessionConfig.UnitySessionEliminationDs))
+        if (gameSessionName.Equals(GameSessionConfig.UnitySessionEliminationDs))
         {
             GameMode = InGameMode.CreateMatchEliminationGameMode;
-            SessionServerType = MatchSessionServerType.DedicatedServer;
+            SessionServerType = GameSessionServerType.DedicatedServer;
         }
-        else if (gameSessionName.Equals(MatchSessionConfig.UnitySessionEliminationP2P))
+        else if (gameSessionName.Equals(GameSessionConfig.UnitySessionEliminationP2P))
         {
             GameMode = InGameMode.CreateMatchEliminationGameMode;
-            SessionServerType = MatchSessionServerType.PeerToPeer;
+            SessionServerType = GameSessionServerType.PeerToPeer;
         }
-        else if (gameSessionName.Equals(MatchSessionConfig.UnitySessionDeathMatchDs))
+        else if (gameSessionName.Equals(GameSessionConfig.UnitySessionDeathMatchDs))
         {
             GameMode = InGameMode.CreateMatchDeathMatchGameMode;
-            SessionServerType = MatchSessionServerType.DedicatedServer;
+            SessionServerType = GameSessionServerType.DedicatedServer;
         }
-        else if (gameSessionName.Equals(MatchSessionConfig.UnitySessionDeathMatchP2P))
+        else if (gameSessionName.Equals(GameSessionConfig.UnitySessionDeathMatchP2P))
         {
             GameMode = InGameMode.CreateMatchDeathMatchGameMode;
-            SessionServerType = MatchSessionServerType.PeerToPeer;
+            SessionServerType = GameSessionServerType.PeerToPeer;
         }
-        else if (gameSessionName.Equals(MatchSessionConfig.UnitySessionEliminationDSAMS))
+        else if (gameSessionName.Equals(GameSessionConfig.UnitySessionEliminationDSAMS))
         {
             GameMode = InGameMode.CreateMatchEliminationGameMode;
-            SessionServerType = MatchSessionServerType.DedicatedServerAMS;
+            SessionServerType = GameSessionServerType.DedicatedServerAMS;
         }
-        else if (gameSessionName.Equals(MatchSessionConfig.UnitySessionTeamDeathmatchDSAMS))
+        else if (gameSessionName.Equals(GameSessionConfig.UnitySessionTeamDeathmatchDSAMS))
         {
             GameMode = InGameMode.CreateMatchDeathMatchGameMode;
-            SessionServerType = MatchSessionServerType.DedicatedServerAMS;
+            SessionServerType = GameSessionServerType.DedicatedServerAMS;
         }
     }
     

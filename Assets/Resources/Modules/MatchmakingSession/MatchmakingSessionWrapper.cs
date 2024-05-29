@@ -3,38 +3,60 @@
 // and restrictions contact your company contract manager.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
-using UnityEngine;
 
-public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
+public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
 {
-    private MatchmakingV2 _matchmakingV2;
-    private static string _ticketId;
+    #region AGS Game SDK Reference
+    private MatchmakingV2 matchmakingV2;
+    #endregion
 
-    protected internal event Action<string> OnMatchmakingFoundEvent;
-    protected internal event ResultCallback<MatchmakingV2CreateTicketResponse> OnStartMatchmakingCompleteEvent;
-    protected internal event Action OnCancelMatchmakingCompleteEvent;
-    protected internal event ResultCallback<SessionV2GameJoinedNotification> OnUserJoinedGameSessionEvent;
-    protected internal event Action<string/* session id*/> OnMatchFoundFallbackEvent;
-    private bool isMatchmakingCancelled;
+    private List<SessionV2GameSession> playerSessions = new List<SessionV2GameSession>();
+    private bool isGetActiveSessionCompleted = false;
+
+    #region matchmaking events
+    protected event ResultCallback<MatchmakingV2MatchFoundNotification> OnMatchFound;
+    protected event ResultCallback<MatchmakingV2MatchmakingStartedNotification> OnMatchStarted;
+    protected event ResultCallback<MatchmakingV2TicketExpiredNotification> OnMatchExpired;
+    protected event ResultCallback<SessionV2DsStatusUpdatedNotification> OnDSStatusUpdate;
+    protected event Action OnMatchTicketDeleted;
+    protected event Action<string /*match ticket id*/> OnMatchTicketCreated;
+    protected internal event Action<string> OnMatchmakingError;
+
+    #endregion
 
     protected void Awake()
     {
         base.Awake();
-
-        _matchmakingV2 = AccelByteSDK.GetClientRegistry().GetApi().GetMatchmakingV2();
-
+        matchmakingV2 = AccelByteSDK.GetClientRegistry().GetApi().GetMatchmakingV2();
     }
 
     #region Matchmaking
 
-    public void StartMatchmaking(string matchPool, bool isLocal = false)
+    /// <summary>
+    /// Start Matchmaking by matchpool
+    /// </summary>
+    /// <param name="matchPool"></param>
+    /// <param name="isLocal"></param>
+    public async Task StartMatchmakingAsync(string matchPool, bool isLocal = false)
     {
-        isMatchmakingCancelled = false;
+        CheckActiveGameSessionClient();
+
+        await WaitCheckActiveGameSessionAsync();
+
+        if (playerSessions.Count > 0)
+        {
+            BytewarsLogger.Log($"Player is already in a session: {playerSessions.Count}");
+            OnMatchmakingError?.Invoke($"Player is already in a session \n cannot start matchmaking");
+            isGetActiveSessionCompleted = false;
+            playerSessions.Clear();
+            return;
+        }
+
         var optionalParams = CreateTicketRequestParams(isLocal);
 
         // Play with Party additional code
@@ -44,176 +66,109 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
             optionalParams.sessionId = PartyHelper.CurrentPartyId;
         }
 
-        _matchmakingV2.CreateMatchmakingTicket(matchPool, optionalParams, OnStartMatchmakingComplete);
+        matchmakingV2.CreateMatchmakingTicket(matchPool, optionalParams, OnStartMatchmakingComplete);
     }
 
     protected internal void CancelMatchmaking(string matchTicketId)
     {
-        isMatchmakingCancelled = true;
-        _matchmakingV2.DeleteMatchmakingTicket(matchTicketId, result => OnCancelMatchmakingComplete(result, matchTicketId));
-    }
-
-    protected internal void GetMatchmakingTicketDetails(string ticketId, bool isNotFallback = false)
-    {
-        _ticketId = ticketId; // cached ticket id
-        if (isNotFallback)
-        {
-            GetTicketDetailsPeriodically(ticketId);
-        }
-        else
-        {
-            GetMatchmakingTicketDetailsFallback(ticketId);
-        }
-    }
-
-    private void GetTicketDetailsPeriodically(string ticketId)
-    {
-        _matchmakingV2.GetMatchmakingTicket(ticketId, OnGetMatchmakingTicketStatusComplete);
-    }
-
-    private void GetMatchmakingTicketDetailsFallback(string ticketId)
-    {
-        _matchmakingV2.GetMatchmakingTicket(ticketId, OnGetMatchmakingTicketFallbackComplete);
+        matchmakingV2.DeleteMatchmakingTicket(matchTicketId, result => OnCancelMatchmakingComplete(result, matchTicketId));
     }
 
     #endregion
 
-    #region EventListener
+    #region Lobby Service EventListener
 
-    protected void BindMatchmakingUserJoinedGameSession()
+    protected void BindMatchmakingStartedNotification()
     {
-        Lobby.SessionV2UserJoinedGameSession += OnUserJoinedGameSession;
+        lobby.MatchmakingV2MatchmakingStarted += OnMatchmakingStarted;
     }
 
-    protected void UnBindMatchmakingUserJoinedGameSession()
+    protected void UnBindMatchmakingStartedNotification()
     {
-        Lobby.SessionV2UserJoinedGameSession -= OnUserJoinedGameSession;
+        lobby.MatchmakingV2MatchmakingStarted -= OnMatchmakingStarted;
     }
 
-    protected void BindOnMatchmakingStarted()
+    protected void BindMatchmakingExpiredNotification()
     {
-        Lobby.MatchmakingV2MatchmakingStarted += OnMatchmakingStarted;
+        lobby.MatchmakingV2TicketExpired += OnMatchTicketExpired;
     }
 
-    protected void UnBindOnMatchmakingStarted()
+    protected void UnBindMatchmakingExpiredNotification()
     {
-        Lobby.MatchmakingV2MatchmakingStarted -= OnMatchmakingStarted;
+        lobby.MatchmakingV2TicketExpired -= OnMatchTicketExpired;
     }
 
     protected void BindMatchFoundNotification()
     {
-        Lobby.MatchmakingV2MatchFound += OnMatchFound;
+        lobby.MatchmakingV2MatchFound += OnMatchmakingFound;
     }
 
     protected void UnBindMatchFoundNotification()
     {
-        Lobby.MatchmakingV2MatchFound -= OnMatchFound;
+        lobby.MatchmakingV2MatchFound -= OnMatchmakingFound;
+    }
+
+    protected void BindOnDSUpdateNotification()
+    {
+        lobby.SessionV2DsStatusChanged += OnDSStatusUpdated;
+    }
+
+    protected void UnBindOnDSUpdateNotification()
+    {
+        lobby.SessionV2DsStatusChanged -= OnDSStatusUpdated;
     }
 
     #endregion
 
-    #region EventHandler
-
-    private void OnUserJoinedGameSession(Result<SessionV2GameJoinedNotification> result)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"user joined session {JsonUtility.ToJson(result.Value)}");
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
-        }
-        OnUserJoinedGameSessionEvent?.Invoke(result);
-    }
+    #region Lobby Service EventHandler
 
     private void OnMatchmakingStarted(Result<MatchmakingV2MatchmakingStartedNotification> result)
     {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"match started {JsonUtility.ToJson(result.Value)}");
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
-        }
+        OnMatchStarted?.Invoke(result);
     }
 
-    private void OnMatchFound(Result<MatchmakingV2MatchFoundNotification> result)
+    private void OnMatchTicketExpired(Result<MatchmakingV2TicketExpiredNotification> result)
     {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log(JsonUtility.ToJson(result.Value));
-            OnMatchmakingFoundEvent?.Invoke(result.Value.id);
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
-        }
+        OnMatchExpired?.Invoke(result);
+    }
+
+    private void OnMatchmakingFound(Result<MatchmakingV2MatchFoundNotification> result)
+    {
+        OnMatchFound?.Invoke(result);
+    }
+
+    private void OnDSStatusUpdated(Result<SessionV2DsStatusUpdatedNotification> result)
+    {
+        OnDSStatusUpdate?.Invoke(result);
     }
 
     #endregion
 
-    #region Callbacks
+    #region Matchmaking Callbacks
 
     private void OnStartMatchmakingComplete(Result<MatchmakingV2CreateTicketResponse> result)
     {
         if (!result.IsError)
         {
-            BytewarsLogger.Log($"MatchTicket id {result.Value.matchTicketId}, estimated queue time {result.Value.queueTime}");
+            BytewarsLogger.Log($"MatchTicket id {result.Value.matchTicketId} Created, queue {result.Value.queueTime}");
+            OnMatchTicketCreated?.Invoke(result.Value.matchTicketId);
         }
         else
         {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
+            BytewarsLogger.LogWarning($"Error: {result.Error.Message}");
         }
-        OnStartMatchmakingCompleteEvent?.Invoke(result);
     }
 
     private void OnCancelMatchmakingComplete(Result result, string ticketId)
     {
         if (!result.IsError)
         {
-            OnCancelMatchmakingCompleteEvent?.Invoke();
-            StopAllCoroutines();
-            BytewarsLogger.Log($"success cancel matchmaking with ticket id {ticketId}");
-        }
-    }
-
-    private void OnGetMatchmakingTicketStatusComplete(Result<MatchmakingV2MatchTicketStatus> result)
-    {
-        if (isMatchmakingCancelled)
-        {
-            return;
-        }
-        if (!result.IsError)
-        {
-            if (result.Value.matchFound)
-            {
-                OnMatchmakingFoundEvent?.Invoke(result.Value.sessionId);
-            }
-            else
-            {
-                StartCoroutine(WaitForASecond(_ticketId, GetTicketDetailsPeriodically));
-            }
-        }
+            BytewarsLogger.Log($"Successfully cancel matchmaking with ticket id {ticketId}");
+            OnMatchTicketDeleted.Invoke();
+        } 
         else
         {
-            BytewarsLogger.LogWarning($"failed to get matchmaking ticket {result.Error.Message}");
-        }
-    }
-
-    private void OnGetMatchmakingTicketFallbackComplete(Result<MatchmakingV2MatchTicketStatus> result)
-    {
-        if (!result.IsError)
-        {
-            if (result.Value.matchFound)
-            {
-                OnMatchFoundFallbackEvent?.Invoke(result.Value.sessionId);
-            }
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"failed to get matchmaking ticket {result.Error.Message}");
+            BytewarsLogger.Log($"Unable cancel matchmaking with ticket id {ticketId}");
         }
     }
 
@@ -236,10 +191,30 @@ public class MatchmakingSessionWrapper : GameSessionEssentialsWrapper
         return optionalParams;
     }
 
-    protected IEnumerator WaitForASecond(string ticketId, Action<string> action)
+    private void CheckActiveGameSessionClient()
     {
-        yield return new WaitForSeconds(1);
-        action?.Invoke(ticketId);
+        SessionV2StatusFilter filter = SessionV2StatusFilter.JOINED;
+        SessionV2AttributeOrderBy orderBy = SessionV2AttributeOrderBy.createdAt;
+        
+        session.GetUserGameSessions(filter, orderBy, true,  result => {
+            if (!result.IsError)
+            {
+                playerSessions.AddRange(result.Value.data);
+                isGetActiveSessionCompleted = true;
+            } 
+            else
+            {
+                BytewarsLogger.LogWarning($"Cannot get user's session : {result.Error.Message}");
+            }
+        });
+    }
+
+    protected async Task WaitCheckActiveGameSessionAsync()
+    {
+        while (isGetActiveSessionCompleted == false)
+        {
+            await Task.Yield();
+        }
     }
 
     #endregion

@@ -30,19 +30,10 @@ public class FriendEssentialsWrapper : MonoBehaviour
 
         AuthEssentialsWrapper.OnUserProfileReceived += userProfile => PlayerFriendCode = userProfile.publicId;
 
-        LoginHandler.onLoginCompleted += _ => CheckLobbyConnection();
         LoginHandler.onLoginCompleted += _ => ListenIncomingFriendRequest();
         LoginHandler.onLoginCompleted += _ => ListenRejectedRequest();
         LoginHandler.onLoginCompleted += _ => ListenAcceptedRequest();
         LoginHandler.onLoginCompleted += tokenData => PlayerUserId = tokenData.user_id;
-    }
-
-    private void CheckLobbyConnection()
-    {
-        if (!lobby.IsConnected)
-        {
-            lobby.Connect();
-        }
     }
 
     #region Add Friends

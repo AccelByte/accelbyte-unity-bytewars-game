@@ -72,13 +72,13 @@ public class MatchSessionItem : MonoBehaviour
         SetView(updatedData);
     }
 
-    private string GetServerType(MatchSessionServerType sessionServerType)
+    private string GetServerType(GameSessionServerType sessionServerType)
     {
         switch (sessionServerType)
         {
-            case MatchSessionServerType.DedicatedServer or MatchSessionServerType.DedicatedServerAMS:
+            case GameSessionServerType.DedicatedServer or GameSessionServerType.DedicatedServerAMS:
                 return "DS";
-            case MatchSessionServerType.PeerToPeer:
+            case GameSessionServerType.PeerToPeer:
                 return "P2P";
         }
 

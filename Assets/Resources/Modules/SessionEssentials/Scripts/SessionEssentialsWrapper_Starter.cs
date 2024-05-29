@@ -1,6 +1,8 @@
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
-using System.IO;
-using System.Runtime.CompilerServices;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -8,73 +10,149 @@ using UnityEngine;
 
 public class SessionEssentialsWrapper_Starter : MonoBehaviour
 {
-    protected Session _session;
-    protected Lobby _lobby;
-    
-    
+    protected Session session;
+    protected Lobby lobby;
+
+    /// <summary>
+    /// This event will raised after JoinSession is complete
+    /// </summary>
+    public event Action<Result<SessionV2GameSession>> OnJoinSessionCompleteEvent;
+
+    /// <summary>
+    /// This event will raised after CreateSession is complete
+    /// </summary>
+    public event Action<Result<SessionV2GameSession>> OnCreateSessionCompleteEvent;
+
+    /// <summary>
+    /// This event will raised after LeaveSession is complete
+    /// </summary>
+    public event Action<Result<SessionV2GameSession>> OnLeaveSessionCompleteEvent;
+
     /// <summary>
     /// This event will raised after GetGameSessionDetailsById is complete
     /// </summary>
-    public event Action<SessionResponsePayload> OnGetSessionDetailsCompleteEvent;
-    
+    public event Action<Result<SessionV2GameSession>> OnGetSessionDetailsCompleteEvent;
 
     protected void Awake()
     {
-        _session = AccelByteSDK.GetClientRegistry().GetApi().GetSession();
-        _lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
+        session = AccelByteSDK.GetClientRegistry().GetApi().GetSession();
+        lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
     }
 
-    private void Start()
+    /// <summary>
+    /// This method will invoke OnCreateSessionCompleteEvent and return Result<SessionV2GameSession>.
+    /// </summary>
+    /// <param name="sessionRequest"></param>
+    protected internal void CreateSession(SessionV2GameSessionCreateRequest request)
     {
-        LoginHandler.onLoginCompleted += LoginToLobby;
+        //TODO: Copy your code here
     }
 
-    
+    /// <summary>
+    /// This method will invoke OnJoinSessionCompleteEvent and return Result<SessionV2GameSession>.
+    /// </summary>
+    /// <param name="sessionId"></param>
+    protected internal void JoinSession(string sessionId)
+    {
+        session.JoinGameSession(sessionId, OnJoinSessionCompleted);
+    }
+
+    /// <summary>
+    /// This method will invoke OnLeaveSessionCompleteEvent and return Result<SessionV2GameSession>.
+    /// </summary>
+    /// <param name="sessionId"></param>
+    protected internal void LeaveSession(string sessionId)
+    {
+        //TODO: Copy your code here
+    }
+
     /// <summary>
     /// This method will invoke OnGetSessionDetailsCompleteEvent and return SessionRequestPayload.
     /// You can filter it by add _tutorialType static flag from class who called this method. 
     /// </summary>
     /// <param name="sessionId"></param>
     /// <param name="sourceFilePath">this will capture class name who called this method, leave it empty</param>
-    protected void GetGameSessionDetailsById(string sessionId, [CallerFilePath] string? sourceFilePath=null)
+    protected void GetGameSessionDetailsById(string sessionId)
     {
-        var tutorialType = SessionUtil.GetTutorialTypeFromClass(sourceFilePath);
-        _session.GetGameSessionDetailsBySessionId(sessionId,  result => OnGetGameSessionDetailsByIdComplete(result, tutorialType));
+        session.GetGameSessionDetailsBySessionId(sessionId, OnGetGameSessionDetailsByIdComplete);
     }
 
-    private void LoginToLobby(TokenData tokenData)
+    #region Session Callback
+    /// <summary>
+    /// CreateSession Callback
+    /// </summary>
+    /// <param name="result"></param>
+    /// <param name="tutorialType"></param>
+    private void OnCreateSessionCompleted(Result<SessionV2GameSession> result)
     {
-        if (!_lobby.IsConnected)
+        if (!result.IsError)
         {
-            _lobby.Connect();
+            BytewarsLogger.Log($"Successfully created game session");
         }
+        else
+        {
+            BytewarsLogger.LogWarning($"{result.Error.Message}");
+        }
+
+        OnCreateSessionCompleteEvent?.Invoke(result);
     }
 
-    #region Callback
-    
-    
+    /// <summary>
+    /// JoinSession Callback
+    /// </summary>
+    /// <param name="result"></param>
+    /// <param name="tutorialType"></param>
+    private void OnJoinSessionCompleted(Result<SessionV2GameSession> result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log($"Successfully joined the game session");
+        }
+        else
+        {
+            BytewarsLogger.LogWarning($"{result.Error.Message}");
+        }
+
+        OnJoinSessionCompleteEvent?.Invoke(result);
+    }
+
+    /// <summary>
+    /// LeaveSession callback
+    /// </summary>
+    /// <param name="result"></param>
+    /// <param name="tutorialType"></param>
+    private void OnLeaveSessionCompleted(Result<SessionV2GameSession> result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log($"Successfully left the game session");
+        }
+        else
+        {
+            BytewarsLogger.LogWarning($"{result.Error.Message}");
+        }
+
+        OnLeaveSessionCompleteEvent?.Invoke(result);
+    }
+
     /// <summary>
     /// GetGameSessionDetailsById callback
     /// </summary>
     /// <param name="result"></param>
     /// <param name="tutorialType"></param>
-    private void OnGetGameSessionDetailsByIdComplete(Result<SessionV2GameSession> result, TutorialType? tutorialType = null)
+    private void OnGetGameSessionDetailsByIdComplete(Result<SessionV2GameSession> result)
     {
-        var response = new SessionResponsePayload();
-
         if (!result.IsError)
         {
             BytewarsLogger.Log($"Successfully obtained the game session details");
-            response.Result = result;
-            response.TutorialType = tutorialType;
         }
         else
         {
             BytewarsLogger.LogWarning($"{result.Error}");
-            response.IsError = result.IsError;
         }
-        OnGetSessionDetailsCompleteEvent?.Invoke(response);
+
+        OnGetSessionDetailsCompleteEvent?.Invoke(result);
     }
-    
+
     #endregion
 }

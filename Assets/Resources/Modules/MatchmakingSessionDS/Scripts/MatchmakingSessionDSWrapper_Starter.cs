@@ -1,374 +1,286 @@
-﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
 using System;
-using System.Collections;
+using System.Threading.Tasks;
 using AccelByte.Core;
 using AccelByte.Models;
-using AccelByte.Server;
 using UnityEngine;
-using static MatchmakingFallback;
 
 public class MatchmakingSessionDSWrapper_Starter : MatchmakingSessionWrapper
 {
-#if UNITY_SERVER
-    private ServerMatchmakingV2 matchmakingV2Server;
-    private ServerDSHub serverDSHub;
-#endif
-    private MatchmakingFallback _matchmakingFallback = new MatchmakingFallback();
     private string matchTicket;
-    private bool isGameStarted;
-    private string sessionId;
-    private bool isSessionActive;
-    private bool isOnJoinSession;
-    private bool isDSUpdateError;
-    private bool onJoinEvent;
-    private bool onDSAvailable;
-    private bool isFired = false;
-    private const int queueTimeOffsetSec = 5;
+    private string cachedSessionId;
+    private bool isEventsListened = false;
+    private bool isMatchTicketExpired = false;
+    private static readonly TutorialType tutorialType = TutorialType.MatchmakingWithDS;
 
-    private static readonly TutorialType _tutorialType = TutorialType.MatchmakingWithDS;
-
-    protected internal event Action OnStartMatchmakingFailed;
-    protected internal event Action<string> OnStartMatchmakingSucceedEvent;
-    protected internal event Action<SessionResponsePayload> OnMatchmakingJoinSessionCompleteEvent;
-    protected internal event Action OnMatchmakingJoinSessionFailedEvent;
-    protected internal event Action<SessionV2GameSession> OnDSAvailableEvent;
-    protected internal event Action OnDSFailedRequestEvent;
-    protected internal event Action OnSessionEnded;
+    protected internal event Action OnMatchmakingWithDSStarted;
+    protected internal event Action OnMatchmakingWithDSTicketExpired;
+    protected internal event Action OnMatchmakingWithDSMatchFound;
+    protected internal event Action OnMatchmakingWithDSCanceled;
+    protected internal event Action OnMatchmakingWithDSJoinSessionStarted;
+    protected internal event Action OnMatchmakingWithDSJoinSessionCompleted;
+    protected internal event Action OnIntendedLeaveSession;
+    protected internal event Action<string /*Matchmaking Error Message*/> OnMatchmakingWithDSError;
+    protected internal event Action<bool> OnDSAvailable;
+    protected internal event Action<string /*DS Error Message*/> OnDSError;
 
     private void Awake()
     {
         base.Awake();
-#if UNITY_SERVER
-#endif
-
     }
 
     private void Start()
     {
-#if UNITY_SERVER
-#endif
+        GameManager.Instance.OnClientLeaveSession += OnClientLeave;
     }
 
-    protected internal void BindEventListener()
+    #region Matchmaking
+
+    /// <summary>
+    /// Start a matchmaking
+    /// </summary>
+    /// <param name="matchPool"></param>
+    protected internal async void StartDSMatchmaking(string matchPool)
     {
-        SetupMatchmakingEventListener(true, false);
-        base.OnStartMatchmakingCompleteEvent += OnStartMatchmakingComplete;
-        base.OnCancelMatchmakingCompleteEvent += OnCancelMatchmakingComplete;
+        //Copy your code here
+        await Task.Delay(40);
+        BytewarsLogger.Log("Start Create Match Ticket Not Implemented");
     }
 
-    protected internal void UnbindEventListener()
-    {
-        UnbindMatchmakingEventListener(true, false);
-        base.OnStartMatchmakingCompleteEvent -= OnStartMatchmakingComplete;
-        base.OnCancelMatchmakingCompleteEvent -= OnCancelMatchmakingComplete;
-        isFired = false;
-    }
-
-    #region Fallback
-    private void CheckMatchFoundNotificationFallback(Result<MatchmakingV2CreateTicketResponse> result)
-    {
-        if (!result.IsError)
-        {
-            Debug.Log(JsonUtility.ToJson(result.Value));
-            StartCoroutine(StartFallbackTimer(result.Value.queueTime));
-        }
-        else
-        {
-            Debug.LogWarning($"{result.Error.Message}");
-        }
-    }
-
-    private void CheckDSStatusUpdateNotificationFallback(Result<SessionV2GameJoinedNotification> result)
-    {
-        if (!result.IsError)
-        {
-            Debug.Log(JsonUtility.ToJson(result.Value));
-            StartCoroutine(StartFallbackTimer(5));
-        }
-        else
-        {
-            Debug.LogWarning($"{result.Error.Message}");
-        }
-    }
-
-    private IEnumerator StartFallbackTimer(int queueTime)
-    {
-        var waitingTime = queueTime + queueTimeOffsetSec;
-        yield return new WaitForSeconds(waitingTime);
-        _matchmakingFallback.FallbackState = FallbackStateEnum.MatchFoundNotificationTimeout;
-        if (isOnJoinSession && !onDSAvailable)
-        {
-            _matchmakingFallback.FallbackState = FallbackStateEnum.DSUpdateNotificationTimeout;
-        }
-        switch (_matchmakingFallback.FallbackState)
-        {
-            case FallbackStateEnum.MatchFoundNotificationTimeout:
-                BytewarsLogger.Log($"UnBindMatchFoundNotification");
-                UnBindMatchFoundNotification();
-                StartFallback(true, false);
-                break;
-            case FallbackStateEnum.DSUpdateNotificationTimeout:
-                BytewarsLogger.Log($"UnBindOnSessionDSUpdateNotification");
-                UnBindOnSessionDSUpdateNotification();
-                StartFallback(false, true);
-                break;
-            default:
-                BytewarsLogger.Log($" is joined to session {isOnJoinSession}, is ds update {onDSAvailable}");
-                break;
-        }
-    }
-
-    private void StartFallback(bool isMatchNotFound, bool isServerUpdateNotFound)
-    {
-        switch (isMatchNotFound)
-        {
-            case true when !isServerUpdateNotFound:
-                GetMatchmakingTicketDetails(matchTicket, true);
-                break;
-            case false when isServerUpdateNotFound:
-                GetSessionAndDSStatus(matchTicket);
-                break;
-        }
-    }
-
-    private void StopFallback()
-    {
-        this.StopAllCoroutines();
-    }
-
-    private void PostFallback(string matchSessionId)
-    {
-        switch (_matchmakingFallback.FallbackState)
-        {
-            case FallbackStateEnum.MatchFoundNotificationTimeout:
-                UnBindMatchFoundNotification();
-                break;
-            case FallbackStateEnum.DSUpdateNotificationTimeout:
-                UnBindOnSessionDSUpdateNotification();
-                _matchmakingFallback.FallbackState = FallbackStateEnum.None;
-                ResetFlag();
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-    }
-
-    private void ResetFlag()
-    {
-        onDSAvailable = false;
-        onJoinEvent = false;
-    }
-    #endregion Fallback
-
-    #region DSMatchmaking
-    protected internal void StartDSMatchmaking(string matchPool)
-    {
-
-    }
-
+    /// <summary>
+    /// Cancel Matchmaking only if the user does not join to the game
+    /// </summary>
     protected internal void CancelDSMatchmaking()
     {
-        StopFallback();
-        CancelMatchmaking(matchTicket);
-    }
-    #endregion DSMatchmaking
-
-    #region EventHandler
-    private void OnStartMatchmakingComplete(Result<MatchmakingV2CreateTicketResponse> result)
-    {
-
+        //Copy your code here
+        BytewarsLogger.Log("Cancel DS Matchmaking is not implemented");
     }
 
-    private void OnJoiningMatch(string sessionId)
-    {
+    #endregion Matchmaking
 
-    }
-
-    private void OnCancelMatchmakingComplete()
+    /// <summary>
+    /// Subscribe notification from this class and parent class
+    /// </summary>
+    protected internal void BindMatchmakingEvent()
     {
-        matchTicket = null;
-        sessionId = null;
-        StopAllCoroutines();
-    }
-
-    private void OnPeriodicJoinSessionComplete(SessionResponsePayload response)
-    {
-        if (!response.IsError)
+        if (!isEventsListened) 
         {
-            if (response.TutorialType != _tutorialType)
-            {
-                return;
-            }
-            OnMatchmakingJoinSessionCompleteEvent?.Invoke(response);
+            RegisterMatchmakingEventListener();
+            BindOnSessionDSUpdateNotification();
+            isEventsListened = true;
+        }
+    }
+
+    /// <summary>
+    /// Unsubscribe notification from this class and parent class
+    /// </summary>
+    protected internal void UnbindMatchmakingEvent()
+    {
+        DeRegisterMatchmakingEventListener();
+        UnBindOnSessionDSUpdateNotification();     
+        isEventsListened = false;
+    }
+
+    /// <summary>
+    /// Subscribe all events from MatchmakingSessionWrapper 
+    /// </summary>
+    private void RegisterMatchmakingEventListener()
+    {
+        BindMatchmakingStartedNotification();
+        BindMatchFoundNotification();
+        BindMatchmakingExpiredNotification();
+
+        OnMatchStarted += OnMatchStartedCallback;
+        OnMatchFound += OnMatchFoundCallback;
+        OnMatchExpired += OnMatchExpiredCallback;
+        OnMatchTicketCreated += OnMatchTicketCreatedCallback;
+        OnMatchTicketDeleted += OnMatchTicketDeletedCallback;
+    }
+
+    /// <summary>
+    /// Unsubscribe all events from MatchmakingSessionWrapper 
+    /// </summary>
+    private void DeRegisterMatchmakingEventListener()
+    {
+        UnBindMatchmakingStartedNotification();
+        UnBindMatchFoundNotification();
+        UnBindMatchmakingExpiredNotification();
+
+        OnMatchStarted -= OnMatchStartedCallback;
+        OnMatchFound -= OnMatchFoundCallback;
+        OnMatchExpired -= OnMatchExpiredCallback;
+        OnMatchTicketCreated -= OnMatchTicketCreatedCallback;
+        OnMatchTicketDeleted -= OnMatchTicketDeletedCallback;
+    }
+
+    private void OnMatchStartedCallback(Result<MatchmakingV2MatchmakingStartedNotification> result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log($"Matchmaking started");
+            OnMatchmakingWithDSStarted?.Invoke();
         }
         else
         {
-            OnMatchmakingJoinSessionFailedEvent?.Invoke();
+            BytewarsLogger.LogWarning($"Matchmaking started");
+            OnMatchmakingWithDSError?.Invoke(result.Error.Message);
+        }
+
+    }
+
+    private void OnMatchExpiredCallback(Result<MatchmakingV2TicketExpiredNotification> result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log($"Matchmaking Ticket is expired");
+            OnMatchmakingWithDSTicketExpired?.Invoke();
+            isMatchTicketExpired = true;
+        }
+        else
+        {
+            BytewarsLogger.LogWarning($"Unable to get OnMatchticketExpired Notification from lobby");
+            OnMatchmakingWithDSError?.Invoke(result.Error.Message);
+        }
+
+        Reset();
+    }
+
+    private void OnMatchFoundCallback(Result<MatchmakingV2MatchFoundNotification> result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log($"Match Found {result.Value}");
+            cachedSessionId = result.Value.id;
+            OnMatchmakingWithDSMatchFound?.Invoke();
+            StartJoinToGameSession(result.Value);
+        }
+        else
+        {
+            BytewarsLogger.LogWarning($"Unable to get OnMatchFound Notification from lobby");
+            OnMatchmakingWithDSError?.Invoke(result.Error.Message);
         }
     }
 
-    private void GetSessionDetailsAndDSStatus(SessionResponsePayload response)
+    private void OnMatchTicketDeletedCallback()
     {
-        if (!response.IsError)
+        Reset();
+        OnMatchmakingWithDSCanceled?.Invoke();
+    }
+
+    private void OnMatchTicketCreatedCallback(string matchTicketId)
+    {
+        matchTicket = matchTicketId;
+    }
+
+    private async void StartJoinToGameSession(MatchmakingV2MatchFoundNotification result)
+    {
+        //Copy your code here
+        BytewarsLogger.Log("Join to GameSession is not implemented");
+    }
+
+    private void OnClientLeave()
+    {
+        OnLeaveSessionCompleteEvent += OnLeaveSessionComplete;
+        LeaveCurrentSession();
+    }
+
+    public void LeaveCurrentSession()
+    {
+        //Copy your code here
+        BytewarsLogger.Log("Leave GameSession is not implemented");
+    }
+
+    private void OnLeaveSessionComplete(Result<SessionV2GameSession> result)
+    {
+        if (!result.IsError)
         {
-            var session = response.Result.Value;
-            GetGameSessionDetailsById(session.id);
+            OnIntendedLeaveSession?.Invoke();
+            OnLeaveSessionCompleteEvent -= OnLeaveSessionComplete;
         }
     }
+
+    private void OnJoiningSessionCompleted(Result<SessionV2GameSession> result)
+    {
+        if (!result.IsError)
+        {
+            OnJoinSessionCompleteEvent -= OnJoiningSessionCompleted;
+            BytewarsLogger.Log($"Joined to session : {cachedSessionId} - Waiting DS Status");
+            OnMatchmakingWithDSJoinSessionCompleted?.Invoke();
+        } 
+        else
+        {
+            BytewarsLogger.Log($"Error : {result.Error.Message}");
+            OnMatchmakingWithDSError?.Invoke(result.Error.Message);
+        }
+
+    }
+
+    #region MatchmakingDSEventHandler
+    
+    private void Reset()
+    {
+        matchTicket = string.Empty;
+        cachedSessionId = string.Empty;
+    }
+
+    private async Task Delay(int milliseconds=1000)
+    {
+        await Task.Delay(milliseconds);
+    }
+
     #endregion EventHandler
 
-    #region Override
-    private void GetSessionAndDSStatus(string sessionId)
-    {
-        GetGameSessionDetailsById(sessionId);
-    }
-
-    private void GetSessionDetails(SessionResponsePayload response)
-    {
-        if (!response.IsError)
-        {
-            if (response.TutorialType != _tutorialType) return;
-
-            var session = response.Result.Value;
-            var dsInfo = session.dsInformation;
-
-            if (!session.isActive)
-            {
-                OnSessionEnded?.Invoke();
-                return;
-            }
-
-            switch (dsInfo.status)
-            {
-                case SessionV2DsStatus.AVAILABLE:
-                    BytewarsLogger.Log($"{dsInfo.status}");
-                    OnDSAvailableEvent?.Invoke(session);
-                    break;
-                case SessionV2DsStatus.REQUESTED:
-                    StartCoroutine(WaitForASecond(session.id, GetSessionAndDSStatus));
-                    break;
-                case SessionV2DsStatus.NEED_TO_REQUEST:
-                    StartCoroutine(WaitForASecond(session.id, GetSessionAndDSStatus));
-                    break;
-                case SessionV2DsStatus.FAILED_TO_REQUEST:
-                    OnDSFailedRequestEvent?.Invoke();
-                    break;
-                default:
-                    BytewarsLogger.Log($"{dsInfo.status}");
-                    break;
-            }
-        }
-    }
-    #endregion Override
-
-    #region EventListener
-    private void SetupMatchmakingEventListener(bool notification, bool periodically, bool fallback = false)
-    {
-        if (notification && periodically)
-        {
-            BytewarsLogger.Log($"unable to activate both");
-            return;
-        }
-
-        if (notification)
-        {
-            BindOnMatchmakingStarted();
-            BindMatchFoundNotification();
-            BindMatchmakingUserJoinedGameSession();
-            BindOnSessionDSUpdateNotification();
-
-            OnMatchmakingFoundEvent += OnJoiningMatch;
-            OnMatchFoundFallbackEvent += PostFallback;
-        }
-
-        if (periodically)
-        {
-            OnStartMatchmakingSucceedEvent += ticketId => GetMatchmakingTicketDetails(ticketId, true);
-            OnMatchmakingFoundEvent += OnJoiningMatch;
-            OnJoinSessionCompleteEvent += OnPeriodicJoinSessionComplete;
-            OnMatchmakingJoinSessionCompleteEvent += GetSessionDetailsAndDSStatus;
-            OnGetSessionDetailsCompleteEvent += GetSessionDetails;
-        }
-
-        if (fallback)
-        {
-            OnStartMatchmakingCompleteEvent += CheckMatchFoundNotificationFallback;
-            OnUserJoinedGameSessionEvent += CheckDSStatusUpdateNotificationFallback;
-            OnDSAvailableEvent += result => PostFallback(result.id);
-
-        }
-    }
-
-    private void UnbindMatchmakingEventListener(bool notification, bool periodically, bool fallback = false)
-    {
-        if (notification && periodically)
-        {
-            BytewarsLogger.Log($"unable to activate both");
-            return;
-        }
-
-        if (notification)
-        {
-            UnBindOnMatchmakingStarted();
-            UnBindMatchFoundNotification();
-            UnBindMatchmakingUserJoinedGameSession();
-            UnBindOnSessionDSUpdateNotification();
-
-            OnMatchmakingFoundEvent -= OnJoiningMatch;
-        }
-
-        if (periodically)
-        {
-            OnStartMatchmakingSucceedEvent -= ticketId => GetMatchmakingTicketDetails(ticketId, true);
-            OnMatchmakingFoundEvent -= OnJoiningMatch;
-            OnJoinSessionCompleteEvent -= OnPeriodicJoinSessionComplete;
-            OnMatchmakingJoinSessionCompleteEvent -= GetSessionDetailsAndDSStatus;
-            OnGetSessionDetailsCompleteEvent -= GetSessionDetails;
-        }
-    }
+    #region Lobby service notification
 
     private void BindOnSessionDSUpdateNotification()
     {
-        Lobby.SessionV2DsStatusChanged += OnSessionDSUpdate;
+        //Copy your code here
+        BytewarsLogger.Log("Subscribe Lobby Notification - DS Status Update is not implemented");
     }
 
     private void UnBindOnSessionDSUpdateNotification()
     {
-        Lobby.SessionV2DsStatusChanged -= OnSessionDSUpdate;
+        //Copy your code here
+        BytewarsLogger.Log("Unsubscribe Lobby Notification - DS Status Update is not implemented");
     }
 
     private void OnSessionDSUpdate(Result<SessionV2DsStatusUpdatedNotification> result)
     {
+        if (!result.IsError)
+        {
+            var session = result.Value.session;
+            var dsInfo = session.dsInformation;
 
+            BytewarsLogger.Log($"DS Status updated: {dsInfo.status}");
+            switch (dsInfo.status)
+            {
+                case SessionV2DsStatus.AVAILABLE:
+                    TravelToDS(session);
+                    OnDSAvailable?.Invoke(true);
+                    UnbindMatchmakingEvent();
+                    break;
+                case SessionV2DsStatus.FAILED_TO_REQUEST:
+                    BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}");
+                    OnDSError?.Invoke($"DS Status: {dsInfo.status}");
+                    UnbindMatchmakingEvent();
+                    break;
+                case SessionV2DsStatus.REQUESTED:
+                    BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}, Waiting");
+                    break;
+                case SessionV2DsStatus.ENDED:
+                    BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}, send ended notification");
+                    UnbindMatchmakingEvent();
+                    break;
+            }
+        }
+        else
+        {
+            OnDSError?.Invoke($"Error: {result.Error.Message}");
+            Debug.Log($"Error: {result.Error.Message}");
+        }
     }
-    #endregion EventListener
-
-    #region GameServer
-#if UNITY_SERVER
-    #region GameServerNotification
-    private void MatchMakingServerClaim()
-    {
-
-    }
-
-    private void BackFillProposal()
-    {
-
-    }
-
-    private void OnBackfillProposalReceived(MatchmakingV2BackfillProposalNotification proposal, bool isStopBackfilling)
-    {
-
-    }
-
-    private void OnBackfillProposalRejected(MatchmakingV2BackfillProposalNotification proposal)
-    {
-
-    }
-    #endregion GameServerNotification
-#endif
-    #endregion GameServer
+    #endregion
 }

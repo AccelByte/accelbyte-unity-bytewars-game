@@ -12,7 +12,6 @@ public class P2PHelper
 {
     private static AccelByteNetworkTransportManager transportManager;
     private static NetworkManager networkManager;
-    private const string ClassName = "[P2PHelper]";
 
     private static void Init()
     {
@@ -28,8 +27,6 @@ public class P2PHelper
 
     public static async void StartAsHost(InGameMode gameMode, string matchSessionId)
     {
-        Debug.Log($"{ClassName} Start P2P Host");
-
         await GameManager.ShowTravelingLoading();
 
         GameManager.Instance.ResetCache();
@@ -37,13 +34,12 @@ public class P2PHelper
 
         SetP2PNetworkTransport(gameMode, matchSessionId);
         networkManager.StartHost();
+        BytewarsLogger.Log($"Start P2P Host");
         GameManager.StartListenNetworkSceneEvent();
     }
 
     public static async void StartAsP2PClient(string hostUserId, InGameMode gameMode, string matchSessionId)
     {
-        Debug.Log($"{ClassName} Start P2P Client hostUserId: {hostUserId}");
-
         await GameManager.ShowTravelingLoading();
 
         GameManager.Instance.ResetCache();
@@ -52,6 +48,7 @@ public class P2PHelper
         SetP2PNetworkTransport(gameMode, matchSessionId);
         transportManager.SetTargetHostUserId(hostUserId);
         networkManager.StartClient();
+        BytewarsLogger.Log($"Start P2P Client hostUserId: {hostUserId}");
     }
 
     private static void SetP2PNetworkTransport(InGameMode gameMode, string matchSessionId)

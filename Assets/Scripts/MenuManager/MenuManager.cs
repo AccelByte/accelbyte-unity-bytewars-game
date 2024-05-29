@@ -475,7 +475,7 @@ public class MenuManager : MonoBehaviour
 
     #region Loading Menu Methods
 
-    public void ShowLoading(string info, LoadingTimeoutInfo loadingTimeoutInfo = null, UnityAction cancelCallback = null)
+    public void ShowLoading(string info, LoadingTimeoutInfo loadingTimeoutInfo = null, UnityAction cancelCallback = null, bool showButton = true)
     {
         LoadingMenuCanvas loadingMenuCanvas = _menusDictionary[AssetEnum.LoadingMenuCanvas] as LoadingMenuCanvas;
         if (loadingMenuCanvas == null)
@@ -494,7 +494,7 @@ public class MenuManager : MonoBehaviour
         
         _currentMainMenu.gameObject.SetActive(false);
         loadingMenuCanvas.gameObject.SetActive(true);
-        loadingMenuCanvas.Show(info, loadingTimeoutInfo, cancelCallback);
+        loadingMenuCanvas.Show(info, showButton, loadingTimeoutInfo, cancelCallback);
     }
 
     public void HideLoading(bool showActiveMenuImmediately = true)

@@ -7,7 +7,7 @@ using AccelByte.Core;
 using AccelByte.Models;
 using AccelByte.Server;
 
-public class MultiplayerDSAMSWrapper : GameSessionEssentialsWrapper
+public class MultiplayerDSAMSWrapper : GameSessionUtilityWrapper
 {
     public event Action OnAMSConnectionOpened;
     public event Action OnAMSDrainReceived;
@@ -15,6 +15,7 @@ public class MultiplayerDSAMSWrapper : GameSessionEssentialsWrapper
     private DedicatedServer ds;
     private ServerAMS ams;
     private ServerDSHub dsHub;
+    private ServerOauthLoginSession serverOauthLoginSession;
     public string DedicatedServerId
     {
         get
@@ -35,6 +36,7 @@ public class MultiplayerDSAMSWrapper : GameSessionEssentialsWrapper
         else
         {
             ams.OnOpen += OnAMSConnected;
+            ams.Disconnecting += OnAMSDisconnecting;
         }
         dsHub = AccelByteSDK.GetServerRegistry().GetApi().GetDsHub();
     }
@@ -98,12 +100,18 @@ public class MultiplayerDSAMSWrapper : GameSessionEssentialsWrapper
 
     private void OnDSHubDisconnected(WsCloseCode wsCloseCode)
     {
-        BytewarsLogger.Log("DS disconnected from DSHub, trying to reconnect..");
-
-        // Reconnect to DS
-        if (!String.IsNullOrEmpty(DedicatedServerId) && dsHub != null)
+        switch (wsCloseCode)
         {
-            ConnectToDSHub(DedicatedServerId);
+            case WsCloseCode.Normal:
+                BytewarsLogger.Log("DS disconnected from DSHub, trying to reconnect..");
+                break;
+            case WsCloseCode.Undefined or WsCloseCode.Abnormal or WsCloseCode.NoStatus:
+                // Reconnect to DS
+                if (!String.IsNullOrEmpty(DedicatedServerId) && dsHub != null)
+                {
+                    ConnectToDSHub(DedicatedServerId);
+                }
+                break;
         }
     }
 
@@ -126,6 +134,19 @@ public class MultiplayerDSAMSWrapper : GameSessionEssentialsWrapper
     public void ConnectToDSHub(string serverId)
     {
         dsHub?.Connect(serverId);
+    }
+
+    public void Disconnect()
+    {
+        ams.Disconnect();
+    }
+
+    private void OnAMSDisconnecting(Result<DisconnectNotif> result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log("DS disconnected from DSHub, trying to reconnect..");
+        }
     }
 
     #endregion

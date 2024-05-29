@@ -1,9 +1,14 @@
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 
 public class MainMenu : MenuCanvas
 {
@@ -15,6 +20,8 @@ public class MainMenu : MenuCanvas
     [SerializeField] private Button helpAndOptionsButton;
     [SerializeField] private Button quitButton;
     [SerializeField] private LayoutGroup layoutGroup;
+
+    public static event Action<Action> OnQuitPressed;
 
     // Start is called before the first frame update
     void Start()
@@ -78,6 +85,20 @@ public class MainMenu : MenuCanvas
     }
 
     public void OnQuitButtonPressed()
+    {
+        var authEssentialsModule = TutorialModuleManager.Instance.GetModule(TutorialType.AuthEssentials);
+        
+        if(authEssentialsModule.isActive)
+        {
+            OnQuitPressed?.Invoke(QuitGame);
+        }
+        else
+        {
+            QuitGame();
+        }
+    }
+
+    private void QuitGame()
     {
 #if UNITY_EDITOR
         EditorApplication.ExitPlaymode();

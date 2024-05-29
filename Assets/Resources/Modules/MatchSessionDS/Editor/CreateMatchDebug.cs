@@ -14,10 +14,10 @@ public static class CreateMatchDebug
     private const string EmailsFilePath = "/TestData/emails.ini";
     private static readonly CreateMatchDebugTemplate[] k_Templates = new CreateMatchDebugTemplate[]
     {
-        new CreateMatchDebugTemplate(InGameMode.CreateMatchEliminationGameMode, MatchSessionServerType.DedicatedServer),
-        new CreateMatchDebugTemplate(InGameMode.CreateMatchEliminationGameMode, MatchSessionServerType.PeerToPeer),
-        new CreateMatchDebugTemplate(InGameMode.CreateMatchDeathMatchGameMode, MatchSessionServerType.DedicatedServer),
-        new CreateMatchDebugTemplate(InGameMode.CreateMatchDeathMatchGameMode, MatchSessionServerType.PeerToPeer),
+        new CreateMatchDebugTemplate(InGameMode.CreateMatchEliminationGameMode, GameSessionServerType.DedicatedServer),
+        new CreateMatchDebugTemplate(InGameMode.CreateMatchEliminationGameMode, GameSessionServerType.PeerToPeer),
+        new CreateMatchDebugTemplate(InGameMode.CreateMatchDeathMatchGameMode, GameSessionServerType.DedicatedServer),
+        new CreateMatchDebugTemplate(InGameMode.CreateMatchDeathMatchGameMode, GameSessionServerType.PeerToPeer),
     };
 
     private static int _templateIndex = 0;
@@ -165,7 +165,7 @@ public static class CreateMatchDebug
         if (_templateIndex < k_Templates.Length)
         {
             var template = k_Templates[_templateIndex];
-            if (MatchSessionConfig.MatchRequests.TryGetValue(template.GameMode, out var serverTDict))
+            if (GameSessionConfig.SessionCreateRequest.TryGetValue(template.GameMode, out var serverTDict))
             {
                 if (serverTDict.TryGetValue(template.MatchSessionServerType, out var request))
                 {
@@ -234,11 +234,11 @@ public static class CreateMatchDebug
 
 public struct CreateMatchDebugTemplate
 {
-    public CreateMatchDebugTemplate(InGameMode gameMode, MatchSessionServerType matchSessionServerType)
+    public CreateMatchDebugTemplate(InGameMode gameMode, GameSessionServerType matchSessionServerType)
     {
         GameMode = gameMode;
         MatchSessionServerType = matchSessionServerType;
     }
     public readonly InGameMode GameMode;
-    public readonly MatchSessionServerType MatchSessionServerType;
+    public readonly GameSessionServerType MatchSessionServerType;
 }

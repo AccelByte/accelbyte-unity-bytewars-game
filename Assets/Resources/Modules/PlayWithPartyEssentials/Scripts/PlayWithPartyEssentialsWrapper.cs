@@ -30,7 +30,6 @@ public class PlayWithPartyEssentialsWrapper : MonoBehaviour
 
     private void SubscribeLobbyNotifications()
     {
-        if (!lobby.IsConnected) lobby.Connect();
         lobby.MatchmakingV2MatchmakingStarted += result => OnMatchmakingStarted.Invoke();
         lobby.SessionV2InvitedUserToGameSession += result => OnGameSessionInvitationReceived.Invoke(result.Value.sessionId); ;
     }

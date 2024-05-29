@@ -1,9 +1,10 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -33,7 +34,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
     void Start()
     {
         LoginHandler.onLoginCompleted += SetCurrentUserID;
-        Lobby.SessionV2GameSessionMemberChanged += OnV2GameSessionMemberChanged;
+        lobby.SessionV2GameSessionMemberChanged += OnV2GameSessionMemberChanged;
         GameManager.Instance.OnClientLeaveSession += LeaveGameSession;
         LoginHandler.onLoginCompleted += OnLoginSuccess;
 
@@ -49,21 +50,28 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
 
     #region CreateCustomMatchSession
     public void Create(InGameMode gameMode,
-        MatchSessionServerType sessionServerType,
+        GameSessionServerType sessionServerType,
         Action<string> onCreatedMatchSession)
     {
         isCreateMatchSessionCancelled = false;
         requestedGameMode = gameMode;
         gameSessionV2 = null;
-        var config = MatchSessionConfig.MatchRequests;
+        Dictionary<InGameMode, 
+        Dictionary<GameSessionServerType, 
+        SessionV2GameSessionCreateRequest>> config = GameSessionConfig.SessionCreateRequest;
+        
         if (!config.TryGetValue(gameMode, out var matchTypeDict))
         {
             return;
         }
+        
         if (!matchTypeDict.TryGetValue(sessionServerType, out var request))
         {
             return;
         }
+
+        request.attributes = CreateMatchConfig.CreatedMatchSessionAttribute;
+
         BytewarsLogger.Log($"creating session {gameMode} {sessionServerType}");
         MatchSessionDSWrapper.onCreatedMatchSession = onCreatedMatchSession;
         ConnectionHandler.Initialization();
@@ -76,6 +84,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
         if (!String.IsNullOrWhiteSpace(PartyHelper.CurrentPartyId))
         {
             string[] memberIds = PartyHelper.PartyMembersData.Select(data => data.UserId).ToArray();
+            
             request.teams = new SessionV2TeamData[]
             {
                 new SessionV2TeamData()
@@ -97,6 +106,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
         }
         else
         {
+            SessionCache.CurrentGameSessionId = result.Value.id;
             BytewarsLogger.Log($"create session result: {result.Value.ToJsonString()}");
             if (isCreateMatchSessionCancelled)
             {
@@ -126,7 +136,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
         }
         yield return waitOneSec;
         checkDSStatusCount++;
-        Session.GetGameSessionDetailsBySessionId(gameSessionV2.id, OnSessionDetailsCheckFinished);
+        session.GetGameSessionDetailsBySessionId(gameSessionV2.id, OnSessionDetailsCheckFinished);
     }
 
     private void OnSessionDetailsCheckFinished(Result<SessionV2GameSession> result)
@@ -155,6 +165,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
                 if (checkDSStatusCount >= MaxCheckDSStatusCount)
                 {
                     onCreatedMatchSession?.Invoke("Failed to Connect to Dedicated Server in time");
+                    LeaveGameSession();
                 }
                 else
                 {
@@ -209,7 +220,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
                 }
                 else
                 {
-                    Lobby.SessionV2DsStatusChanged += OnV2DSStatusChanged;
+                    lobby.SessionV2DsStatusChanged += OnV2DSStatusChanged;
                 }
             }
             if (gameSession.configuration.type == SessionConfigurationTemplateType.P2P)
@@ -265,7 +276,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
     #region Events
     private void OnV2DSStatusChanged(Result<SessionV2DsStatusUpdatedNotification> result)
     {
-        Lobby.SessionV2DsStatusChanged -= OnV2DSStatusChanged;
+        lobby.SessionV2DsStatusChanged -= OnV2DSStatusChanged;
         if (result.IsError)
         {
             if (gameSessionV2 != null)
@@ -309,10 +320,6 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
     private void OnLoginSuccess(TokenData tokenData)
     {
         MatchSessionHelper.GetCurrentUserPublicData(tokenData.user_id);
-        if (!Lobby.IsConnected)
-        {
-            Lobby.Connect();
-        }
     }
     #endregion
 
@@ -349,7 +356,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
         {
             return;
         }
-        Session.GetGameSessionDetailsBySessionId(gameSessionV2.id, OnSessionDetailsRetrieved);
+        session.GetGameSessionDetailsBySessionId(gameSessionV2.id, OnSessionDetailsRetrieved);
     }
 
     private void OnSessionDetailsRetrieved(Result<SessionV2GameSession> result)

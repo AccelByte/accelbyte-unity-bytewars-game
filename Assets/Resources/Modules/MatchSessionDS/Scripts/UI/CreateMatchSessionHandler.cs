@@ -19,7 +19,7 @@ public class CreateMatchSessionHandler : MenuCanvas
     private static CreateMatchSessionHandler instance = null;
     private RectTransform shownRectTransform;
     private InGameMode gameMode = InGameMode.None;
-    private MatchSessionServerType selectedSessionServerType = MatchSessionServerType.DedicatedServer;
+    private GameSessionServerType selectedSessionServerType = GameSessionServerType.DedicatedServer;
     private MatchSessionDSWrapper matchSessionDSWrapper;
     private MatchSessionP2PWrapper matchSessionP2PWrapper;
 
@@ -53,7 +53,7 @@ public class CreateMatchSessionHandler : MenuCanvas
 
     private void OnP2PBtnClicked()
     {
-        selectedSessionServerType = MatchSessionServerType.PeerToPeer;
+        selectedSessionServerType = GameSessionServerType.PeerToPeer;
         CreateMatchSession();
     }
 
@@ -61,8 +61,8 @@ public class CreateMatchSessionHandler : MenuCanvas
     {
         dsBtn.interactable = false;
         selectedSessionServerType = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MultiplayerDSEssentials)
-                                         ? MatchSessionServerType.DedicatedServerAMS
-                                         : MatchSessionServerType.DedicatedServer;
+                                         ? GameSessionServerType.DedicatedServerAMS
+                                         : GameSessionServerType.DedicatedServer;
         CreateMatchSession();
     }
 
@@ -71,11 +71,11 @@ public class CreateMatchSessionHandler : MenuCanvas
         ShowLoading("Creating Match Session...", CancelCreateMatch);
         switch (selectedSessionServerType)
         {
-            case MatchSessionServerType.DedicatedServer or MatchSessionServerType.DedicatedServerAMS:
+            case GameSessionServerType.DedicatedServer or GameSessionServerType.DedicatedServerAMS:
                 matchSessionDSWrapper.Create(gameMode, 
                     selectedSessionServerType, OnCreatedMatchSession);
                 break;
-            case MatchSessionServerType.PeerToPeer:
+            case GameSessionServerType.PeerToPeer:
                 matchSessionP2PWrapper.CreateP2P(gameMode, 
                     selectedSessionServerType, OnCreatedMatchSession);
                 break;
@@ -150,10 +150,10 @@ public class CreateMatchSessionHandler : MenuCanvas
         loadingPanel.gameObject.SetActive(false);
         switch (selectedSessionServerType)
         {
-            case MatchSessionServerType.DedicatedServerAMS:
+            case GameSessionServerType.DedicatedServerAMS:
                 matchSessionDSWrapper.CancelCreateMatchSession();
                 break;
-            case MatchSessionServerType.PeerToPeer:
+            case GameSessionServerType.PeerToPeer:
                 matchSessionP2PWrapper.CancelCreateMatchSessionP2P();
                 break;
             default:

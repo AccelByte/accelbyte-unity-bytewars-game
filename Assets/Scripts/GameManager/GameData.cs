@@ -24,8 +24,10 @@ public enum ServerType
 /// </summary>
 public static class SessionCache
 {
+    
     private static readonly Dictionary<string, SessionData> CachedSessions = new();
     private static string _currentPlayerJoinedSessionId;
+    public static string CurrentGameSessionId = string.Empty;
 
     public static void SetJoinedSessionIdAndLeaderUserId(string sessionId, string leaderId)
     {

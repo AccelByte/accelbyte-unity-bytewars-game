@@ -299,8 +299,6 @@ public class TutorialModuleManager : MonoBehaviour
                 var asset = AssetDatabase.FindAssets($"{moduleData.defaultModuleScript.name}").FirstOrDefault();
                 scriptPath = AssetDatabase.GUIDToAssetPath(asset);
 #endif
-                Debug.Log(scriptPath);
-
                 result.Add(moduleData.defaultModuleScript.name, scriptPath);
             }
         }

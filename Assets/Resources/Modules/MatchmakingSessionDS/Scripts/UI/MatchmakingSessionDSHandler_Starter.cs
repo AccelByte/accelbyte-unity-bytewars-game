@@ -3,32 +3,45 @@
 // and restrictions contact your company contract manager.
 
 using System;
-using AccelByte.Models;
+using System.Threading.Tasks;
 using UnityEngine;
 
 public class MatchmakingSessionDSHandler_Starter : MenuCanvas
 {
-    private const string eliminationWithDSMatchPoolName = "unity-elimination-ds";
-    private const string teamdeathmatchWithDSMatchPoolName = "unity-teamdeathmatch-ds";
-    private const string eliminationDSAMSMatchPool = "unity-elimination-ds-ams";
-    private const string teamDeathmatchDSAMSMatchPool = "unity-teamdeathmatch-ds-ams";
     private InGameMode selectedGameMode = InGameMode.None;
-    private MatchmakingSessionDSWrapper_Starter matchmakingSessionDSWrapper;
     private const int matchmakingTimeoutSec = 90;
     private const int joinSessionTimeoutSec = 60;
     private const int cancelMatchmakingTimeoutSec = 30;
 
     public void ClickDedicatedServerButton()
     {
-        BytewarsLogger.Log("Matchmaking with DS is not implemented yet!!!");
+        MenuCanvas menu = MenuManager.Instance.GetCurrentMenu();
+        if (menu is MatchmakingSessionServerTypeSelection serverTypeSelection)
+        {
+            InitWrapper();
+            selectedGameMode = serverTypeSelection.SelectedGameMode;
+        }
+        else
+        {
+            BytewarsLogger.LogWarning("Current menu is not server type selection menu while try to matchmaking with DS");
+            return;
+        }
+        switch (selectedGameMode)
+        {
+            case InGameMode.OnlineDeathMatchGameMode:
+                break;
+            case InGameMode.OnlineEliminationGameMode:
+                break;
+            default:
+                string errorMsg = $"No Dedicated Server Match Pool for {selectedGameMode}";
+                BytewarsLogger.LogWarning(errorMsg);
+                ShowError(errorMsg);
+                break;
+        }
     }
 
     private void InitWrapper()
     {
-        if (matchmakingSessionDSWrapper == null)
-        {
-            matchmakingSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapper_Starter>();
-        } 
 
         BindMatchmakingEvent();
 
@@ -39,74 +52,102 @@ public class MatchmakingSessionDSHandler_Starter : MenuCanvas
     private void OnBackButtonFromServerSelection()
     {
         UnbindMatchmakingEvents();
-        matchmakingSessionDSWrapper?.UnbindEventListener();
     }
 
     private void BindMatchmakingEvent()
     {
-        if (matchmakingSessionDSWrapper == null)
+        //TODO: Copy your code here
+    }
+
+    private void OnMatchTicketDSCreated()
+    {
+        switch (selectedGameMode)
         {
-            return;
+            case InGameMode.OnlineDeathMatchGameMode:
+                ShowLoading("Finding Team Death Match (Dedicated Server)...",
+                "Finding Team Death Match (Dedicated Server) is timed out",
+                matchmakingTimeoutSec, CancelDSMatchmaking);
+                break;
+            case InGameMode.OnlineEliminationGameMode:
+                ShowLoading("Finding Elimination Match (Dedicated Server)...",
+                "Elimination Team Death Match (Dedicated Server) is timed out",
+                matchmakingTimeoutSec, CancelDSMatchmaking);
+                break;
         }
-
-        matchmakingSessionDSWrapper.BindEventListener();
-
-        // listen event when match is found and ds available
-        matchmakingSessionDSWrapper.OnMatchmakingFoundEvent += JoinSessionPanel;
-        matchmakingSessionDSWrapper.OnDSAvailableEvent += TravelToDS;
-
-        // listen event when failed
-        matchmakingSessionDSWrapper.OnStartMatchmakingFailed += FailedPanel;
-        matchmakingSessionDSWrapper.OnMatchmakingJoinSessionFailedEvent += FailedPanel;
-        matchmakingSessionDSWrapper.OnDSFailedRequestEvent += FailedPanel;
-        matchmakingSessionDSWrapper.OnSessionEnded += FailedPanel;
-        matchmakingSessionDSWrapper.OnCancelMatchmakingCompleteEvent += OnCancelMatchmakingComplete;
     }
 
     private void UnbindMatchmakingEvents()
     {
-        //remove all events
-        if (matchmakingSessionDSWrapper == null)
-        {
-            return;
-        }
-        matchmakingSessionDSWrapper.OnMatchmakingFoundEvent -= JoinSessionPanel;
-        matchmakingSessionDSWrapper.OnDSAvailableEvent -= TravelToDS;
-        matchmakingSessionDSWrapper.OnStartMatchmakingFailed -= FailedPanel;
-        matchmakingSessionDSWrapper.OnMatchmakingJoinSessionFailedEvent += FailedPanel;
-        matchmakingSessionDSWrapper.OnDSFailedRequestEvent -= FailedPanel;
-        matchmakingSessionDSWrapper.OnSessionEnded -= FailedPanel;
-        matchmakingSessionDSWrapper.OnCancelMatchmakingCompleteEvent += OnCancelMatchmakingComplete;
+        //TODO: Copy your code here
     }
 
-    private void FailedPanel()
-    {
-        UnbindMatchmakingEvents();
-        ShowError("Cannot find Match");
-    }
-
-    private void OnCancelMatchmakingComplete()
-    {
-        UnbindMatchmakingEvents();
-        HideLoading();
-    }
-
-    private void TravelToDS(SessionV2GameSession session)
-    {
-        UnbindMatchmakingEvents();
-        matchmakingSessionDSWrapper.UnbindEventListener();
-        matchmakingSessionDSWrapper.TravelToDS(session, selectedGameMode);
-    }
-
-    private void JoinSessionPanel(string sessionId)
+    private void OnMatchmakingWithDSJoinSessionStarted()
     {
         ShowLoading("Joining Match", "Joining Match is timed out", joinSessionTimeoutSec);
     }
 
+    private void OnMatchmakingWithDSJoinSessionCompleted()
+    {
+        ShowLoading("Waiting for DS", "Waiting for DS timed out", joinSessionTimeoutSec, OnDSTimeOut, false);
+    }
+
+    private void Travelling(bool isAvailable)
+    {
+        ShowLoading("Travelling", "Match Found timed out", joinSessionTimeoutSec);
+        Reset();
+    }
+
+    private void OnMatchmakingWithDSTicketExpired()
+    {
+        ShowError("Matchmaking ticket is expired");
+        Reset();
+    }
+
+    private void OnMatchmakingWithDSMatchFound()
+    {
+        ShowLoading("Match Found", "Match Found timed out", joinSessionTimeoutSec);
+    }
+
+    private async void ErrorPanel(string message)
+    {
+        await Delay();
+        ShowError(message);
+        Reset();
+    }
+
+    private async void OnMatchmakingWithDSCanceled()
+    {
+        await Delay();
+        ShowInfo("Matchmaking is Canceled");
+        Reset();
+    }
+
+    private void Reset()
+    {
+        selectedGameMode = InGameMode.None;
+        UnbindMatchmakingEvents();
+    }
+
+    private void OnDSTimeOut()
+    {
+        Reset();
+    }
+
+    private async Task Delay(int milliseconds=1000)
+    {
+        await Task.Delay(milliseconds);
+    }
+
     private void CancelDSMatchmaking()
     {
-        matchmakingSessionDSWrapper.CancelDSMatchmaking();
         ShowLoading("Cancelling Match", "Cancelling match is timed out", cancelMatchmakingTimeoutSec);
+    }
+
+    private void ClientLeaveGameSession()
+    {
+        UnbindMatchmakingEvents();
+
+        HideLoading();
     }
 
     #region MenuCanvas

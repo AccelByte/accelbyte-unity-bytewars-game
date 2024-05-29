@@ -18,7 +18,7 @@ public class CreateMatchSessionHandler_Starter : MenuCanvas
     
     private RectTransform shownRectTransform;
     private InGameMode gameMode = InGameMode.None;
-    private MatchSessionServerType selectedSessionServerType = MatchSessionServerType.DedicatedServer;
+    private GameSessionServerType selectedSessionServerType = GameSessionServerType.DedicatedServer;
     
     private static CreateMatchSessionHandler_Starter instance = null;
     private const string ClassName = "[CreateMatchSessionHandler_Starter]";

@@ -33,11 +33,6 @@ public class PartyEssentialsWrapper : MonoBehaviour
     #region AB Service Functions
     private void SubscribeLobbyNotifications()
     {
-        if (!lobby.IsConnected)
-        {
-            lobby.Connect();
-        }
-
         // current user related notification
         lobby.SessionV2InvitedUserToParty += result => OnPartyInvitationReceived.Invoke(result.Value);
         lobby.SessionV2UserKickedFromParty += result => OnUserKicked.Invoke(result.Value.partyId);

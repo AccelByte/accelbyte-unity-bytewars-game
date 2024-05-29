@@ -14,7 +14,8 @@ public class AuthEssentialsWrapper : MonoBehaviour
     private ApiClient apiClient;
     private User user;
     private UserProfiles userProfiles;
-
+    private Lobby lobby;
+    
     // required variables to login with other platform outside AccelByte
     private PlatformType platformType;
     private string platformToken;
@@ -29,6 +30,21 @@ public class AuthEssentialsWrapper : MonoBehaviour
         apiClient = AccelByteSDK.GetClientRegistry().GetApi();
         user = apiClient.GetApi<User, UserApi>();
         userProfiles = apiClient.GetApi<UserProfiles, UserProfilesApi>();
+        lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
+
+        lobby.Disconnected += OnLobbyDisconnected;
+        lobby.Disconnecting += OnLobbyDisconnecting;
+
+    }
+
+    void OnApplicationQuit()
+    {
+        lobby.Disconnect();
+    }
+
+    void OnDestroy()
+    {
+        lobby.Disconnecting -= OnLobbyDisconnecting;
     }
 
     #region AB Service Functions
@@ -60,6 +76,24 @@ public class AuthEssentialsWrapper : MonoBehaviour
     public void GetUserByUserId(string userId, ResultCallback<PublicUserData> resultCallback)
     {
         user.GetUserByUserId(userId, result => OnGetUserByUserId(result, resultCallback));
+    }
+
+    public void Logout(Action action)
+    {
+        user.Logout(result => OnLogoutComplete(result, action));
+    }
+
+    private void OnLogoutComplete(Result result, Action callback)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log($"Logout successful");
+            callback?.Invoke();
+        }
+        else
+        {
+            BytewarsLogger.Log($"Logout failed. Error message: {result.Error.Message}");
+        }
     }
 
     /// <summary>
@@ -97,6 +131,58 @@ public class AuthEssentialsWrapper : MonoBehaviour
     }
 
     #endregion
+    
+    #region Lobby Callback
+    /// <summary>
+    /// A callback function to handle websocket connection closed events from the lobby service
+    /// </summary>
+    /// <param name="code"></param>
+    private void OnLobbyDisconnected(WsCloseCode code)
+    {
+
+        switch (code)
+        {
+            case WsCloseCode.Normal:
+                BytewarsLogger.Log($"{code}");
+                AuthEssentialsHelper.OnUserLogout?.Invoke();
+                lobby.Connected -= OnConnected;
+                lobby.Disconnected -= OnLobbyDisconnected;
+                break;
+            case WsCloseCode.DisconnectDueToMultipleSessions:
+                BytewarsLogger.Log($"{code}");
+                AuthEssentialsHelper.OnUserLogout?.Invoke();
+                lobby.Connected -= OnConnected;
+                lobby.Disconnected -= OnLobbyDisconnected;
+                break;
+            case WsCloseCode.DisconnectDueToIAMLoggedOut:
+                BytewarsLogger.Log($"{code}");
+                AuthEssentialsHelper.OnUserLogout?.Invoke();
+                lobby.Connected -= OnConnected;
+                lobby.Disconnected -= OnLobbyDisconnected;
+                break;
+            case WsCloseCode.Undefined:
+                BytewarsLogger.Log($"{code}");
+                break;
+        }
+    }
+
+    private void OnLobbyDisconnecting(Result<DisconnectNotif> result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log($"{result.Value.message}");
+        } 
+        else
+        {
+            BytewarsLogger.LogWarning($"{result.Error.Message}");
+        }
+    }
+
+    private void OnConnected()
+    {
+        BytewarsLogger.Log($"Lobby service connected: {lobby.IsConnected}");
+    }
+    #endregion
 
     #region Callback Functions
 
@@ -115,6 +201,11 @@ public class AuthEssentialsWrapper : MonoBehaviour
             userData = result.Value;
 
             GetUserProfile();
+            if (!lobby.IsConnected)
+            {
+                lobby.Connect();
+                lobby.Connected += OnConnected;
+            }
         }
         else
         {

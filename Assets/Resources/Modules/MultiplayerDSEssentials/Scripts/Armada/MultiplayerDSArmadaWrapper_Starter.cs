@@ -9,7 +9,7 @@ using AccelByte.Models;
 using AccelByte.Server;
 using Unity.Profiling;
 
-public class MultiplayerDSArmadaWrapper_Starter: GameSessionEssentialsWrapper
+public class MultiplayerDSArmadaWrapper_Starter: GameSessionUtilityWrapper
 {
     public event Action OnInstantiateComplete;
     public event ResultCallback OnLoginCompleteEvent;

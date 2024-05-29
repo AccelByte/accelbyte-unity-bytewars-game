@@ -1,10 +1,17 @@
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using AccelByte.Core;
 using AccelByte.Models;
+using UnityEngine;
 
-public class MatchSessionWrapper : GameSessionEssentialsWrapper
+public class MatchSessionWrapper : GameSessionUtilityWrapper
 {
 
     protected event Action<Result<PaginatedResponse<SessionV2GameSession>>> OnBrowseMatchSessionCompleteEvent;
@@ -22,36 +29,36 @@ public class MatchSessionWrapper : GameSessionEssentialsWrapper
     /// Function to Create Custom Match Session 
     /// </summary>
     /// <param name="request"></param>
-    protected void CreateCustomMatchSession(SessionV2GameSessionCreateRequest request)
+    protected internal void CreateCustomMatchSession(SessionV2GameSessionCreateRequest request)
     {
-        Session.CreateGameSession(request, OnCreateCustomMatchSessionComplete);
+        session.CreateGameSession(request, OnCreateCustomMatchSessionComplete);
     }
 
     /// <summary>
     /// Function to Browse Custom Match Session
     /// </summary>
     /// <param name="request"></param>
-    protected void BrowseCustomMatchSession(Dictionary<string, object> request = null)
+    protected internal void BrowseCustomMatchSession(Dictionary<string, object> request = null)
     {
-        Session.QueryGameSession(request, OnBrowseMatchSessionComplete);
+        session.QueryGameSession(request, OnBrowseMatchSessionComplete);
     }
 
     /// <summary>
     /// Function to Join Custom Match Session
     /// </summary>
     /// <param name="sessionId"></param>
-    protected void JoinCustomMatchSession(string sessionId)
+    protected internal void JoinCustomMatchSession(string sessionId)
     {
-        Session.JoinGameSession(sessionId, OnJoinCustomSessionComplete);
+        session.JoinGameSession(sessionId, OnJoinCustomSessionComplete);
     }
 
     /// <summary>
     /// Function to Leave Custom Match Session
     /// </summary>
     /// <param name="sessionId"></param>
-    protected void LeaveCustomMatchSession(string sessionId)
+    public void LeaveCustomMatchSession(string sessionId)
     {
-        Session.LeaveGameSession(sessionId, OnLeaveCustomSessionComplete);
+        session.LeaveGameSession(sessionId, OnLeaveCustomSessionComplete);
     }
 
     /// <summary>
@@ -60,7 +67,7 @@ public class MatchSessionWrapper : GameSessionEssentialsWrapper
     /// <param name="sessionId"></param>
     protected internal void DeleteCustomMatchSession(string sessionId)
     {
-        Session.DeleteGameSession(sessionId, OnDeleteCustomSessionComplete);
+        session.DeleteGameSession(sessionId, OnDeleteCustomSessionComplete);
     }
 
     #region Callback
@@ -109,6 +116,7 @@ public class MatchSessionWrapper : GameSessionEssentialsWrapper
         if (!result.IsError)
         {
             BytewarsLogger.Log($"Success to leave custom match sessions");
+            SessionCache.CurrentGameSessionId = string.Empty;
         }
         else
         {

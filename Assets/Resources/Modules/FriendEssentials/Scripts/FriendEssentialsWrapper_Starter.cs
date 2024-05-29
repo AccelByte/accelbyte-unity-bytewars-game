@@ -40,18 +40,5 @@ public class FriendEssentialsWrapper_Starter : MonoBehaviour
         {
             PlayerUserId = tokenData.user_id;
         };
-        LoginHandler.onLoginCompleted += tokenData => LoginToLobby();
     }
-
-    /// <summary>
-    /// Predefined code
-    /// </summary>
-    private void LoginToLobby()
-    {
-        if (!lobby.IsConnected)
-        {
-            lobby.Connect();
-        }
-    }
-
 }

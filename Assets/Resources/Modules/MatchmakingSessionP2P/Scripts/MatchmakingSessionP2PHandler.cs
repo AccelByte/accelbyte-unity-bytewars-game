@@ -3,23 +3,22 @@
 // and restrictions contact your company contract manager.
 
 using System;
+using System.Threading.Tasks;
 using UnityEngine;
 
 public class MatchmakingSessionP2PHandler : MenuCanvas
 {
-    private MatchmakingSessionP2PWrapper wrapper;
+    private MatchmakingSessionP2PWrapper matchmakingP2PWrapper;
     private InGameMode selectedGameMode = InGameMode.None;
-    private const string eliminationWithP2PMatchPoolName = "unity-elimination-p2p";
-    private const string teamdeathmatchWithP2PMatchPoolName = "unity-teamdeathmatch-p2p";
-    private const int matchQueueTimeOffsetSec = 10;
     private const string eliminationInfo = "Elimination Match (Peer To Peer)";
     private const string teamdeathmatchInfo = "Team Death Match (Peer To Peer)";
-    private const int createMatchTicketSec = 20;
-    private bool isMatchFound;
+    private const int matchmakingTimeoutSec = 90;
+    private const int joinSessionTimeoutSec = 60;
+    private const int cancelMatchmakingTimeoutSec = 30;
 
     public void ClickPeerToPeerButton()
     {
-        var menu = MenuManager.Instance.GetCurrentMenu();
+        MenuCanvas menu = MenuManager.Instance.GetCurrentMenu();
         if (menu is MatchmakingSessionServerTypeSelection serverTypeSelection)
         {
             InitWrapper();
@@ -29,22 +28,19 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
         {
             BytewarsLogger.LogWarning("Current menu is not server type selection menu while try to matchmaking with Peer to Peer");
         }
-        isMatchFound = false;
         switch (selectedGameMode)
         {
             case InGameMode.OnlineDeathMatchGameMode:
-                wrapper.StartMatchmaking(teamdeathmatchWithP2PMatchPoolName, selectedGameMode,
-                    OnStartTeamdeathmatchCompleted);
-                ShowLoading($"Creating {teamdeathmatchInfo}...",
-                    $"Creating {teamdeathmatchInfo} is timed out",
-                    createMatchTicketSec, CancelMatchmaking);
+                matchmakingP2PWrapper.StartP2PMatchmaking(InGameMode.OnlineDeathMatchGameMode);
+                ShowLoading($"Start {teamdeathmatchInfo}...",
+                    $"Start {teamdeathmatchInfo} is timed out",
+                    matchmakingTimeoutSec);
                 break;
             case InGameMode.OnlineEliminationGameMode:
-                wrapper.StartMatchmaking(eliminationWithP2PMatchPoolName, selectedGameMode,
-                    OnStartEliminationCompleted);
-                ShowLoading($"Creating {eliminationInfo}...",
-                    $"Creating {eliminationInfo} is timed out",
-                    createMatchTicketSec, CancelMatchmaking);
+                matchmakingP2PWrapper.StartP2PMatchmaking(InGameMode.OnlineEliminationGameMode);
+                ShowLoading($"Start {eliminationInfo}...",
+                    $"Start {eliminationInfo} is timed out",
+                    matchmakingTimeoutSec);
                 break;
             default:
                 string errorMsg = $"No Peer To Peer MatchPoolName for {selectedGameMode}";
@@ -54,39 +50,11 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
         }
     }
 
-    private void OnStartTeamdeathmatchCompleted(int queueTimeSec)
-    {
-        if (isMatchFound)
-        {
-            return;
-        }
-        ShowLoading($"Finding {teamdeathmatchInfo}...",
-                    $"Finding {teamdeathmatchInfo} is timed out",
-                    queueTimeSec + matchQueueTimeOffsetSec, CancelMatchmaking);
-    }
-
-    private void OnStartEliminationCompleted(int queueTimeSec)
-    {
-        if (isMatchFound)
-        {
-            return;
-        }
-        ShowLoading($"Finding {eliminationInfo}...",
-                    $"Finding {eliminationInfo} is timed out",
-                    queueTimeSec + matchQueueTimeOffsetSec, CancelMatchmaking);
-    }
-
-    private void CancelMatchmaking()
-    {
-        wrapper.CancelMatchmaking();
-        ShowLoading("Cancelling Match", "Cancelling match is timed out", 30);
-    }
-
     private void InitWrapper()
     {
-        if (wrapper == null)
+        if (matchmakingP2PWrapper == null)
         {
-            wrapper = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionP2PWrapper>();
+            matchmakingP2PWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionP2PWrapper>();
         }
 
         BindMatchmakingEvent();
@@ -95,56 +63,135 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
         MatchmakingSessionServerTypeSelection.OnBackButtonCalled += OnBackButtonFromServerSelection;
     }
 
-    private void BindMatchmakingEvent()
-    {
-        if (wrapper == null)
-        {
-            return;
-        }
-
-        wrapper.OnCancelMatchmakingComplete += OnCancelMatchmakingComplete;
-        wrapper.OnMatchFound += OnMatchFound;
-        wrapper.OnError += OnError;
-        wrapper.OnStartingP2PConnection += OnStartingP2PConnection;
-    }
-
-    private void UnbindMatchmakingEvents()
-    {
-        if (wrapper == null)
-        {
-            return;
-        }
-        
-        wrapper.OnCancelMatchmakingComplete -= OnCancelMatchmakingComplete;
-        wrapper.OnMatchFound -= OnMatchFound;
-        wrapper.OnError -= OnError;
-        wrapper.OnStartingP2PConnection -= OnStartingP2PConnection;
-    }
-
-    private void OnStartingP2PConnection()
-    {
-        UnbindMatchmakingEvents();
-    }
-
     private void OnBackButtonFromServerSelection()
     {
         UnbindMatchmakingEvents();
     }
 
-    private void OnMatchFound()
+    private void BindMatchmakingEvent()
     {
-        isMatchFound = true;
-        ShowLoading("Joining Match...",
-            "Joining match timed out", 30, CancelMatchmaking);
+        if (matchmakingP2PWrapper == null)
+        {
+            return;
+        }
+        
+        matchmakingP2PWrapper.BindMatchmakingEvent();
+        matchmakingP2PWrapper.OnMatchTicketP2PCreated += OnMatchTicketP2PCreated;
+        matchmakingP2PWrapper.OnMatchmakingWithP2PMatchFound += OnMatchmakingWithP2PMatchFound;
+        matchmakingP2PWrapper.OnMatchmakingWithP2PTicketExpired += OnMatchmakingWithP2PTicketExpired;
+        matchmakingP2PWrapper.OnMatchmakingWithP2PJoinSessionStarted += OnMatchmakingWithP2PJoinSessionStarted;
+        matchmakingP2PWrapper.OnMatchmakingWithP2PJoinSessionCompleted += OnMatchmakingWithP2PJoinSessionCompleted;
+        matchmakingP2PWrapper.OnMatchmakingWithP2PCanceled += OnMatchmakingWithP2PCanceledAsync;
+        matchmakingP2PWrapper.OnMatchmakingWithP2PError += ErrorPanelAsync;
+        matchmakingP2PWrapper.OnMatchmakingError += ErrorPanelAsync;
+        matchmakingP2PWrapper.OnIntentionallyLeaveSession += Reset;
     }
 
-    private void OnError(string errorMessage)
+    private void UnbindMatchmakingEvents()
     {
+        if (matchmakingP2PWrapper == null)
+        {
+            return;
+        }
+        
+        matchmakingP2PWrapper.UnbindMatchmakingEvent();
+        matchmakingP2PWrapper.OnMatchTicketP2PCreated -= OnMatchTicketP2PCreated;
+        matchmakingP2PWrapper.OnMatchmakingWithP2PMatchFound -= OnMatchmakingWithP2PMatchFound;
+        matchmakingP2PWrapper.OnMatchmakingWithP2PTicketExpired -= OnMatchmakingWithP2PTicketExpired;
+        matchmakingP2PWrapper.OnMatchmakingWithP2PJoinSessionStarted -= OnMatchmakingWithP2PJoinSessionStarted;
+        matchmakingP2PWrapper.OnMatchmakingWithP2PJoinSessionCompleted -= OnMatchmakingWithP2PJoinSessionCompleted;
+        matchmakingP2PWrapper.OnMatchmakingWithP2PCanceled -= OnMatchmakingWithP2PCanceledAsync;
+        matchmakingP2PWrapper.OnMatchmakingWithP2PError -= ErrorPanelAsync;
+        matchmakingP2PWrapper.OnMatchmakingError -= ErrorPanelAsync;
+        matchmakingP2PWrapper.OnIntentionallyLeaveSession -= Reset;
+    }
+
+    private void CancelP2PMatchmaking()
+    {
+        matchmakingP2PWrapper.CancelP2PMatchmaking();
+        ShowLoading("Cancelling Match", "Cancelling match is timed out", cancelMatchmakingTimeoutSec);
+    }
+
+    private void OnMatchTicketP2PCreated()
+    {
+        switch (selectedGameMode)
+        {
+            case InGameMode.OnlineDeathMatchGameMode:
+                ShowLoading($"Finding {teamdeathmatchInfo}...",
+                    $"Finding {teamdeathmatchInfo} is timed out",
+                    matchmakingTimeoutSec, CancelP2PMatchmaking);
+                break;
+            case InGameMode.OnlineEliminationGameMode:
+                ShowLoading($"Finding {eliminationInfo}...",
+                    $"Finding {eliminationInfo} is timed out",
+                    matchmakingTimeoutSec, CancelP2PMatchmaking);
+                break;
+        }
+    }
+
+
+    private async void OnMatchmakingWithP2PCanceledAsync()
+    {
+        await Delay();
+        ShowInfo("Matchmaking is Canceled");
+        Reset();
+    }
+
+    private void OnMatchmakingWithP2PJoinSessionCompleted(bool isLeader)
+    {
+        if (isLeader)
+        {
+            ShowLoading("Hosting P2P Game", "Hosting P2P Game timed out", joinSessionTimeoutSec, matchmakingP2PWrapper.LeaveCurrentSession, false);
+        }
+        else
+        {
+            ShowLoading("Waiting for P2P Host", "Waiting for for P2P Host timed out", joinSessionTimeoutSec, matchmakingP2PWrapper.LeaveCurrentSession, false);
+        }
+    }
+
+    private void OnMatchmakingWithP2PJoinSessionStarted()
+    {
+        ShowLoading("Joining Match", "Joining Match is timed out", joinSessionTimeoutSec);
+    }
+
+    private void OnMatchmakingWithP2PTicketExpired()
+    {
+        ShowError("Matchmaking ticket is expired");
+        Reset();
+    }
+
+    private void OnMatchmakingWithP2PMatchFound()
+    {
+        ShowLoading("Match Found", "Match Found timed out", joinSessionTimeoutSec);
+    }
+
+    private async void ErrorPanelAsync(string message)
+    {
+        await Delay();
+        ShowError(message);
+        Reset();
+    }
+
+    private void Reset()
+    {
+        selectedGameMode = InGameMode.None;
         UnbindMatchmakingEvents();
-        ShowError(errorMessage);
     }
 
-    private void OnCancelMatchmakingComplete()
+    private async void OnMatchmakingWithDSCanceled()
+    {
+        await Delay();
+        ShowInfo("Matchmaking is Canceled");
+        Reset();
+    }
+
+
+    private async Task Delay()
+    {
+        await Task.Delay(1500);
+    }
+
+    private void HideLoading(bool obj)
     {
         UnbindMatchmakingEvents();
         HideLoading();

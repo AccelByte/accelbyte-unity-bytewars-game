@@ -12,6 +12,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEditor;
 
 #if UNITY_EDITOR
 using ParrelSync;
@@ -186,7 +187,12 @@ public class LoginHandler : MenuCanvas
     
     private void OnQuitGameButtonClicked()
     {
+#if UNITY_EDITOR
+        EditorApplication.ExitPlaymode();
+#else
         Application.Quit();
+#endif
+
     }
 
     public override GameObject GetFirstButton()

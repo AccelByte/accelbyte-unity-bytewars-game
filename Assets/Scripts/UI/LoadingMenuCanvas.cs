@@ -72,14 +72,16 @@ public class LoadingMenuCanvas : MenuCanvas
             return null;
     }
 
-    public void Show(string loadingInfo, LoadingTimeoutInfo loadingTimeoutInfo = null, UnityAction cancelCallback = null)
+    public void Show(string loadingInfo, bool showButton = true, LoadingTimeoutInfo loadingTimeoutInfo = null, UnityAction cancelCallback = null)
     {
         cancelBtn.onClick.RemoveAllListeners();
 
         cancelProcessCallback = cancelCallback;
         infoText.text = loadingInfo;
-        if (cancelCallback != null)
+
+        if (cancelCallback != null && showButton)
         {
+            cancelBtn.onClick.RemoveAllListeners();
             cancelBtn.gameObject.SetActive(true);
             cancelBtn.onClick.AddListener(cancelCallback);
         }

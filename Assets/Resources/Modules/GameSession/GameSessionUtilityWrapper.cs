@@ -1,4 +1,8 @@
-﻿using AccelByte.Core;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
+using AccelByte.Core;
 using AccelByte.Models;
 using AccelByte.Server;
 using System;
@@ -6,7 +10,7 @@ using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 
-public class GameSessionEssentialsWrapper : SessionEssentialsWrapper
+public class GameSessionUtilityWrapper : SessionEssentialsWrapper
 {
     private const string EliminationDSMatchPool = "unity-elimination-ds";
     private const string EliminationDSAMSMatchPool = "unity-elimination-ds-ams";

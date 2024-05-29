@@ -20,7 +20,7 @@ MonoBehaviour:
   defaultModuleScript: {fileID: 11500000, guid: fcf9b95937714b21b6a3c0d01acbcc31,
     type: 3}
   type: 18
-  isActive: 1
+  isActive: 0
   additionalScripts: 1
   additionalPrefab: 0
   defaultHelperScripts:
