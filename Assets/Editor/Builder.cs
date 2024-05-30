@@ -1,3 +1,7 @@
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System.IO;
 using AccelByte.Models;
 using Newtonsoft.Json;
@@ -29,7 +33,7 @@ public class Builder
 
         EditorUserBuildSettings.standaloneBuildSubtarget = StandaloneBuildSubtarget.Player;
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64);
-        var options = new BuildPlayerOptions
+        BuildPlayerOptions options = new BuildPlayerOptions
         {
             scenes = scenes,
             locationPathName = locationPathName,
@@ -37,7 +41,7 @@ public class Builder
             options = BuildOptions.None
         };
         
-        var report = BuildPipeline.BuildPlayer(options);
+        BuildReport report = BuildPipeline.BuildPlayer(options);
         if (report.summary.result == BuildResult.Succeeded)
         {
             Debug.Log($"[Builder.BuildWindowsClient] Build client successful - Build written to: {options.locationPathName}");
@@ -65,7 +69,7 @@ public class Builder
 
         EditorUserBuildSettings.standaloneBuildSubtarget = StandaloneBuildSubtarget.Server;
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.LinuxHeadlessSimulation, BuildTarget.StandaloneLinux64);
-        var options = new BuildPlayerOptions
+        BuildPlayerOptions options = new BuildPlayerOptions
         {
             scenes = scenes,
             locationPathName = locationPathName,
@@ -73,7 +77,7 @@ public class Builder
             subtarget = (int)StandaloneBuildSubtarget.Server,
             options = BuildOptions.None
         };
-        var report = BuildPipeline.BuildPlayer(options);
+        BuildReport report = BuildPipeline.BuildPlayer(options);
         if (report.summary.result == BuildResult.Succeeded)
         {
             Debug.Log($"[Builder.BuildLinuxServer] Build server successful - Build written to: {options.locationPathName}");
@@ -102,36 +106,36 @@ public class Builder
     public static void GenerateSDKConfig()
     {
         string[] cmdArgs = System.Environment.GetCommandLineArgs();
-        var multiConfigs = new MultiConfigs();
-        var config = new Config();
-        var isServer = false;
+        MultiConfigs multiConfigs = new MultiConfigs();
+        Config config = new Config();
+        bool isServer = false;
 
         foreach (string arg in cmdArgs)
         {
             if (arg.Contains("-namespace="))
             {
-                var agsNamespace = arg.Replace("-namespace=", "");
+                string agsNamespace = arg.Replace("-namespace=", "");
                 config.Namespace = agsNamespace;
                 config.Expand(true);
             }
 
             if (arg.Contains("-baseUrl="))
             {
-                var baseUrl = arg.Replace("-baseUrl=", "");
+                string baseUrl = arg.Replace("-baseUrl=", "");
                 config.BaseUrl = baseUrl;
                 config.Expand(true);
             }
 
             if (arg.Contains("-redirectUri="))
             {
-                var redirectUri = arg.Replace("-redirectUri=", "");
+                string redirectUri = arg.Replace("-redirectUri=", "");
                 config.RedirectUri = redirectUri;
                 config.Expand(true);
             }
 
             if (arg.Contains("-publisherNamespace="))
             {
-                var publisherNamespace = arg.Replace("-publisherNamespace=", "");
+                string publisherNamespace = arg.Replace("-publisherNamespace=", "");
                 config.PublisherNamespace = publisherNamespace;
                 config.Expand(true);
             }
@@ -146,8 +150,8 @@ public class Builder
         multiConfigs.Default = config;
         multiConfigs.Expand(true);
         
-        var fileName = isServer ? "AccelByteServerSDKConfig.json" : "AccelByteSDKConfig.json";
-        var json = JsonConvert.SerializeObject(multiConfigs);
+        string fileName = isServer ? "AccelByteServerSDKConfig.json" : "AccelByteSDKConfig.json";
+        string json = JsonConvert.SerializeObject(multiConfigs);
         File.WriteAllText($"Assets/Resources/{fileName}", json);
         Debug.Log($"[Builder.GenerateSDKConfigJSON] Generate JSON Assets/Resources/{fileName}");
 
@@ -157,22 +161,22 @@ public class Builder
     public static void GenerateOAuthConfig()
     {
         string[] cmdArgs = System.Environment.GetCommandLineArgs();
-        var multiOAuthConfig = new MultiOAuthConfigs();
-        var oauthConfig = new OAuthConfig();
-        var isServer = false;
+        MultiOAuthConfigs multiOAuthConfig = new MultiOAuthConfigs();
+        OAuthConfig oauthConfig = new OAuthConfig();
+        bool isServer = false;
 
         foreach (string arg in cmdArgs)
         {
             if (arg.Contains("-clientId="))
             {
-                var clientId = arg.Replace("-clientId=", "");
+                string clientId = arg.Replace("-clientId=", "");
                 oauthConfig.ClientId = clientId;
                 oauthConfig.Expand();
             }
 
             if (arg.Contains("-clientSecret="))
             {
-                var clientSecret = arg.Replace("-clientSecret=", "");
+                string clientSecret = arg.Replace("-clientSecret=", "");
                 oauthConfig.ClientSecret = clientSecret;
                 oauthConfig.Expand();
             }
@@ -187,8 +191,8 @@ public class Builder
         multiOAuthConfig.Default = oauthConfig;
         multiOAuthConfig.Expand();
 
-        var fileName = isServer ? "AccelByteServerSDKOAuthConfig.json" : "AccelByteSDKOAuthConfig.json";
-        var json = JsonConvert.SerializeObject(multiOAuthConfig);
+        string fileName = isServer ? "AccelByteServerSDKOAuthConfig.json" : "AccelByteSDKOAuthConfig.json";
+        string json = JsonConvert.SerializeObject(multiOAuthConfig);
         File.WriteAllText($"Assets/Resources/{fileName}", json);
         Debug.Log($"[Builder.GenerateSDKOAuthJSON] Generate JSON Assets/Resources/{fileName}");
     }
