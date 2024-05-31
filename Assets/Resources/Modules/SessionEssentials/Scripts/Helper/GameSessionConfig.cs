@@ -72,8 +72,8 @@ public class GameSessionConfig
                                 {
                                     type = SessionConfigurationTemplateType.DS,
                                     joinability = SessionV2Joinability.OPEN,
-                                    configurationName = UnitySessionEliminationDs,
-                                    matchPool = UnitySessionEliminationDs,
+                                    configurationName = UnitySessionDeathMatchDs,
+                                    matchPool = UnitySessionDeathMatchDs,
                                 }
                             },
                             {
@@ -90,8 +90,8 @@ public class GameSessionConfig
                                 {
                                     type = SessionConfigurationTemplateType.DS,
                                     joinability = SessionV2Joinability.OPEN,
-                                    configurationName = UnitySessionEliminationDSAMS,
-                                    matchPool = UnitySessionEliminationDSAMS,
+                                    configurationName = UnitySessionTeamDeathmatchDSAMS,
+                                    matchPool = UnitySessionTeamDeathmatchDSAMS,
                                 }
                             }
                         }
