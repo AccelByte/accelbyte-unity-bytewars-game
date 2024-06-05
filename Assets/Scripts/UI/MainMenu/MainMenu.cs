@@ -1,11 +1,10 @@
-// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using System;
@@ -20,11 +19,10 @@ public class MainMenu : MenuCanvas
     [SerializeField] private Button helpAndOptionsButton;
     [SerializeField] private Button quitButton;
     [SerializeField] private LayoutGroup layoutGroup;
-
+    
     public static event Action<Action> OnQuitPressed;
 
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         CheckModulesButtons();
 
@@ -35,56 +33,45 @@ public class MainMenu : MenuCanvas
         socialButton.onClick.AddListener(OnSocialButtonPressed);
         helpAndOptionsButton.onClick.AddListener(OnHelpAndOptionsButtonPressed);
         quitButton.onClick.AddListener(OnQuitButtonPressed);
-        //FixLayout();
     }
 
-    private void OnSocialButtonPressed()
+    private static void OnSocialButtonPressed()
     {
-        var friendEssentialModule = TutorialModuleManager.Instance.GetModule(TutorialType.FriendEssentials);
-        if (!friendEssentialModule.isStarterActive)
-        {
-            MenuManager.Instance.ChangeToMenu(AssetEnum.SocialMenuCanvas);
-        }
-        else
-        {
-            MenuManager.Instance.ChangeToMenu(AssetEnum.SocialMenuCanvas_Starter);
-        }
-    }
+        ModuleModel friendsEssentialModule = TutorialModuleManager.Instance.GetModule(TutorialType.FriendsEssentials);
 
-    public void OnPlayButtonPressed()
+        MenuManager.Instance.ChangeToMenu(friendsEssentialModule.isStarterActive 
+            ? AssetEnum.SocialMenuCanvas_Starter : AssetEnum.SocialMenuCanvas);
+    }
+    
+    private static void OnPlayButtonPressed()
     {
         MenuManager.Instance.ChangeToMenu(AssetEnum.PlayMenuCanvas);
     }
 
-    private void OnPlayOnlineButtonPressed()
+    private static void OnPlayOnlineButtonPressed()
     {
         MenuManager.Instance.ChangeToMenu(AssetEnum.PlayOnlineMenuCanvas);
     }
-
-    public void OnLeaderboardButtonPressed()
+    
+    private static void OnLeaderboardButtonPressed()
     {
-        var leaderboardEssentialModule = TutorialModuleManager.Instance.GetModule(TutorialType.LeaderboardEssentials);
-        if (!leaderboardEssentialModule.isStarterActive)
-        {
-            MenuManager.Instance.ChangeToMenu(AssetEnum.LeaderboardSelectionMenuCanvas);
-        }
-        else
-        {
-            MenuManager.Instance.ChangeToMenu(AssetEnum.LeaderboardSelectionMenuCanvas_Starter);
-        }
+        ModuleModel leaderboardEssentialModule = TutorialModuleManager.Instance.GetModule(TutorialType.LeaderboardEssentials);
+        
+        MenuManager.Instance.ChangeToMenu(leaderboardEssentialModule.isStarterActive 
+            ? AssetEnum.LeaderboardSelectionMenuCanvas_Starter : AssetEnum.LeaderboardSelectionMenuCanvas);
     }
-
-    public void OnProfileButtonPressed()
+    
+    private static void OnProfileButtonPressed()
     {
         MenuManager.Instance.ChangeToMenu(AssetEnum.ProfileMenuCanvas);
     }
-
-    public void OnHelpAndOptionsButtonPressed()
+    
+    private static void OnHelpAndOptionsButtonPressed()
     {
         MenuManager.Instance.ChangeToMenu(AssetEnum.HelpAndOptionsMenuCanvas);
     }
-
-    public void OnQuitButtonPressed()
+    
+    private static void OnQuitButtonPressed()
     {
         var authEssentialsModule = TutorialModuleManager.Instance.GetModule(TutorialType.AuthEssentials);
         
@@ -98,7 +85,7 @@ public class MainMenu : MenuCanvas
         }
     }
 
-    private void QuitGame()
+    private static void QuitGame()
     {
 #if UNITY_EDITOR
         EditorApplication.ExitPlaymode();
@@ -117,7 +104,6 @@ public class MainMenu : MenuCanvas
         return AssetEnum.MainMenuCanvas;
     }
 
-
     private void CheckModulesButtons()
     {
 #if !BYTEWARS_DEBUG
@@ -127,22 +113,14 @@ public class MainMenu : MenuCanvas
         playOnlineBtn.gameObject.SetActive(isOnlineBtnActive);
 #endif
 
-        bool isFriendModuleActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.FriendEssentials);
+        bool isFriendModuleActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.FriendsEssentials);
         socialButton.gameObject.SetActive(isFriendModuleActive);
 
         bool isStatsModuleActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.StatsEssentials);
         profileButton.gameObject.SetActive(isStatsModuleActive);
 
-        bool isLeaderboarModuleActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.LeaderboardEssentials);
-        leaderboardButton.gameObject.SetActive(isLeaderboarModuleActive);
-    }
-
-    private async void FixLayout()
-    {
-        await Task.Delay(30);
-        layoutGroup.enabled = false;
-        await Task.Delay(50);
-        layoutGroup.enabled = true;
+        bool isLeaderboardModuleActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.LeaderboardEssentials);
+        leaderboardButton.gameObject.SetActive(isLeaderboardModuleActive);
     }
 }
 

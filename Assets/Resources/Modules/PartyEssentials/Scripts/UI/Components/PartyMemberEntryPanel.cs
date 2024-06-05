@@ -1,4 +1,4 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -30,7 +30,7 @@ public class PartyMemberEntryPanel : MonoBehaviour
 
     private void OnAddMemberButtonClicked()
     {
-        MenuManager.Instance.ChangeToMenu(AssetEnum.FriendMenuCanvas);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.FriendsMenuCanvas);
     }
 
     private void OnMemberInfoPanelClicked()
@@ -39,13 +39,10 @@ public class PartyMemberEntryPanel : MonoBehaviour
         MenuCanvas friendDetailsMenu = MenuManager.Instance.GetMenu(AssetEnum.FriendDetailsMenuCanvas);
         FriendDetailsMenuHandler friendDetailsMenuHandler = friendDetailsMenu.gameObject.GetComponent<FriendDetailsMenuHandler>();
 
-        Transform friendDetailsPanel = friendDetailsMenuHandler.friendDetailsPanel;
-        Image avatar = friendDetailsPanel.GetComponentInChildren<Image>();
-        TMP_Text playerDisplayName = friendDetailsPanel.GetComponentInChildren<TMP_Text>();
-
-        friendDetailsMenuHandler.UserID = currentUserId;
-        avatar.sprite = avatarImage.sprite;
-        playerDisplayName.text = playerNameText.text;
+        friendDetailsMenuHandler.UserId = currentUserId;
+        friendDetailsMenuHandler.FriendImage.sprite = avatarImage.sprite;
+        friendDetailsMenuHandler.FriendDisplayName.text = playerNameText.text;
+        friendDetailsMenuHandler.FriendPresence.text = "Online";
 
         MenuManager.Instance.ChangeToMenu(AssetEnum.FriendDetailsMenuCanvas);
     }

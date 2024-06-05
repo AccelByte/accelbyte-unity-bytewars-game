@@ -1,5 +1,10 @@
-using System.Collections;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -7,66 +12,125 @@ using UnityEngine;
 
 public class ManagingFriendsWrapper : MonoBehaviour
 {
-    private Lobby _lobby;
+    private static ApiClient ApiClient => AccelByteSDK.GetClientRegistry().GetApi();
+    private static Lobby lobby;
 
-    // Start is called before the first frame update
-    void Start()
+    private FriendsEssentialsWrapper friendsEssentialsWrapper;
+
+    public static event Action<string> OnPlayerBlocked = delegate { };
+    
+    private void Awake()
     {
-        _lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
+        lobby = ApiClient.GetLobby();
+
+        lobby.PlayerBlockedNotif += OnPlayerBlockedNotif;
+    }
+    
+    private void Start()
+    {
+        friendsEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<FriendsEssentialsWrapper>();
+    }
+    
+    private void OnDestroy()
+    {
+        lobby.PlayerBlockedNotif -= OnPlayerBlockedNotif;
+    }
+
+    #region Manage Friends
+
+    public void GetBlockedPlayers(ResultCallback<BlockedList> resultCallback)
+    {
+        lobby.GetListOfBlockedUser(result =>
+        {
+            if (result.IsError)
+            {
+                BytewarsLogger.LogWarning("Error to load blocked users, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+            }
+            else
+            {
+                BytewarsLogger.Log($"Success to load blocked users, total blocked users {result.Value.data.Length}");
+
+                IEnumerable<string> blockedUserIds = result.Value.data.Select(user => user.blockedUserId);
+                friendsEssentialsWrapper.CachedFriendUserIds.Add(blockedUserIds.ToArray());
+            }
+
+            resultCallback?.Invoke(result);
+        });
     }
 
     public void Unfriend(string userId, ResultCallback resultCallback)
     {
-        _lobby.Unfriend(userId, result =>
+        lobby.Unfriend(userId, result =>
         {
-            if (!result.IsError) {
-                Debug.Log($"Success to unfriend");
-            } else {
-                Debug.LogWarning($"Error unfriend a friend, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+            if (result.IsError)
+            {
+                BytewarsLogger.LogWarning("Error sending unfriend request, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
+            else
+            {
+                BytewarsLogger.Log($"Successfully unfriended player with user Id: {userId}");
+                
+                friendsEssentialsWrapper.CachedFriendUserIds.Remove(userId);
+            }
+            
             resultCallback?.Invoke(result);
         } );
     }
     
     public void BlockPlayer(string userId, ResultCallback<BlockPlayerResponse> resultCallback)
     {
-        _lobby.BlockPlayer(userId, result =>
+        lobby.BlockPlayer(userId, result =>
         {
-            if (!result.IsError) {
-                Debug.Log($"Success to block a player");
-            } else {
-                Debug.LogWarning($"Error unfriend a friend, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+            if (result.IsError)
+            {
+                BytewarsLogger.LogWarning("Error sending block player request, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
+            else
+            {
+                BytewarsLogger.Log($"Successfully blocked player with user Id: {userId}");
+            }
+            
             resultCallback?.Invoke(result);
         } );
     }
     
     public void UnblockPlayer(string userId, ResultCallback<UnblockPlayerResponse> resultCallback)
     {
-        _lobby.UnblockPlayer(userId, result =>
+        lobby.UnblockPlayer(userId, result =>
         {
-            if (!result.IsError) {
-                Debug.Log($"Success to unblock a player");
-            } else {
-                Debug.LogWarning($"Error unblock a friend, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
-            }
-            resultCallback?.Invoke(result);
-        } );
-    }
-
-    public void GetBlockedPlayers(ResultCallback<BlockedList> resultCallback)
-    {
-        _lobby.GetListOfBlockedUser(result =>
-        {
-            if (!result.IsError)
+            if (result.IsError)
             {
-                Debug.Log($"Success to load blocked users, total blocked users {result.Value.data.Length}");
+                BytewarsLogger.LogWarning("Error unblock a friend, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
             else
             {
-                Debug.LogWarning($"Error to load blocked users, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+                BytewarsLogger.Log($"Successfully unblocked player with user Id: {userId}");
+
+                friendsEssentialsWrapper.CachedFriendUserIds.Remove(userId);
             }
+
             resultCallback?.Invoke(result);
-        });
+        } );
     }
+    
+    private static void OnPlayerBlockedNotif(Result<PlayerBlockedNotif> result)
+    {
+        if (result.IsError)
+        {
+            BytewarsLogger.LogWarning("Error retrieving player blocked notif, " +
+                $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+
+            return;
+        }
+
+        BytewarsLogger.Log($"Player with user Id: {result.Value.userId} has been blocked");
+
+        OnPlayerBlocked?.Invoke(result.Value.userId);
+    }
+
+    #endregion Manage Friends
 }

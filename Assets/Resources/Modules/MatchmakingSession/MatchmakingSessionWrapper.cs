@@ -18,15 +18,14 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
     private List<SessionV2GameSession> playerSessions = new List<SessionV2GameSession>();
     private bool isGetActiveSessionCompleted = false;
 
-    #region matchmaking events
-    protected event ResultCallback<MatchmakingV2MatchFoundNotification> OnMatchFound;
-    protected event ResultCallback<MatchmakingV2MatchmakingStartedNotification> OnMatchStarted;
-    protected event ResultCallback<MatchmakingV2TicketExpiredNotification> OnMatchExpired;
-    protected event ResultCallback<SessionV2DsStatusUpdatedNotification> OnDSStatusUpdate;
-    protected event Action OnMatchTicketDeleted;
-    protected event Action<string /*match ticket id*/> OnMatchTicketCreated;
-    protected internal event Action<string> OnMatchmakingError;
-
+    #region Matchmaking Events
+    public event ResultCallback<MatchmakingV2MatchmakingStartedNotification> OnMatchStarted;
+    public event ResultCallback<MatchmakingV2MatchFoundNotification> OnMatchFound;
+    public event ResultCallback<SessionV2DsStatusUpdatedNotification> OnDSStatusUpdate;
+    public event ResultCallback<MatchmakingV2TicketExpiredNotification> OnMatchExpired;
+    public event Action<string /*match ticket id*/> OnMatchTicketCreated;
+    public event Action<string> OnMatchmakingError;
+    public event Action OnMatchTicketDeleted;
     #endregion
 
     protected void Awake()

@@ -39,6 +39,7 @@ public class GameManager : NetworkBehaviour
     public event Action OnGameStateIsNone;
 
     public InGameState InGameState { get; private set; } = InGameState.None;
+    public InGameMode InGameMode { get; private set; } = InGameMode.None;
     public InGamePause InGamePause { get; private set; }
     public List<GameEntityAbs> ActiveGEs { get; } = new();
     public Dictionary<ulong, Player> Players { get; } = new();
@@ -60,7 +61,6 @@ public class GameManager : NetworkBehaviour
     private readonly ServerHelper _serverHelper = new();
     private readonly ClientHelper _clientHelper = new();
     
-    private InGameMode _inGameMode = InGameMode.None;
     private GameModeEnum _gameMode = GameModeEnum.MainMenu;
     private List<Vector3> availablePositions;
     private UnityTransport _unityTransport;
@@ -240,7 +240,7 @@ public class GameManager : NetworkBehaviour
     public void ResetCache()
     {
         _gameMode = GameModeEnum.MainMenu;
-        _inGameMode = InGameMode.None;
+        InGameMode = InGameMode.None;
         connectedClients.Clear();
         _serverHelper.Reset();
     }
@@ -254,7 +254,7 @@ public class GameManager : NetworkBehaviour
         if (isHostStopped)
         {
             BytewarsLogger.Log("Hosting server has stopped");
-            _inGameMode = InGameMode.None;
+            InGameMode = InGameMode.None;
         }
 
         ResetCache();
@@ -268,7 +268,7 @@ public class GameManager : NetworkBehaviour
         }
         
         reconnect.OnClientStopped(isHostStopped, InGameState, _serverHelper,
-            _clientHelper.ClientNetworkId, _inGameMode);
+            _clientHelper.ClientNetworkId, InGameMode);
     }
 
     private void StartServer()
@@ -299,7 +299,7 @@ public class GameManager : NetworkBehaviour
     private void OnClientConnected(ulong clientNetworkId)
     {
         reconnect.OnClientConnected(clientNetworkId, IsOwner, IsServer, IsClient, IsHost, _serverHelper,
-                                    _inGameMode, connectedClients, InGameState, GameData.ServerType, Players, _gameTimeLeft, _clientHelper);
+                                    InGameMode, connectedClients, InGameState, GameData.ServerType, Players, _gameTimeLeft, _clientHelper);
     }
 
     private void OnClientDisconnected(ulong clientNetworkId)
@@ -381,15 +381,15 @@ public class GameManager : NetworkBehaviour
                                                   NetworkManager.ConnectionApprovalResponse response)
     {
         ConnectionApprovalResult result = await connectionHelper.ConnectionApproval(request, response, IsServer,
-                                              InGameState, availableInGameMode, _inGameMode, _serverHelper);
+                                              InGameState, availableInGameMode, InGameMode, _serverHelper);
         if (result == null)
         {
             return;
         }
         
-        if (_inGameMode == InGameMode.None)
+        if (InGameMode == InGameMode.None)
         {
-            _inGameMode = result.InGameMode;
+            InGameMode = result.InGameMode;
             GameData.GameModeSo = result.GameModeSo;
         }
         
@@ -647,7 +647,7 @@ public class GameManager : NetworkBehaviour
                 break;
 
             case InGameState.GameOver:
-                OnGameOver.Invoke(_gameMode, _inGameMode, ConnectedPlayerStates.Values.ToList());
+                OnGameOver.Invoke(_gameMode, InGameMode, ConnectedPlayerStates.Values.ToList());
 
                 _serverHelper.CancelCountdown();
 
@@ -1229,7 +1229,7 @@ public class GameManager : NetworkBehaviour
         BytewarsLogger.Log($"update player state lobby playerStates: {JsonUtility.ToJson(playerStates)} " +
                            $"teamStates: {JsonUtility.ToJson(teamStates)}");
         _serverHelper.UpdatePlayerStates(teamStates, playerStates);
-        _inGameMode = inGameMode;
+        InGameMode = inGameMode;
         GameData.GameModeSo = availableInGameMode[(int)inGameMode];
         GameData.ServerType = serverType;
 

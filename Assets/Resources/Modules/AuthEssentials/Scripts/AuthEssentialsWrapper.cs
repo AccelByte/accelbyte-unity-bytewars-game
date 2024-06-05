@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using System;
+using System.Collections.Generic;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -28,13 +29,9 @@ public class AuthEssentialsWrapper : MonoBehaviour
     private void Awake()
     {
         apiClient = AccelByteSDK.GetClientRegistry().GetApi();
-        user = apiClient.GetApi<User, UserApi>();
-        userProfiles = apiClient.GetApi<UserProfiles, UserProfilesApi>();
-        lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
-
-        lobby.Disconnected += OnLobbyDisconnected;
-        lobby.Disconnecting += OnLobbyDisconnecting;
-
+        user = apiClient.GetUser();
+        userProfiles = apiClient.GetUserProfiles();
+        lobby = apiClient.GetLobby();
     }
 
     void OnApplicationQuit()
@@ -71,6 +68,17 @@ public class AuthEssentialsWrapper : MonoBehaviour
     public void LoginWithUsername(string username, string password, ResultCallback<TokenData, OAuthError> resultCallback)
     {
         user.LoginWithUsernameV3(username, password, result => OnLoginCompleted(result, resultCallback), false);
+    }
+
+    public void CheckLobbyConnection()
+    {
+        if (!lobby.IsConnected)
+        {
+            lobby.Connected += OnLobbyConnected;
+            lobby.Disconnected += OnLobbyDisconnected;
+            lobby.Disconnecting += OnLobbyDisconnecting;
+            lobby.Connect();
+        }
     }
 
     public void GetUserByUserId(string userId, ResultCallback<PublicUserData> resultCallback)
@@ -113,7 +121,7 @@ public class AuthEssentialsWrapper : MonoBehaviour
 
     private void GetUserProfile()
     {
-        apiClient.GetApi<UserProfiles, UserProfilesApi>().GetUserProfile(result => OnGetUserProfileCompleted(result));
+        userProfiles.GetUserProfile(result => OnGetUserProfileCompleted(result));
     }
 
     private void CreateUserProfile()
@@ -139,30 +147,21 @@ public class AuthEssentialsWrapper : MonoBehaviour
     /// <param name="code"></param>
     private void OnLobbyDisconnected(WsCloseCode code)
     {
+        BytewarsLogger.Log($"Lobby service disconnected with code: {code}");
 
-        switch (code)
+        HashSet<WsCloseCode> loginDisconnectCodes = new()
         {
-            case WsCloseCode.Normal:
-                BytewarsLogger.Log($"{code}");
-                AuthEssentialsHelper.OnUserLogout?.Invoke();
-                lobby.Connected -= OnConnected;
-                lobby.Disconnected -= OnLobbyDisconnected;
-                break;
-            case WsCloseCode.DisconnectDueToMultipleSessions:
-                BytewarsLogger.Log($"{code}");
-                AuthEssentialsHelper.OnUserLogout?.Invoke();
-                lobby.Connected -= OnConnected;
-                lobby.Disconnected -= OnLobbyDisconnected;
-                break;
-            case WsCloseCode.DisconnectDueToIAMLoggedOut:
-                BytewarsLogger.Log($"{code}");
-                AuthEssentialsHelper.OnUserLogout?.Invoke();
-                lobby.Connected -= OnConnected;
-                lobby.Disconnected -= OnLobbyDisconnected;
-                break;
-            case WsCloseCode.Undefined:
-                BytewarsLogger.Log($"{code}");
-                break;
+            WsCloseCode.Normal,
+            WsCloseCode.DisconnectDueToMultipleSessions,
+            WsCloseCode.DisconnectDueToIAMLoggedOut
+        };
+
+        if (loginDisconnectCodes.Contains(code))
+        {
+            lobby.Connected -= OnLobbyConnected;
+            lobby.Disconnected -= OnLobbyDisconnected;
+
+            AuthEssentialsHelper.OnUserLogout?.Invoke();
         }
     }
 
@@ -178,10 +177,11 @@ public class AuthEssentialsWrapper : MonoBehaviour
         }
     }
 
-    private void OnConnected()
+    private void OnLobbyConnected()
     {
         BytewarsLogger.Log($"Lobby service connected: {lobby.IsConnected}");
     }
+
     #endregion
 
     #region Callback Functions
@@ -201,11 +201,7 @@ public class AuthEssentialsWrapper : MonoBehaviour
             userData = result.Value;
 
             GetUserProfile();
-            if (!lobby.IsConnected)
-            {
-                lobby.Connect();
-                lobby.Connected += OnConnected;
-            }
+            CheckLobbyConnection();
         }
         else
         {
@@ -275,10 +271,7 @@ public class AuthEssentialsWrapper : MonoBehaviour
         {
             BytewarsLogger.Log($"Unable to retrieve self user profile. Message: {result.Error.Message}");
 
-            //TODO: Nicky (5/15/2024) Change the condition to check for
-            //      the correct error code when implemented in the SDK.
-            const string userProfileNotFoundCode = "11440";
-            if (result.Error.Code.ToString() is userProfileNotFoundCode)
+            if (result.Error.Code is ErrorCode.UserProfileNotFoundException)
             {
                 CreateUserProfile();
             }

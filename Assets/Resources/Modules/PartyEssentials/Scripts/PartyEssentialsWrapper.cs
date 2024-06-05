@@ -1,4 +1,4 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -12,10 +12,12 @@ public class PartyEssentialsWrapper : MonoBehaviour
     public delegate void PartyInvitationDelegate(SessionV2PartyInvitationNotification partyInvitation);
     public delegate void PartyKickedDelegate(string partyId);
     public delegate void PartyUpdateDelegate(string leaderId, SessionV2MemberData[] members);
+    public delegate void PartyLeaveDelegate();
 
     public static event PartyInvitationDelegate OnPartyInvitationReceived = delegate { };
     public static event PartyKickedDelegate OnUserKicked = delegate { };
     public static event PartyUpdateDelegate OnPartyUpdated = delegate { };
+    public static event PartyLeaveDelegate OnLeaveParty = delegate { };
 
     private Session session;
     private Lobby lobby;
@@ -220,6 +222,8 @@ public class PartyEssentialsWrapper : MonoBehaviour
         {
             Debug.Log("Successfully left the party session");
             PartyId = null;
+            
+            OnLeaveParty.Invoke();
         }
         else
         {

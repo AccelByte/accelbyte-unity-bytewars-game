@@ -1,233 +1,243 @@
-using System;
-using System.Collections;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System.Collections.Generic;
 using System.Linq;
 using AccelByte.Core;
 using AccelByte.Models;
-using TMPro;
+using Extensions;
 using UnityEngine;
 using UnityEngine.UI;
 
-
 public class BlockedPlayersMenuHandler : MenuCanvas
 {
-    [SerializeField] private RectTransform defaultPanel;
-    [SerializeField] private RectTransform loadingSuccessPanel;
-    [SerializeField] private RectTransform loadingFailedPanel;
-    [SerializeField] private RectTransform loadingPanel;
-    [SerializeField] private Button backButton;
-
-    private List<RectTransform> _panels = new List<RectTransform>();
-    private Dictionary<string, RectTransform> _blockedPlayers = new Dictionary<string, RectTransform>();
+    [Header("Blocked Players Component"), SerializeField] private GameObject playerEntryPrefab;
     
-    private ManagingFriendsWrapper _managingFriendsWrapper;
-    private FriendEssentialsWrapper _friendEssentialsWrapper;
+    [Header("View Panels"), SerializeField] private RectTransform defaultPanel;
+    [SerializeField] private RectTransform loadingPanel;
+    [SerializeField] private RectTransform loadingFailedPanel;
+    [SerializeField] private RectTransform resultContentPanel;
 
+    [Header("Menu Components"), SerializeField] private Button backButton;
 
-    enum BlockedFriendsView
+    private readonly Dictionary<string, GameObject> blockedPlayers = new();
+    
+    private ManagingFriendsWrapper managingFriendsWrapper;
+
+    private FriendsEssentialsWrapper friendEssentialsWrapper;
+    
+    private enum BlockedFriendsView
     {
         Default,
         Loading,
-        LoadingSuccess,
-        LoadingFailed
+        LoadFailed,
+        LoadSuccess
     }
     
-    
+    private BlockedFriendsView currentView = BlockedFriendsView.Default;
+
     private BlockedFriendsView CurrentView
     {
-        get => CurrentView;
-        set => ViewSwitcher(value);
-    }
-    
-    private void ViewSwitcher(BlockedFriendsView value)
-    {
-        switch (value)
+        get => currentView;
+        set
         {
-            case BlockedFriendsView.Default:
-                SwitcherHelper(defaultPanel);
-                break;
-            case BlockedFriendsView.Loading:
-                SwitcherHelper(loadingPanel);
-                break;
-            case BlockedFriendsView.LoadingSuccess:
-                SwitcherHelper(loadingSuccessPanel);
-                break;
-            case BlockedFriendsView.LoadingFailed:
-                SwitcherHelper(loadingFailedPanel);
-                break;
+            defaultPanel.gameObject.SetActive(value == BlockedFriendsView.Default);
+            loadingPanel.gameObject.SetActive(value == BlockedFriendsView.Loading);
+            loadingFailedPanel.gameObject.SetActive(value == BlockedFriendsView.LoadFailed);
+            resultContentPanel.gameObject.SetActive(value == BlockedFriendsView.LoadSuccess);
+            currentView = value;
         }
     }
     
-    
-    private void SwitcherHelper(RectTransform panel)
+    private void OnEnable()
     {
-        panel.gameObject.SetActive(true);
-        _panels.Except(new []{panel})
-            .ToList().ForEach(x => x.gameObject.SetActive(false));
-    }
-
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        _panels = new List<RectTransform>()
+        managingFriendsWrapper ??= TutorialModuleManager.Instance.GetModuleClass<ManagingFriendsWrapper>();
+        friendEssentialsWrapper ??= TutorialModuleManager.Instance.GetModuleClass<FriendsEssentialsWrapper>();
+        
+        if (managingFriendsWrapper != null && friendEssentialsWrapper != null)
         {
-            defaultPanel,
-            loadingPanel,
-            loadingSuccessPanel,
-            loadingFailedPanel
-        };
-
-        backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
-        FriendEssentialsWrapper.OnIncomingAdded += UpdateFriendList;
+            LoadBlockedPlayers();
+        }
     }
     
     private void Awake()
     {
-        _managingFriendsWrapper = TutorialModuleManager.Instance.GetModuleClass<ManagingFriendsWrapper>();
-        _friendEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<FriendEssentialsWrapper>();
-    }
+        CurrentView = BlockedFriendsView.Default;
 
-    
-    private void OnEnable()
-    {
-        GetBlockedPlayers();
+        backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
     }
     
     private void OnDisable()
     {
         ClearBlockedPlayers();
+
+        CurrentView = BlockedFriendsView.Default;
     }
     
-    #region Managing Friends
-    
-    private void UpdateFriendList()
+    #region Managing Friends Module
+
+    #region Main Functions
+
+    private void LoadBlockedPlayers()
     {
-        if (transform.gameObject.activeSelf)
-        {
-            ClearBlockedPlayers();
-            GetBlockedPlayers();
-        }
+        CurrentView = BlockedFriendsView.Loading;
+
+        managingFriendsWrapper.GetBlockedPlayers(OnLoadBlockedPlayersCompleted);
+    }
+
+    private void GetBulkUserInfo(params string[] userIds)
+    {
+        friendEssentialsWrapper.GetBulkUserInfo(userIds, OnGetBulkUserInfoCompleted);
+    }
+
+    private void UnblockPlayer(string userId)
+    {
+        managingFriendsWrapper.UnblockPlayer(userId, result => OnUnblockPlayerCompleted(userId, result));
+    }
+
+    private void RetrieveUserAvatar(string userId)
+    {
+        friendEssentialsWrapper.GetUserAvatar(userId, result => OnGetAvatarCompleted(userId, result));
     }
     
-    private void ClearBlockedPlayers()
+    #endregion Main Functions
+
+    #region Callback Functions
+    
+    private void OnUnblockPlayerCompleted(string userId, Result<UnblockPlayerResponse> result)
     {
-        var tempFriendPanel = new List<GameObject>();
-        foreach (var friendPanelHandler in _blockedPlayers)
+        if (result.IsError)
         {
-            if (friendPanelHandler.Value != null)
-            {
-                tempFriendPanel.Add(friendPanelHandler.Value.gameObject);
-            }
+            return;
         }
         
-        tempFriendPanel.ForEach(Destroy);
-        
-        _blockedPlayers.Clear();
-    }
-
-    private void GenerateEntryResult(ListBulkUserInfoResponse friends)
-    {
-        var friendRequestComponent = loadingSuccessPanel.GetChild(0);
-        Debug.Log(friendRequestComponent.name);
-        foreach (var baseUserInfo in friends.data)
+        if (!blockedPlayers.Remove(userId, out GameObject playerEntry))
         {
-            var resultPanel = Instantiate(friendRequestComponent, Vector3.zero, Quaternion.identity, loadingSuccessPanel);
-            resultPanel.gameObject.SetActive(true);
-            resultPanel.gameObject.name = baseUserInfo.userId;
-            var friendEntryComponent = resultPanel.GetComponentInChildren<BlockedFriendEntryHandler>();
-            friendEntryComponent.friendName.text = String.IsNullOrEmpty(baseUserInfo.displayName) ? "Bytewars Player Headless" : baseUserInfo.displayName;
-            friendEntryComponent.unblockButton.onClick.AddListener(() =>
-            {
-                OnUnblockFriend(baseUserInfo.userId);
-            });
-            _blockedPlayers.TryAdd(baseUserInfo.userId, (RectTransform)resultPanel);
-            RetrieveAvatar(baseUserInfo.userId);
+            return;
+        }
+        
+        Destroy(playerEntry);
+        
+        if (blockedPlayers.Count <= 0)
+        {
+            CurrentView = BlockedFriendsView.Default;
         }
     }
     
-    private void OnUnblockFriend(string userId)
-    {
-        _managingFriendsWrapper.UnblockPlayer(userId, result => OnUnblockedCompleted(userId, result));
-    }
-
-    private void OnUnblockedCompleted(string userId, Result<UnblockPlayerResponse> result)
-    {
-        if (!result.IsError)
-        {
-            var target = GameObject.Find(userId);
-            Destroy(target);
-        }
-    }
-
-    private void UserInfo(BlockedList friends)
-    {
-        var blockedUsersId = friends.data.Select(x => x.blockedUserId).ToArray();
-        _friendEssentialsWrapper.GetBulkUserInfo(blockedUsersId, OnGetBulkUserInfoCompleted);
-    }
-
     private void OnGetBulkUserInfoCompleted(Result<ListBulkUserInfoResponse> result)
     {
-        if (!result.IsError)
+        if (result.IsError)
         {
-            GenerateEntryResult(result.Value);
+            return;
         }
-    }
 
-    private void RetrieveAvatar(string userId)
+        CurrentView = BlockedFriendsView.LoadSuccess;
+
+        ClearBlockedPlayers();
+
+        PopulateBlockedPlayers(result.Value.data);
+    }
+    
+    private void OnLoadBlockedPlayersCompleted(Result<BlockedList> result)
     {
-        loadingPanel.gameObject.SetActive(true);
-        _friendEssentialsWrapper.GetUserAvatar(userId, result => OnGetAvatarCompleted(userId, result));
+        if (result.IsError)
+        {
+            CurrentView = BlockedFriendsView.LoadFailed;
+            
+            return;
+        }
+
+        BlockedData[] blockedData = result.Value.data;
+
+        if (blockedData.Length <= 0)
+        {
+            CurrentView = BlockedFriendsView.Default;
+            
+            return;
+        }
+        
+        IEnumerable<string> blockedPlayerIds = blockedData.Select(player => player.blockedUserId);
+
+        GetBulkUserInfo(blockedPlayerIds.ToArray());
     }
     
     private void OnGetAvatarCompleted(string userId, Result<Texture2D> result)
     {
-        if (!result.IsError)
+        if (result.IsError)
         {
-            var blockedPlayerEntry = GameObject.Find(userId);
-            blockedPlayerEntry.GetComponent<BlockedFriendEntryHandler>().friendImage.sprite = Sprite.Create(result.Value,
-                new Rect(0f, 0f, result.Value.width, result.Value.height), Vector2.zero);
+            return;
         }
-        loadingPanel.gameObject.SetActive(false);
+        
+        if (!blockedPlayers.TryGetValue(userId, out GameObject playerEntry))
+        {
+            return;
+        }
+
+        if (!playerEntry.TryGetComponent(out BlockedPlayerEntryHandler playerEntryHandler))
+        {
+            return;
+        }
+
+        Rect rect = new Rect(0f, 0f, result.Value.width, result.Value.height);
+        playerEntryHandler.FriendImage.sprite = Sprite.Create(result.Value, rect, Vector2.zero);
     }
 
+    #endregion Callback Functions
 
-    private void GetBlockedPlayers()
+    #region View Management
+
+    private void ClearBlockedPlayers()
     {
-        CurrentView = BlockedFriendsView.Default;
-        _managingFriendsWrapper.GetBlockedPlayers(OnLoadBlockedPlayersCompleted);
+        resultContentPanel.DestroyAllChildren();
+        
+        blockedPlayers.Clear();
+    }
+    
+    private void PopulateBlockedPlayers(params BaseUserInfo[] userInfo)
+    {
+        foreach (BaseUserInfo baseUserInfo in userInfo)
+        {
+            CreatePlayerEntry(baseUserInfo.userId, baseUserInfo.displayName);
+        }
+    }
+    
+    private void CreatePlayerEntry(string userId, string displayName)
+    {
+        GameObject playerEntry = Instantiate(playerEntryPrefab, resultContentPanel);
+        playerEntry.name = userId;
+
+        if (string.IsNullOrEmpty(displayName))
+        {
+            string truncatedUserId = userId[..5];
+            displayName = $"Player-{truncatedUserId}";
+        }
+
+        BlockedPlayerEntryHandler playerEntryHandler = playerEntry.GetComponent<BlockedPlayerEntryHandler>();
+        playerEntryHandler.UserId = userId;
+        playerEntryHandler.FriendName.text = displayName;
+        playerEntryHandler.UnblockButton.onClick.AddListener(() => UnblockPlayer(userId));
+
+        blockedPlayers.Add(userId, playerEntry);
+
+        RetrieveUserAvatar(userId);
     }
 
-    private void OnLoadBlockedPlayersCompleted(Result<BlockedList> result)
-    {
-        if (!result.IsError)
-        {
-            CurrentView = BlockedFriendsView.LoadingSuccess;
-            if (result.Value.data.Length > 0)
-            {
-                UserInfo(result.Value);
-            }
-            else
-            {
-                CurrentView = BlockedFriendsView.Default;
-            }
-        }
-        else
-        {
-            CurrentView = BlockedFriendsView.LoadingFailed;
-        }
-    }
+    #endregion View Management
 
     #endregion
+
+    #region Menu Canvas Override
 
     public override GameObject GetFirstButton()
     {
         return defaultPanel.gameObject;
-
     }
 
     public override AssetEnum GetAssetEnum()
     {
         return AssetEnum.BlockedPlayersMenuCanvas;
     }
+
+    #endregion Menu Canvas Override
 }
