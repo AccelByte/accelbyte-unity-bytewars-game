@@ -1,5 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
+using Extensions;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,9 +12,34 @@ public class LeaderboardCycleMenu : MenuCanvas
     [SerializeField] private Button backButton;
 
     [SerializeField] private Transform leaderboardListPanel;
+    [SerializeField] private Transform loadingPanel;
+    [SerializeField] private Transform loadingFailed;
+
     [SerializeField] private GameObject leaderboardItemButtonPrefab;
 
+    public enum LeaderboardCycleView
+    {
+        Default,
+        Loading,
+        Failed
+    }
+
+    private LeaderboardCycleView currentView = LeaderboardCycleView.Default;
+
+    public LeaderboardCycleView CurrentView
+    {
+        get => currentView;
+        set
+        {
+            leaderboardListPanel.gameObject.SetActive(value == LeaderboardCycleView.Default);
+            loadingPanel.gameObject.SetActive(value == LeaderboardCycleView.Loading);
+            loadingFailed.gameObject.SetActive(value == LeaderboardCycleView.Failed);
+            currentView = value;
+        }
+    }
+
     public static LeaderboardCycleType chosenCycleType;
+    public static string chosenCycleId;
 
     public enum LeaderboardCycleType
     {
@@ -19,7 +47,9 @@ public class LeaderboardCycleMenu : MenuCanvas
         Weekly
     }
 
-    public delegate void LeaderboardCycleMenuDelegate(Transform leaderboardListPanel,
+    public delegate void LeaderboardCycleMenuDelegate(
+        LeaderboardCycleMenu leaderboardCycleMenu,
+        Transform leaderboardListPanel,
         GameObject leaderboardItemButtonPrefab);
 
     public static event LeaderboardCycleMenuDelegate onLeaderboardCycleMenuActivated = delegate { };
@@ -27,15 +57,21 @@ public class LeaderboardCycleMenu : MenuCanvas
     private void Start()
     {
         backButton.onClick.AddListener(OnBackButtonClicked);
-
-        allTimeButton.onClick.AddListener(() => ChangeToLeaderboardMenu(LeaderboardCycleType.AllTime));
-
-        onLeaderboardCycleMenuActivated.Invoke(leaderboardListPanel, leaderboardItemButtonPrefab);
+        allTimeButton.onClick.AddListener(() => ChangeToLeaderboardMenu(LeaderboardCycleType.AllTime, string.Empty));
     }
 
-    public static void ChangeToLeaderboardMenu(LeaderboardCycleType cycleType)
+    private void OnEnable()
+    {
+        leaderboardListPanel.DestroyAllChildren(allTimeButton.transform);
+        CurrentView = LeaderboardCycleView.Default;
+        onLeaderboardCycleMenuActivated.Invoke(this, leaderboardListPanel, leaderboardItemButtonPrefab);
+    }
+
+    public static void ChangeToLeaderboardMenu(LeaderboardCycleType cycleType, string cycleId)
     {
         chosenCycleType = cycleType;
+        chosenCycleId = cycleId;
+
         MenuManager.Instance.ChangeToMenu(AssetEnum.LeaderboardMenuCanvas);
     }
 

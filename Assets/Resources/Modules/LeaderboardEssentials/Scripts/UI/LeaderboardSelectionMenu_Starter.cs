@@ -1,8 +1,12 @@
-﻿using System.Collections.Generic;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
+using System.Collections.Generic;
+using System.Linq;
 using AccelByte.Core;
 using AccelByte.Models;
 using Extensions;
-using Newtonsoft.Json;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,8 +14,32 @@ using UnityEngine.UI;
 public class LeaderboardSelectionMenu_Starter : MenuCanvas
 {
     [SerializeField] private Transform leaderboardListPanel;
+    [SerializeField] private Transform loadingPanel;
+    [SerializeField] private Transform loadingFailed;
+
     [SerializeField] private Button backButton;
     [SerializeField] private GameObject leaderboardItemButtonPrefab;
+
+    private enum LeaderboardSelectionView
+    {
+        Default,
+        Loading,
+        Failed
+    }
+
+    private LeaderboardSelectionView currentView = LeaderboardSelectionView.Default;
+
+    private LeaderboardSelectionView CurrentView
+    {
+        get => currentView;
+        set
+        {
+            leaderboardListPanel.gameObject.SetActive(value == LeaderboardSelectionView.Default);
+            loadingPanel.gameObject.SetActive(value == LeaderboardSelectionView.Loading);
+            loadingFailed.gameObject.SetActive(value == LeaderboardSelectionView.Failed);
+            currentView = value;
+        }
+    }
 
     #region "Tutorial implementation"
     // Put your code here
@@ -20,9 +48,10 @@ public class LeaderboardSelectionMenu_Starter : MenuCanvas
     private void Start()
     {
         backButton.onClick.AddListener(OnBackButtonClicked);
+    }
 
-        leaderboardListPanel.DestroyAllChildren();
-
+    private void OnEnable()
+    {
         // Put your code here
     }
 
@@ -39,14 +68,5 @@ public class LeaderboardSelectionMenu_Starter : MenuCanvas
     public override AssetEnum GetAssetEnum()
     {
         return AssetEnum.LeaderboardSelectionMenuCanvas_Starter;
-    }
-    
-    private bool IsLeaderboardDataCached(LeaderboardDataV3[] newData)
-    {
-        string newDataSerialized = JsonConvert.SerializeObject(newData);
-        
-        // Put your code here
-
-        return false;
     }
 }

@@ -1,8 +1,12 @@
-﻿using System.Collections.Generic;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
+using System.Collections.Generic;
+using System.Linq;
 using AccelByte.Core;
 using AccelByte.Models;
 using Extensions;
-using Newtonsoft.Json;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,30 +14,48 @@ using UnityEngine.UI;
 public class LeaderboardSelectionMenu : MenuCanvas
 {
     [SerializeField] private Transform leaderboardListPanel;
+    [SerializeField] private Transform loadingPanel;
+    [SerializeField] private Transform loadingFailed;
+
     [SerializeField] private Button backButton;
     [SerializeField] private GameObject leaderboardItemButtonPrefab;
+
+    private enum LeaderboardSelectionView
+    {
+        Default,
+        Loading,
+        Failed
+    }
+
+    private LeaderboardSelectionView currentView = LeaderboardSelectionView.Default;
+
+    private LeaderboardSelectionView CurrentView
+    {
+        get => currentView;
+        set
+        {
+            leaderboardListPanel.gameObject.SetActive(value == LeaderboardSelectionView.Default);
+            loadingPanel.gameObject.SetActive(value == LeaderboardSelectionView.Loading);
+            loadingFailed.gameObject.SetActive(value == LeaderboardSelectionView.Failed);
+            currentView = value;
+        }
+    }
 
     private LeaderboardEssentialsWrapper leaderboardWrapper;
 
     public static string chosenLeaderboardCode;
-    public static Dictionary<string, string[]> leaderboardCycleIds;
-
-    private string leaderboardDataSerialized;
+    public static Dictionary<string, string[]> leaderboardCycleIds = new Dictionary<string, string[]>();
 
     private void Start()
     {
         backButton.onClick.AddListener(OnBackButtonClicked);
-
-        leaderboardListPanel.DestroyAllChildren();
-
-        leaderboardWrapper = TutorialModuleManager.Instance.GetModuleClass<LeaderboardEssentialsWrapper>();
-
-        DisplayLeaderboardList();
     }
 
     private void OnEnable()
     {
-        if (!leaderboardWrapper) 
+        leaderboardWrapper = TutorialModuleManager.Instance.GetModuleClass<LeaderboardEssentialsWrapper>();
+
+        if (!leaderboardWrapper)
         {
             return;
         }
@@ -47,39 +69,45 @@ public class LeaderboardSelectionMenu : MenuCanvas
         MenuManager.Instance.ChangeToMenu(AssetEnum.LeaderboardCycleMenuCanvas);
     }
 
+    private void DisplayLeaderboardList()
+    {
+        CurrentView = LeaderboardSelectionView.Loading;
+        leaderboardWrapper.GetLeaderboardList(OnGetLeaderboardListCompleted);
+    }
+
     private void OnGetLeaderboardListCompleted(Result<LeaderboardPagedListV3> result)
     {
         if (result.IsError) 
         {
+            CurrentView = LeaderboardSelectionView.Failed;
             return;
         }
 
-        if (IsLeaderboardDataCached(result.Value.Data))
+        LeaderboardDataV3[] leadeboardList = result.Value.Data.Where(data => data.Name.Contains("Unity")).ToArray();
+
+        // No relevant leaderboard was found.
+        if (leadeboardList.Length < 0)
         {
+            CurrentView = LeaderboardSelectionView.Failed;
             return;
         }
-        
-        leaderboardCycleIds = new Dictionary<string, string[]>();
+
+        // Show leaderboard list.
         leaderboardListPanel.DestroyAllChildren();
-
-        foreach (LeaderboardDataV3 leaderboardData in result.Value.Data)
+        leaderboardCycleIds.Clear();
+        foreach (LeaderboardDataV3 leaderboard in leadeboardList)
         {
-            if (!leaderboardData.Name.Contains("Unity")) continue;
-
             Button leaderboardButton =
                 Instantiate(leaderboardItemButtonPrefab, leaderboardListPanel).GetComponent<Button>();
             TMP_Text leaderboardButtonText = leaderboardButton.GetComponentInChildren<TMP_Text>();
-            leaderboardButtonText.text = leaderboardData.Name.Replace("Unity Leaderboard ", "");
+            leaderboardButtonText.text = leaderboard.Name.Replace("Unity Leaderboard ", "");
 
-            leaderboardButton.onClick.AddListener(() => ChangeToLeaderboardCycleMenu(leaderboardData.LeaderboardCode));
+            leaderboardButton.onClick.AddListener(() => ChangeToLeaderboardCycleMenu(leaderboard.LeaderboardCode));
 
-            leaderboardCycleIds.Add(leaderboardData.LeaderboardCode, leaderboardData.CycleIds);
+            leaderboardCycleIds.Add(leaderboard.LeaderboardCode, leaderboard.CycleIds);
         }
-    }
 
-    private void DisplayLeaderboardList()
-    {
-        leaderboardWrapper.GetLeaderboardList(OnGetLeaderboardListCompleted);
+        CurrentView = LeaderboardSelectionView.Default;
     }
 
     private void OnBackButtonClicked()
@@ -95,19 +123,5 @@ public class LeaderboardSelectionMenu : MenuCanvas
     public override AssetEnum GetAssetEnum()
     {
         return AssetEnum.LeaderboardSelectionMenuCanvas;
-    }
-
-    private bool IsLeaderboardDataCached(LeaderboardDataV3[] newData)
-    {
-        string newDataSerialized = JsonConvert.SerializeObject(newData);
-        
-        bool isCached = leaderboardDataSerialized != null && leaderboardDataSerialized == newDataSerialized;
-        if (isCached)
-        {
-            return true;
-        }
-        
-        leaderboardDataSerialized = newDataSerialized;
-        return false;
     }
 }

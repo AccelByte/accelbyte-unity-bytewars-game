@@ -1,5 +1,8 @@
-﻿using System;
-using System.Collections;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using AccelByte.Core;
@@ -11,10 +14,37 @@ using UnityEngine.UI;
 public class LeaderboardMenu : MenuCanvas
 {
     [SerializeField] private Transform rankingListPanel;
-    [SerializeField] private Transform placeholderText;
     [SerializeField] private Button backButton;
     [SerializeField] private GameObject rankingEntryPanelPrefab;
     [SerializeField] private RankingEntryPanel userRankingPanel;
+
+    [SerializeField] private Transform resultPanel;
+    [SerializeField] private Transform emptyPanel;
+    [SerializeField] private Transform loadingPanel;
+    [SerializeField] private Transform loadingFailed;
+
+    public enum LeaderboardMenuView
+    {
+        Default,
+        Loading,
+        Empty,
+        Failed
+    }
+
+    private LeaderboardMenuView currentView = LeaderboardMenuView.Default;
+
+    public LeaderboardMenuView CurrentView
+    {
+        get => currentView;
+        set
+        {
+            resultPanel.gameObject.SetActive(value == LeaderboardMenuView.Default);
+            emptyPanel.gameObject.SetActive(value == LeaderboardMenuView.Empty);
+            loadingPanel.gameObject.SetActive(value == LeaderboardMenuView.Loading);
+            loadingFailed.gameObject.SetActive(value == LeaderboardMenuView.Failed);
+            currentView = value;
+        }
+    }
 
     private TokenData currentUserData;
 
@@ -31,28 +61,21 @@ public class LeaderboardMenu : MenuCanvas
         UserCycleRanking[] userCycleRankings = null);
 
     public static event LeaderboardMenuDelegate onDisplayRankingListEvent = delegate { };
-    public static event LeaderboardMenuDelegate onDisplayUserRankingEvent = delegate { };
 
     void Start()
     {
         backButton.onClick.AddListener(OnBackButtonClicked);
-
-        leaderboardWrapper = TutorialModuleManager.Instance.GetModuleClass<LeaderboardEssentialsWrapper>();
-        authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
-
-        DisplayRankingList();
-    }
-
-    private void OnDisable()
-    {
-        placeholderText.gameObject.SetActive(true);
-        rankingListPanel.DestroyAllChildren(placeholderText);
-        userRankingPanel.ResetRankingEntry();
     }
 
     private void OnEnable()
     {
-        if (!leaderboardWrapper || !authWrapper) return;
+        leaderboardWrapper = TutorialModuleManager.Instance.GetModuleClass<LeaderboardEssentialsWrapper>();
+        authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
+
+        if (!leaderboardWrapper || !authWrapper)
+        {
+            return;
+        }
 
         DisplayRankingList();
     }
@@ -66,58 +89,114 @@ public class LeaderboardMenu : MenuCanvas
 
     private void OnGetUserRankingCompleted(Result<UserRankingDataV3> result)
     {
-        if (result.IsError) return;
+        if (result.IsError)
+        {
+            BytewarsLogger.LogWarning($"Failed to display leaderboard rankings. Error: {result.Error.Message}");
+            CurrentView = LeaderboardMenuView.Failed;
+            return;
+        }
 
-        onDisplayUserRankingEvent.Invoke(this, result.Value.Cycles);
+        if (currentCycleType == LeaderboardCycleMenu.LeaderboardCycleType.AllTime)
+        {
+            UserRanking allTimeUserRank = result.Value.AllTime;
+            if (allTimeUserRank != null)
+            {
+                userRankingPanel.SetRankingDetails(
+                    currentUserData.user_id,
+                    allTimeUserRank.rank,
+                    currentUserData.display_name,
+                    allTimeUserRank.point);
+            }
+        }
+        else
+        {
+            UserCycleRanking cycleUserRank = result.Value.Cycles.First(data => data.CycleId.Equals(LeaderboardCycleMenu.chosenCycleId));
+            if (cycleUserRank != null)
+            {
+                userRankingPanel.SetRankingDetails(
+                    currentUserData.user_id,
+                    cycleUserRank.Rank,
+                    currentUserData.display_name,
+                    cycleUserRank.Point);
+            }
+        }
 
-        if (currentCycleType != LeaderboardCycleMenu.LeaderboardCycleType.AllTime) return;
-
-        UserRanking allTimeUserRank = result.Value.AllTime;
-        userRankingPanel.SetRankingDetails(currentUserData.user_id, allTimeUserRank.rank,
-            currentUserData.display_name, allTimeUserRank.point);
+        CurrentView = LeaderboardMenuView.Default;
     }
 
-    private void OnBulkGetUserInfoCompleted(Result<ListBulkUserInfoResponse> result,
-        Dictionary<string, float> userRankInfos)
+    private void OnBulkGetUserInfoCompleted(Result<ListBulkUserInfoResponse> result, Dictionary<string, float> userRankInfos)
     {
-        // userRankInfos: key = userId, value = displayName
-        Dictionary<string, string> userDisplayNames =
-            result.Value.data.ToDictionary(userInfo => userInfo.userId, userInfo => userInfo.displayName);
+        if (result.IsError)
+        {
+            BytewarsLogger.LogWarning($"Failed to display leaderboard rankings. Error: {result.Error.Message}");
+            CurrentView = LeaderboardMenuView.Failed;
+            return;
+        }
+
+        // Populate leaderboard ranking entries.
         int rankOrder = 0;
+        Dictionary<string, string> userDisplayNames = 
+            result.Value.data.ToDictionary(userInfo => userInfo.userId, userInfo => userInfo.displayName);
         foreach (string userId in userRankInfos.Keys)
         {
             rankOrder += 1;
             InstantiateRankingEntry(userId, rankOrder, userDisplayNames[userId], userRankInfos[userId]);
+
+            if (userId.Equals(currentUserData.user_id))
+            {
+                userRankingPanel.SetRankingDetails(
+                    userId,
+                    rankOrder,
+                    userDisplayNames[userId],
+                    userRankInfos[userId]);
+            }
         }
 
-        if (userRankInfos.Keys.Contains(currentUserData.user_id)) return;
+        /* No need to query current player ranking if already in the ranking list.
+         * Immediately show the leaderboard ranking list. */
+        if (userRankInfos.Keys.Contains(currentUserData.user_id))
+        {
+            CurrentView = LeaderboardMenuView.Default;
+            return;
+        }
 
-        // Get player ranking if player not on the ranking list
-        leaderboardWrapper.GetUserRanking(currentUserData.user_id, currentLeaderboardCode,
+        // Get current player ranking if not already in the ranking list.
+        leaderboardWrapper.GetUserRanking(
+            currentUserData.user_id,
+            currentLeaderboardCode,
             OnGetUserRankingCompleted);
     }
 
     public void OnGetRankingsCompleted(Result<LeaderboardRankingResult> result)
     {
-        if (result.IsError) return;
-
-        // Set placeholder text active to true if list empty
-        placeholderText.gameObject.SetActive(result.Value.data.Length <= 0);
+        /* The backend returns result as error even if leaderboard ranking is empty.
+         * Hence, here the game show the leaderboard empty message. */
+        if (result.IsError || result.Value.data.Length <= 0)
+        {
+            BytewarsLogger.LogWarning($"Failed to display leaderboard rankings. Error: {result.Error.Message}");
+            CurrentView = LeaderboardMenuView.Empty;
+            return;
+        }
 
         // Store the ranking result's userIds and points to a Dictionary
         Dictionary<string, float> userRankInfos =
             result.Value.data.ToDictionary(userPoint => userPoint.userId, userPoint => userPoint.point);
 
         // Get the players' display name from the provided user ids
-        authWrapper.BulkGetUserInfo(userRankInfos.Keys.ToArray(),
+        authWrapper.BulkGetUserInfo(
+            userRankInfos.Keys.ToArray(),
             authResult => OnBulkGetUserInfoCompleted(authResult, userRankInfos));
     }
 
     private void DisplayRankingList()
     {
+        CurrentView = LeaderboardMenuView.Loading;
+        rankingListPanel.DestroyAllChildren();
+        userRankingPanel.ResetRankingEntry();
+
         InitializeLeaderboardRequiredValues();
 
-        if (currentCycleType is LeaderboardCycleMenu.LeaderboardCycleType.AllTime)
+        if (currentCycleType == LeaderboardCycleMenu.LeaderboardCycleType.AllTime)
         {
             leaderboardWrapper.GetRankings(currentLeaderboardCode, OnGetRankingsCompleted, QUERY_OFFSET, QUERY_LIMIT);
         }
