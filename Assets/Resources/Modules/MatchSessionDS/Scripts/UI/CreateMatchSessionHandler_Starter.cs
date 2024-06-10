@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using UnityEngine;
 using UnityEngine.Events;
@@ -42,7 +46,7 @@ public class CreateMatchSessionHandler_Starter : MenuCanvas
         backFromServerTypeBtn.onClick.AddListener(OnBackFromServerTypeBtnClicked);
         selectServerPanel.HideRight();
     }
-    
+
     #region ButtonAction
     private void OnBackFromServerTypeBtnClicked()
     {
@@ -97,8 +101,11 @@ public class CreateMatchSessionHandler_Starter : MenuCanvas
 
     private void HideError()
     {
-        if(shownRectTransform!=null)
+        if (shownRectTransform != null)
+        {
             shownRectTransform.gameObject.SetActive(true);
+        }
+
         errorPanel.gameObject.SetActive(false);
     }
 
@@ -112,6 +119,11 @@ public class CreateMatchSessionHandler_Starter : MenuCanvas
 
     private void ShowError(string errorInfo)
     {
+        if (shownRectTransform != null)
+        {
+            shownRectTransform.gameObject.SetActive(false);
+        }
+
         loadingPanel.gameObject.SetActive(false);
         errorPanel.Show(errorInfo, HideError);
     }

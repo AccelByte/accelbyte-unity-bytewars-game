@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using System.Collections.Generic;
 using AccelByte.Core;
@@ -36,7 +40,6 @@ public class BrowseMatchMenuCanvas : MenuCanvas
         scrollRect.onValueChanged.AddListener(OnScrollValueChanged);
         BrowseMatchSessionEventListener.Init(gameSessionList);
         BrowseMatchSessionEventListener.OnUpdate = OnGameSessionUpdated;
-        GameManager.OnDisconnectedInMainMenu += OnDisconnectedFromMainMenu;
         BrowseMatchSession();
     }
     
@@ -119,11 +122,6 @@ public class BrowseMatchMenuCanvas : MenuCanvas
     #endregion JoinMatchSession
 
     #region EventCallback
-    private void OnDisconnectedFromMainMenu(string disconnectReason)
-    {
-        ShowError($"disconnected from server, reason:{disconnectReason}");
-    }
-
     private void OnGameSessionUpdated(SessionV2GameSession result)
     {
         var updatedModel = loadedModels.Find(m => m.MatchSessionId == result.id);

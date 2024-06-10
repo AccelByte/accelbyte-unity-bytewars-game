@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using UnityEngine;
 using UnityEngine.Events;
@@ -43,12 +47,6 @@ public class CreateMatchSessionHandler : MenuCanvas
         p2pBtn.onClick.AddListener(OnP2PBtnClicked);
         backFromServerTypeBtn.onClick.AddListener(OnBackFromServerTypeBtnClicked);
         selectServerPanel.HideRight();
-        GameManager.OnDisconnectedInMainMenu += OnDisconnectedInMainMenu;
-    }
-
-    private void OnDisconnectedInMainMenu(string reason)
-    {
-        ShowError($"disconnected from server, message: {reason}");
     }
 
     private void OnP2PBtnClicked()
@@ -134,14 +132,22 @@ public class CreateMatchSessionHandler : MenuCanvas
 
     private void ShowError(string errorInfo)
     {
+        if (shownRectTransform != null)
+        {
+            shownRectTransform.gameObject.SetActive(false);
+        }
+
         loadingPanel.gameObject.SetActive(false);
         errorPanel.Show(errorInfo, HideError);
     }
 
     private void HideError()
     {
-        if(shownRectTransform!=null)
+        if (shownRectTransform != null)
+        {
             shownRectTransform.gameObject.SetActive(true);
+        }
+
         errorPanel.gameObject.SetActive(false);
     }
 

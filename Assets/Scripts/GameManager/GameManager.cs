@@ -77,7 +77,7 @@ public class GameManager : NetworkBehaviour
     [RuntimeInitializeOnLoadMethod]
     private static void CreateInstance()
     {
-        bool isMainMenuScene = SceneManager.GetActiveScene().buildIndex is GameConstant.MenuSceneBuildIndex;
+        bool isMainMenuScene = SceneManager.GetActiveScene().buildIndex == GameConstant.MenuSceneBuildIndex;
         if (isMainMenuScene && Instance == null)
         {
             Instance = Instantiate(AssetManager.Singleton.GameManagerPrefab);
@@ -135,7 +135,7 @@ public class GameManager : NetworkBehaviour
             InGamePause = new InGamePause(_menuManager, _hud, this);
         });
     }
-    
+
     public void OnDisable()
     {
         Pool?.DestroyAll();
@@ -170,7 +170,7 @@ public class GameManager : NetworkBehaviour
         ActiveGEs.RemoveAll(ge => !ge);
         Players.Clear();
         
-        if (_gameMode is GameModeEnum.OnlineMultiplayer)
+        if (_gameMode == GameModeEnum.OnlineMultiplayer)
         {
             SetupOnlineGame();
         }
@@ -188,7 +188,7 @@ public class GameManager : NetworkBehaviour
         
         CreateLevelAndInitializeHud(states.m_teamStates, states.m_playerStates, out _);
         
-        bool isSinglePlayer = _gameMode is GameModeEnum.SinglePlayer;
+        bool isSinglePlayer = _gameMode == GameModeEnum.SinglePlayer;
         if (isSinglePlayer && Players.TryGetValue(1, out Player player))
         {
             player.playerInput.enabled = false;
@@ -306,8 +306,8 @@ public class GameManager : NetworkBehaviour
     {
         string reason = string.Empty;
         int activeSceneBuildIndex = SceneManager.GetActiveScene().buildIndex;
-        bool isInMainMenu = activeSceneBuildIndex is GameConstant.MenuSceneBuildIndex;
-        bool isInGameScene = activeSceneBuildIndex is GameConstant.GameSceneBuildIndex;
+        bool isInMenuScene = activeSceneBuildIndex == GameConstant.MenuSceneBuildIndex;
+        bool isInGameScene = activeSceneBuildIndex == GameConstant.GameSceneBuildIndex;
 
         if (!string.IsNullOrEmpty(NetworkManager.Singleton.DisconnectReason))
         {
@@ -317,7 +317,7 @@ public class GameManager : NetworkBehaviour
         BytewarsLogger.Log($"OnClientDisconnected client id {clientNetworkId} disconnected reason:{reason} " +
                   $"active entity count:{ActiveGEs.Count} IsServer:{IsServer}");
 
-        if (isInMainMenu)
+        if (isInMenuScene)
         {
             OnDisconnectedInMainMenu?.Invoke(reason);
 
@@ -326,39 +326,32 @@ public class GameManager : NetworkBehaviour
                 _menuManager.HideLoading();
             }
 
-            if (!IsServer)
+            if (IsServer)
             {
-                return;
+                RemoveConnectedClient(clientNetworkId, isInGameScene);
+
+                // If host, refresh lobby player entries.
+                if (IsHost && _menuManager.GetCurrentMenu() is MatchLobbyMenu lobby)
+                {
+                    lobby.Refresh();
+                }
+
+                // Start lobby countdown to shutdown server if no connected clients.
+                if (reconnect.IsServerShutdownOnLobby(connectedClients.Count))
+                {
+                    _serverHelper.StartCoroutineCountdown(this,
+                        GameData.GameModeSo.lobbyShutdownCountdown, OnLobbyShutdownCountdown);
+                }
             }
-
-            RemoveConnectedClient(clientNetworkId, isInGameScene);
-            MenuCanvas currentMenu = _menuManager.GetCurrentMenu();
-
-            if (IsHost && currentMenu is MatchLobbyMenu lobby)
-            {
-                lobby.Refresh();
-            }
-
-            if (reconnect.IsServerShutdownOnLobby(connectedClients.Count))
-            {
-                _serverHelper.StartCoroutineCountdown(this, 
-                    GameData.GameModeSo.lobbyShutdownCountdown, OnLobbyShutdownCountdown);  
-            }
-
-            //wait reconnect
-            // if (connectedClients.Count < 1)
-            // {
-            //     _serverHelper.CancelCountdown();
-            //     _inGameMode = InGameMode.None;
-            // }
-        } 
+        }
         else if (isInGameScene)
         {
             if (IsServer)
             {
-                //player might reconnect in the middle of game, missile will not reset
+                // Player might reconnect in the middle of game, missile will not reset
                 RemoveConnectedClient(clientNetworkId, isInGameScene, false);
 
+                // Start in game countdown to shutdown server if no connected clients.
                 if (connectedClients.Count < MinPlayerForOnlineGame)
                 {
                     SetInGameState(InGameState.ShuttingDown);
@@ -366,12 +359,49 @@ public class GameManager : NetworkBehaviour
             }
         }
 
-        if (IsClient && !IsHost)
+        StartCoroutine(OnClientDisconnectedComplete(clientNetworkId, reason));
+    }
+
+    private IEnumerator OnClientDisconnectedComplete(ulong clientNetworkId, string reason)
+    {
+        BytewarsLogger.Log($"OnClientDisconnectedComplete client id {clientNetworkId} disconnected reason:{reason} " +
+          $"active entity count:{ActiveGEs.Count} IsServer:{IsServer}");
+
+        int activeSceneBuildIndex = SceneManager.GetActiveScene().buildIndex;
+        bool isInGameScene = activeSceneBuildIndex == GameConstant.GameSceneBuildIndex;
+
+        // Back to the main menu and show the disconnected message (only for client or local network).
+        bool isLocalNetwork = ClientNetworkId.Equals(clientNetworkId);
+        if (!IsHost && (IsClient || isLocalNetwork))
         {
-            StartCoroutine(QuitToMainMenu());
+            bool isInMainMenu = !(isInGameScene || _menuManager.GetCurrentMenu() is MatchLobbyMenu);
+            if (!isInMainMenu)
+            {
+                yield return QuitToMainMenu();
+            }
+
+            ShowDisconnectedFromServerMessage(reason);
         }
     }
-    
+
+    private void ShowDisconnectedFromServerMessage(string disconnectReason = "")
+    {
+        if (InGameState == InGameState.GameOver)
+        {
+            BytewarsLogger.Log("No need to show disconnected from server message if the game state was over.");
+            return;
+        }
+
+        const string title = "Connection Error";
+        string message = "Connection to the server or host has been lost.";
+        if (!string.IsNullOrEmpty(disconnectReason))
+        {
+            message = $"{message}\n\n{disconnectReason}";
+        }
+
+        _menuManager.ShowInfo(message, title);
+    }
+
     /// <summary>
     /// this is only called in server/hosting
     /// </summary>
@@ -516,7 +546,7 @@ public class GameManager : NetworkBehaviour
 
         yield return reconnect.ClientDisconnectIntentionally();
 
-        if (InGameState is InGameState.LocalPause)
+        if (InGameState == InGameState.LocalPause)
         {
             Time.timeScale = 1f;
         }
@@ -1105,7 +1135,7 @@ public class GameManager : NetworkBehaviour
     private void OnActiveSceneChanged(Scene current, Scene next)
     {
 #if UNITY_SERVER
-        if (next.buildIndex is GameConstant.MenuSceneBuildIndex)
+        if (next.buildIndex == GameConstant.MenuSceneBuildIndex)
         {
             //TODO: ADD server shutdown
             // Debug.Log("server shutdown");
@@ -1150,7 +1180,7 @@ public class GameManager : NetworkBehaviour
             return;
         }
         
-        if (sceneEvent.SceneEventType is SceneEventType.LoadComplete)
+        if (sceneEvent.SceneEventType == SceneEventType.LoadComplete)
         {
             OnRejectBackfill?.Invoke();
             _menuManager.CloseMenuPanel();
