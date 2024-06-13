@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using AccelByte.Core;
@@ -13,132 +14,217 @@ using UnityEngine;
 
 public class MatchSessionWrapper : GameSessionUtilityWrapper
 {
-
-    protected event Action<Result<PaginatedResponse<SessionV2GameSession>>> OnBrowseMatchSessionCompleteEvent;
-    protected event Action<Result<SessionV2GameSession>> OnJoinCustomSessionCompleteEvent;
-    protected event Action<Result<SessionV2GameSession>> OnCreateCustomMatchSessionCompleteEvent;
-    protected event Action<Result<SessionV2GameSession>> OnLeaveCustomSessionCompleteEvent;
-    protected event Action OnDeleteCustomSessionCompleteEvent;
+    public Action OnCreateMatchCancelled;
+    protected internal event Action<Result<PaginatedResponse<SessionV2GameSession>>> OnBrowseMatchSessionCompleteEvent;
+    protected internal event Action OnLeaveSessionCompleted;
+    protected internal Action<bool> OnCreatedMatchSession;
+    protected internal Action<string> OnJoinedMatchSession;
+    protected internal Action<string> OnCreateOrJoinError;
+    protected internal InGameMode RequestedGameMode = InGameMode.None;
+    private SessionV2GameSession gameSession;
 
     protected void Awake()
     {
         base.Awake();
     }
-
+    
     /// <summary>
-    /// Function to Create Custom Match Session 
+    /// Function to Create Match Session 
     /// </summary>
     /// <param name="request"></param>
-    protected internal void CreateCustomMatchSession(SessionV2GameSessionCreateRequest request)
+    protected internal void CreateMatchSession(InGameMode inGameMode, GameSessionServerType sessionServerType)
     {
-        session.CreateGameSession(request, OnCreateCustomMatchSessionComplete);
+        GameManager.Instance.OnClientLeaveSession += LeaveCurrentGameSession;
+        lobby.SessionV2GameSessionMemberChanged += OnV2GameSessionMemberChanged;
+
+        RequestedGameMode = inGameMode;
+        ConnectionHandler.Initialization();
+        
+        Dictionary<InGameMode, 
+        Dictionary<GameSessionServerType, 
+        SessionV2GameSessionCreateRequest>> gameSessionConfig = GameSessionConfig.SessionCreateRequest;
+
+        if (!gameSessionConfig.TryGetValue(inGameMode, out var matchTypeDict))
+        {
+            BytewarsLogger.LogWarning($"GameSession Configuration not found");
+            return;
+        }
+
+        if (!matchTypeDict.TryGetValue(sessionServerType, out var request))
+        {
+            BytewarsLogger.LogWarning($"Matchtype not found");
+            return;
+        }
+
+        request.attributes = CreateMatchConfig.CreatedMatchSessionAttribute;
+
+        if (ConnectionHandler.IsUsingLocalDS())
+        {
+            request.serverName = ConnectionHandler.LocalServerName;
+        }
+
+        // Playing with Party additional code
+        if (!String.IsNullOrWhiteSpace(PartyHelper.CurrentPartyId))
+        {
+            string[] memberIds = PartyHelper.PartyMembersData.Select(data => data.UserId).ToArray();
+            
+            request.teams = new SessionV2TeamData[]
+            {
+                new SessionV2TeamData()
+                {
+                    userIds = memberIds
+                }
+            };
+        }
+
+        CreateSession(request);
     }
 
-    /// <summary>
-    /// Function to Browse Custom Match Session
-    /// </summary>
-    /// <param name="request"></param>
-    protected internal void BrowseCustomMatchSession(Dictionary<string, object> request = null)
+    public void CancelCreateMatchSession()
     {
-        session.QueryGameSession(request, OnBrowseMatchSessionComplete);
+        LeaveCurrentGameSession();
     }
 
-    /// <summary>
-    /// Function to Join Custom Match Session
-    /// </summary>
-    /// <param name="sessionId"></param>
-    protected internal void JoinCustomMatchSession(string sessionId)
+    public void CancelJoinMatchSession()
     {
-        session.JoinGameSession(sessionId, OnJoinCustomSessionComplete);
+        LeaveCurrentGameSession();
     }
 
-    /// <summary>
-    /// Function to Leave Custom Match Session
-    /// </summary>
-    /// <param name="sessionId"></param>
-    public void LeaveCustomMatchSession(string sessionId)
+    protected internal void BrowseMatchSession(Dictionary<string, object> request)
     {
-        session.LeaveGameSession(sessionId, OnLeaveCustomSessionComplete);
+        QueryGameSession(request);
     }
 
-    /// <summary>
-    /// Function to Delete Custom Match Session
-    /// </summary>
-    /// <param name="sessionId"></param>
-    protected internal void DeleteCustomMatchSession(string sessionId)
+    protected internal void JoinMatchSession(string sessionId, InGameMode gameMode)
     {
-        session.DeleteGameSession(sessionId, OnDeleteCustomSessionComplete);
+        GameManager.Instance.OnClientLeaveSession += LeaveCurrentGameSession;
+        lobby.SessionV2GameSessionMemberChanged += OnV2GameSessionMemberChanged;
+        RequestedGameMode = gameMode;
+
+        JoinSession(sessionId);
     }
 
-    #region Callback
-
-    private void OnCreateCustomMatchSessionComplete(Result<SessionV2GameSession> result)
+    protected internal void LeaveCurrentGameSession()
     {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"Success to create custom match session");
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
-        }
-        OnCreateCustomMatchSessionCompleteEvent?.Invoke(result);
+        GameManager.Instance.OnClientLeaveSession -= LeaveCurrentGameSession;
+        lobby.SessionV2GameSessionMemberChanged -= OnV2GameSessionMemberChanged;
+        LeaveSession(gameSession.id);
     }
 
-    private void OnBrowseMatchSessionComplete(Result<PaginatedResponse<SessionV2GameSession>> result)
+    #region Event 
+
+    protected internal void BindEvents()
     {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"Success getting match sessions");
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"error:{result.Error.ToJsonString()}");
-        }
-        OnBrowseMatchSessionCompleteEvent?.Invoke(result);
+        OnCreateSessionCompleteEvent += OnCreateSessionCompleted;
+        OnJoinSessionCompleteEvent += OnJoinCustomSessionCompleted;
+        OnLeaveSessionCompleteEvent += OnLeaveCustomSessionCompleted;
+        OnQueryGameSessionCompleteEvent += OnBrowseMatchSessionCompleted;
     }
 
-    private void OnJoinCustomSessionComplete(Result<SessionV2GameSession> result)
+    protected internal void UnbindEvents()
     {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"Success to join custom match session");
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
-        }
-        OnJoinCustomSessionCompleteEvent?.Invoke(result);
-    }
-
-    private void OnLeaveCustomSessionComplete(Result<SessionV2GameSession> result)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"Success to leave custom match sessions");
-            SessionCache.CurrentGameSessionId = string.Empty;
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"error:{result.Error.ToJsonString()}");
-        }
-
-        OnLeaveCustomSessionCompleteEvent?.Invoke(result);
-    }
-
-    private void OnDeleteCustomSessionComplete(Result result)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"Success to delete custom match sessions");
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"error:{result.Error.ToJsonString()}");
-        }
-        OnDeleteCustomSessionCompleteEvent?.Invoke();
+        OnCreateSessionCompleteEvent -= OnCreateSessionCompleted;
+        OnJoinSessionCompleteEvent -= OnJoinCustomSessionCompleted;
+        OnLeaveSessionCompleteEvent -= OnLeaveCustomSessionCompleted;
+        OnQueryGameSessionCompleteEvent -= OnBrowseMatchSessionCompleted;
     }
 
     #endregion
 
+
+    #region Callback
+
+    private void OnCreateSessionCompleted(Result<SessionV2GameSession> result)
+    {
+        if (!result.IsError)
+        {
+            gameSession = result.Value;
+            UpdateCachedGameSession(gameSession);
+            BytewarsLogger.Log($"OnCreatedMatchSession: true");
+            BytewarsLogger.Log($"Session Configuration Template Type : {gameSession.configuration.type}");
+            OnCreatedMatchSession?.Invoke(true);
+            switch (gameSession.configuration.type)
+            {
+                case SessionConfigurationTemplateType.DS:
+                    MatchSessionDSWrapper.OnCreateMatchSessionDS?.Invoke();
+                    break;
+                case SessionConfigurationTemplateType.P2P:
+                    MatchSessionP2PWrapper.OnCreateMatchSessionP2P?.Invoke(RequestedGameMode, result);
+                    break;
+                default:
+                    break;
+            }
+        }
+        else
+        {
+            BytewarsLogger.LogWarning($"Error: {result.Error.Message}");
+            OnCreatedMatchSession?.Invoke(false);
+        }
+    }
+
+    private void OnV2GameSessionMemberChanged(Result<SessionV2GameMembersChangedNotification> result)
+    {
+        if (!result.IsError)
+        {
+            SessionV2GameSession gameSession = result.Value.session;
+            SessionCache.SetSessionLeaderId(gameSession.id, gameSession.leaderId);
+            MatchSessionHelper.RefreshLobbyMenu();
+        } 
+        else
+        {
+            BytewarsLogger.LogWarning($"Error: {result.Error.Message}");
+        }
+    }
+
+    private void OnJoinCustomSessionCompleted(Result<SessionV2GameSession> result)
+    {
+        if (!result.IsError) 
+        {
+            gameSession = result.Value;
+            UpdateCachedGameSession(gameSession);
+            BytewarsLogger.Log($"Session Configuration Template Type : {gameSession.configuration.type}");
+            switch (gameSession.configuration.type)
+            {
+                case SessionConfigurationTemplateType.DS:
+                    MatchSessionDSWrapper.OnJoinMatchSessionDS.Invoke(result);
+                    break;
+                case SessionConfigurationTemplateType.P2P:
+                    MatchSessionP2PWrapper.OnJoinMatchSessionP2P?.Invoke(RequestedGameMode ,result);
+                    break;
+                default:
+                    break;
+            }
+        }
+        else
+        {
+            BytewarsLogger.LogWarning($"Error: {result.Error.Message}");
+            OnCreateOrJoinError?.Invoke(result.Error.Message);
+        }
+    }
+
+    private void OnLeaveCustomSessionCompleted(Result<SessionV2GameSession> result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log($"Success leave session id: {gameSession?.id ?? "sessionId"}");
+            OnLeaveSessionCompleted?.Invoke();
+        }
+        else
+        {
+            BytewarsLogger.LogWarning($"Error leave session: {result.Error.Message}");
+        }
+    }
+
+    private void OnBrowseMatchSessionCompleted(Result<PaginatedResponse<SessionV2GameSession>> result)
+    {
+        OnBrowseMatchSessionCompleteEvent?.Invoke(result);
+    }
+
+    #endregion
+
+    private void UpdateCachedGameSession(SessionV2GameSession session)
+    {
+        gameSession = session;
+        SessionCache.SetJoinedSessionIdAndLeaderUserId(session.id, session.leaderId);
+    }
 }

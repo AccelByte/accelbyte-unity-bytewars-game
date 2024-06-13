@@ -14,22 +14,22 @@ public class SessionEssentialsWrapper_Starter : MonoBehaviour
     protected Lobby lobby;
 
     /// <summary>
-    /// This event will raised after JoinSession is complete
+    /// This event will be raised after JoinSession is complete
     /// </summary>
     public event Action<Result<SessionV2GameSession>> OnJoinSessionCompleteEvent;
 
     /// <summary>
-    /// This event will raised after CreateSession is complete
+    /// This event will be raised after CreateSession is complete
     /// </summary>
     public event Action<Result<SessionV2GameSession>> OnCreateSessionCompleteEvent;
 
     /// <summary>
-    /// This event will raised after LeaveSession is complete
+    /// This event will be raised after LeaveSession is complete
     /// </summary>
     public event Action<Result<SessionV2GameSession>> OnLeaveSessionCompleteEvent;
 
     /// <summary>
-    /// This event will raised after GetGameSessionDetailsById is complete
+    /// This event will be raised after GetGameSessionDetailsById is complete
     /// </summary>
     public event Action<Result<SessionV2GameSession>> OnGetSessionDetailsCompleteEvent;
 

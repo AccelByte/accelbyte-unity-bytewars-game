@@ -21,7 +21,7 @@ public class P2PHelper
         }
         networkManager = NetworkManager.Singleton;
         transportManager = networkManager.gameObject.AddComponent<AccelByteNetworkTransportManager>();
-        var apiClient = AccelByteSDK.GetClientRegistry().GetApi();
+        ApiClient apiClient = AccelByteSDK.GetClientRegistry().GetApi();
         transportManager.Initialize(apiClient);
     }
 
@@ -54,7 +54,7 @@ public class P2PHelper
     private static void SetP2PNetworkTransport(InGameMode gameMode, string matchSessionId)
     {
         Init();
-        var data = new InitialConnectionData() { inGameMode = gameMode, serverSessionId = matchSessionId };
+        InitialConnectionData data = new InitialConnectionData() { inGameMode = gameMode, serverSessionId = matchSessionId };
         networkManager.NetworkConfig.ConnectionData = GameUtility.ToByteArray(data);
         networkManager.NetworkConfig.NetworkTransport = transportManager;
     }

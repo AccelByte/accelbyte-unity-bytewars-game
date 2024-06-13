@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -265,6 +266,7 @@ public class AuthEssentialsWrapper : MonoBehaviour
             BytewarsLogger.Log("Successfully retrieved self user profile!");
 
             UserProfile = result.Value;
+            GetUserPublicData(UserProfile.userId);
             OnUserProfileReceived?.Invoke(UserProfile);
         }
         else
@@ -290,6 +292,28 @@ public class AuthEssentialsWrapper : MonoBehaviour
         else
         {
             BytewarsLogger.Log($"Unable to create self user profile. Message: {result.Error.Message}");
+        }
+    }
+
+    private void GetUserPublicData(string receivedUserId)
+    {
+        user.GetUserByUserId(receivedUserId, OnGetUserPublicDataFinished);
+    }
+
+    private void OnGetUserPublicDataFinished(Result<PublicUserData> result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log("Successfully Retrieved Public Data");
+            PublicUserData publicUserData = result.Value;
+            string truncatedUserId = publicUserData.userId[..5];
+            GameData.CachedPlayerState.avatarUrl = publicUserData.avatarUrl;
+            GameData.CachedPlayerState.playerName = string.IsNullOrEmpty(publicUserData.displayName) ?
+                $"Player-{truncatedUserId}" : publicUserData.displayName;
+        }
+        else
+        {
+            BytewarsLogger.Log($"Error:{result.Error.Message}");
         }
     }
 

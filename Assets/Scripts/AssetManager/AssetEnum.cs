@@ -1,4 +1,4 @@
-// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -14,10 +14,13 @@ public enum AssetEnum
 	BrowseMatchMenuCanvas_Starter,
 	CloudSaveEssentialsAssetConfig,
 	CreateCustomMatchMenuCanvas,
-	CreateMatchMenu,
-	CreateMatchMenuCanvas,
-	CreateMatchMenuCanvas_Starter,
-	CreditsMenuCanvas,
+    MatchSessionHandler,
+    MatchSessionServerTypeSelection,
+    CreateMatchSessionDSHandler,
+    CreateMatchSessionDSHandler_Starter,
+    CreateMatchSessionP2PHandler,
+    CreateMatchSessionP2PHandler_Starter,
+    CreditsMenuCanvas,
 	EliminationMenuCanvas,
 	emails,
 	FindFriendsEntryComponent,

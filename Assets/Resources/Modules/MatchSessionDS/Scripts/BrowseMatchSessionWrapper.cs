@@ -10,7 +10,6 @@ using UnityEngine;
 
 public class BrowseMatchSessionWrapper : MatchSessionWrapper
 {
-
     private static string nextPage;
     private static bool isBrowseMatchSessionsCanceled;
     private static bool isJoinMatchSessionCancelled;
@@ -18,19 +17,26 @@ public class BrowseMatchSessionWrapper : MatchSessionWrapper
     private static Action<BrowseMatchResult> onQueryMatchSessionFinished;
     private static Action<BrowseMatchResult> onQueryNextPageMatchSessionFinished;
 
-    private void Start()
+    protected internal void BindEvents()
     {
+        base.BindEvents();
         OnBrowseMatchSessionCompleteEvent += OnBrowseMatchSessionsComplete;
+    }
+
+    protected internal void UnbindEvents()
+    {
+        base.UnbindEvents();
+        OnBrowseMatchSessionCompleteEvent -= OnBrowseMatchSessionsComplete;
     }
 
     #region BrowseMatchSession
 
     protected internal void BrowseMatch(Action<BrowseMatchResult> onSessionRetrieved)
     {
-        nextPage = "";
+        nextPage = string.Empty;
         isBrowseMatchSessionsCanceled = false;
         onQueryMatchSessionFinished = onSessionRetrieved;
-        BrowseCustomMatchSession(CreateMatchConfig.CreatedMatchSessionAttribute);
+        BrowseMatchSession(CreateMatchConfig.CreatedMatchSessionAttribute);
     }
 
     public void CancelBrowseMatchSessions()
@@ -127,7 +133,4 @@ public class BrowseMatchSessionWrapper : MatchSessionWrapper
     }
 
     #endregion
-
-
-
 }

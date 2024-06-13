@@ -116,12 +116,21 @@ public class MatchLobbyMenu : MenuCanvas
         
         PopulatePlayerEntries();
 
-        /* If P2P, only show the start button if the player is the session leader.
-         * Otherwise, always show the start button on other server mode. */
-        startButton.gameObject.SetActive(
-            GameData.ServerType.Equals(ServerType.OnlinePeer2Peer) ?
-            GameManager.Instance.IsHost :
-            true);
+        if (SessionCache.IsCreateMatch())
+        {
+            startButton.gameObject.SetActive(SessionCache.IsSessionLeader());
+        } 
+        else
+        {
+            /* If P2P, only show the start button if the player is the session leader.
+            * Otherwise, always show the start button on other server mode. */
+
+            startButton.gameObject.SetActive(
+                GameData.ServerType.Equals(ServerType.OnlinePeer2Peer) ?
+                GameManager.Instance.IsHost :
+                true);
+        }
+
     }
     
     private void PopulatePlayerEntries()

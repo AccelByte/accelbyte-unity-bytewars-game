@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 public class PlayOnlineMenu : MenuCanvas
@@ -44,7 +44,7 @@ public class PlayOnlineMenu : MenuCanvas
 
     private void OnCreateMatchButtonPressed()
     {
-        MenuManager.Instance.ChangeToMenu(AssetEnum.CreateMatchMenuCanvas);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.MatchSessionHandler);
     }
 
     private void OnBrowserMatchButtonPressed()

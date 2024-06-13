@@ -24,25 +24,24 @@ public enum ServerType
 /// </summary>
 public static class SessionCache
 {
-    
     private static readonly Dictionary<string, SessionData> CachedSessions = new();
-    private static string _currentPlayerJoinedSessionId;
+    private static string currentPlayerJoinedSessionId = string.Empty;
+    private static bool isCreateMatchSession = false;
     public static string CurrentGameSessionId = string.Empty;
-
     public static void SetJoinedSessionIdAndLeaderUserId(string sessionId, string leaderId)
     {
-        _currentPlayerJoinedSessionId = sessionId;
+        currentPlayerJoinedSessionId = sessionId;
         SetSessionLeaderId(sessionId, leaderId);
+        isCreateMatchSession = true;
     }
     
-    public static void SetJoinedSessionId(string sessionId) => _currentPlayerJoinedSessionId = sessionId;
+    public static void SetJoinedSessionId(string sessionId) => currentPlayerJoinedSessionId = sessionId;
 
     public static void SetSessionLeaderId(string sessionId, string sessionLeaderId)
     {
         if (CachedSessions.TryGetValue(sessionId, out SessionData sessionData))
         {
-            sessionData.SessionLeaderUserId = sessionLeaderId;
-            
+            sessionData.SessionLeaderUserId = sessionLeaderId;            
             return;
         }
 
@@ -57,23 +56,31 @@ public static class SessionCache
 
     public static string GetJoinedSessionLeaderUserId()
     {
-        if (string.IsNullOrEmpty(_currentPlayerJoinedSessionId))
+        if (string.IsNullOrEmpty(currentPlayerJoinedSessionId))
         {
             return string.Empty;
         }
 
-        if (!CachedSessions.TryGetValue(_currentPlayerJoinedSessionId, out SessionData sessionData))
+        if (!CachedSessions.TryGetValue(currentPlayerJoinedSessionId, out SessionData sessionData))
         {
             return string.Empty;
         }
-
+    
         return sessionData.SessionLeaderUserId;
     }
 
     public static bool IsSessionLeader() => GameData.CachedPlayerState.playerId.Equals(GetJoinedSessionLeaderUserId());
+    public static bool IsCreateMatch() => isCreateMatchSession;
+    public static void ClearSessionCache()
+    {
+        CachedSessions.Clear();
+        currentPlayerJoinedSessionId = string.Empty;
+        CurrentGameSessionId = string.Empty;
+        isCreateMatchSession = false;
+    }
 }
 
-public struct SessionData
+public class SessionData
 {
     public string SessionId { get; set; }
     public string SessionLeaderUserId { get; set; }

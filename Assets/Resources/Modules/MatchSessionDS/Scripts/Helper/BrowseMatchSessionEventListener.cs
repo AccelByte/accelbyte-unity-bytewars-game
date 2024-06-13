@@ -1,3 +1,7 @@
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using System.Collections.Generic;
 using AccelByte.Api;
@@ -15,20 +19,12 @@ public static class BrowseMatchSessionEventListener
         _displayedGameSessions = displayedGameSessions;
         _lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
         _lobby.SessionV2GameSessionUpdated += OnV2GameSessionUpdated;
-        _lobby.SessionV2UserRejectedGameSessionInvitation += OnV2UserRejectedGameSessionInvitation;
-        MatchSessionDSWrapper.OnGameSessionUpdated += OnGameSessionUpdated;
-
-        // MatchSessionWrapper_Old.OnGameSessionUpdated += OnGameSessionUpdated;
-        // _lobby.SessionV2UserJoinedGameSession += OnV2UserJoinedGameSession;
-        // _lobby.SessionV2UserKickedFromGameSession += OnV2UserKickedFromGameSession;
-        // _lobby.SessionV2InvitedUserToGameSession += OnV2InvitedUserToGameSession;
-        // _lobby.SessionV2DsStatusChanged += OnV2DSStatusChanged;
-        
+        _lobby.SessionV2UserRejectedGameSessionInvitation += OnV2UserRejectedGameSessionInvitation;        
     }
 
     private static void OnGameSessionUpdated(SessionV2GameSession updatedGameSession)
     {
-        var updated = _displayedGameSessions
+        SessionV2GameSession updated = _displayedGameSessions
             .Find(d => d.id.Equals(updatedGameSession.id));
         if (updated != null)
         {
@@ -67,7 +63,7 @@ public static class BrowseMatchSessionEventListener
     {
         if (!result.IsError)
         {
-            var updatedGameSession = _displayedGameSessions
+            SessionV2GameSession updatedGameSession = _displayedGameSessions
                 .Find(d => d.id.Equals(result.Value.sessionId));
             if (updatedGameSession != null)
             {
@@ -87,7 +83,7 @@ public static class BrowseMatchSessionEventListener
     {
         if (!result.IsError)
         {
-            var updated = _displayedGameSessions
+            SessionV2GameSession updated = _displayedGameSessions
                 .Find(d => d.id.Equals(result.Value.sessionId));
             if (updated != null)
             {
@@ -102,8 +98,8 @@ public static class BrowseMatchSessionEventListener
     {
         if (!result.IsError)
         {
-            var value = result.Value;
-            var updated = _displayedGameSessions
+            SessionV2GameMembersChangedNotification value = result.Value;
+            SessionV2GameSession updated = _displayedGameSessions
                 .Find(d => d.id.Equals(value.session.id));
             if (updated != null)
             {
@@ -118,8 +114,8 @@ public static class BrowseMatchSessionEventListener
     {
         if (!result.IsError)
         {
-            var value = result.Value;
-            var updated = _displayedGameSessions
+            SessionV2GameSessionUpdatedNotification value = result.Value;
+            SessionV2GameSession updated = _displayedGameSessions
                 .Find(d => d.id.Equals(value.id));
             if (updated != null)
             {

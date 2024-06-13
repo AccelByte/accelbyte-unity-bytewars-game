@@ -10,6 +10,7 @@ public static class MatchSessionHelper
 {
     private static ApiClient _apiClient;
     private static User _user;
+    
     private static void Init()
     {
         if (_user==null)
@@ -18,8 +19,18 @@ public static class MatchSessionHelper
             _user = _apiClient.GetApi<User, UserApi>();
         }
     }
-    
+
+    public static void RefreshLobbyMenu()
+    {
+        MenuCanvas currentMenu = MenuManager.Instance.GetCurrentMenu();
+        if (currentMenu is MatchLobbyMenu matchLobbyMenu)
+        {
+            matchLobbyMenu.Refresh();
+        }
+    }
+
     #region GetCurrentUserPublicData
+
     public static void GetCurrentUserPublicData(string receivedUserId)
     {
         Init();
@@ -35,12 +46,13 @@ public static class MatchSessionHelper
         }
         else
         {
-            var publicUserData = result.Value;
+            PublicUserData publicUserData = result.Value;
             GameData.CachedPlayerState.playerId = publicUserData.userId;
             GameData.CachedPlayerState.avatarUrl = publicUserData.avatarUrl;
             GameData.CachedPlayerState.playerName = publicUserData.displayName;
         }
     }
+
     #endregion GetCurrentUserPublicData
 
     #region LogResult
@@ -61,6 +73,4 @@ public static class MatchSessionHelper
     }
 
     #endregion
-
-
 }

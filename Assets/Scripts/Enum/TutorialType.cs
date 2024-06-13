@@ -24,5 +24,6 @@ public enum TutorialType
     PartyEssentials = 17,
     PlayWithPartyEssentials = 18,
     MatchmakingSession = 103,
+    MatchSession = 104,
     MatchSessionWithP2P = 19,
 }

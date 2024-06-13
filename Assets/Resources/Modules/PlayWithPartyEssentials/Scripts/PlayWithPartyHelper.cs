@@ -123,8 +123,7 @@ public class PlayWithPartyHelper : MonoBehaviour
             MatchSessionDSWrapper matchSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionDSWrapper>();
             matchSessionDSWrapper.JoinMatchSession(
                 result.Value.id,
-                currentGameMode,
-                OnJoinMatchSessionCompleted(result.Value)
+                currentGameMode
             );
         } 
         else

@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using System;
+using System.Collections.Generic;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -14,24 +15,29 @@ public class SessionEssentialsWrapper : MonoBehaviour
     protected Lobby lobby;
 
     /// <summary>
-    /// This event will raised after JoinSession is complete
+    /// This event will be raised after JoinSession is complete
     /// </summary>
     public event Action<Result<SessionV2GameSession>> OnJoinSessionCompleteEvent;
 
     /// <summary>
-    /// This event will raised after CreateSession is complete
+    /// This event will be raised after CreateSession is complete
     /// </summary>
     public event Action<Result<SessionV2GameSession>> OnCreateSessionCompleteEvent;
 
     /// <summary>
-    /// This event will raised after LeaveSession is complete
+    /// This event will be raised after LeaveSession is complete
     /// </summary>
     public event Action<Result<SessionV2GameSession>> OnLeaveSessionCompleteEvent;
 
     /// <summary>
-    /// This event will raised after GetGameSessionDetailsById is complete
+    /// This event will be raised after GetGameSessionDetailsById is complete
     /// </summary>
     public event Action<Result<SessionV2GameSession>> OnGetSessionDetailsCompleteEvent;
+
+    /// <summary>
+    /// This event will be raised after QueryGameSession is complete
+    /// </summary>
+    public event Action<Result<PaginatedResponse<SessionV2GameSession>>> OnQueryGameSessionCompleteEvent;
 
     protected void Awake()
     {
@@ -69,7 +75,6 @@ public class SessionEssentialsWrapper : MonoBehaviour
 
     /// <summary>
     /// This method will invoke OnGetSessionDetailsCompleteEvent and return SessionRequestPayload.
-    /// You can filter it by add _tutorialType static flag from class who called this method. 
     /// </summary>
     /// <param name="sessionId"></param>
     /// <param name="sourceFilePath">this will capture class name who called this method, leave it empty</param>
@@ -78,12 +83,20 @@ public class SessionEssentialsWrapper : MonoBehaviour
         session.GetGameSessionDetailsBySessionId(sessionId, OnGetGameSessionDetailsByIdComplete);
     }
 
+    /// <summary>
+    /// This method will invoke OnGetSessionDetailsCompleteEvent and return SessionRequestPayload.
+    /// </summary>
+    /// <param name="sessionId"></param>
+    protected void QueryGameSession(Dictionary<string, object> request = null)
+    {
+        session.QueryGameSession(request, OnQueryGameSessionCompleted);
+    }
+
     #region Session Callback
     /// <summary>
     /// CreateSession Callback
     /// </summary>
     /// <param name="result"></param>
-    /// <param name="tutorialType"></param>
     private void OnCreateSessionCompleted(Result<SessionV2GameSession> result)
     {
         if (!result.IsError)
@@ -102,7 +115,6 @@ public class SessionEssentialsWrapper : MonoBehaviour
     /// JoinSession Callback
     /// </summary>
     /// <param name="result"></param>
-    /// <param name="tutorialType"></param>
     private void OnJoinSessionCompleted(Result<SessionV2GameSession> result)
     {
         if (!result.IsError)
@@ -121,7 +133,6 @@ public class SessionEssentialsWrapper : MonoBehaviour
     /// LeaveSession callback
     /// </summary>
     /// <param name="result"></param>
-    /// <param name="tutorialType"></param>
     private void OnLeaveSessionCompleted(Result<SessionV2GameSession> result)
     {
         if (!result.IsError)
@@ -140,7 +151,6 @@ public class SessionEssentialsWrapper : MonoBehaviour
     /// GetGameSessionDetailsById callback
     /// </summary>
     /// <param name="result"></param>
-    /// <param name="tutorialType"></param>
     private void OnGetGameSessionDetailsByIdComplete(Result<SessionV2GameSession> result)
     {
         if (!result.IsError)
@@ -153,6 +163,25 @@ public class SessionEssentialsWrapper : MonoBehaviour
         }
 
         OnGetSessionDetailsCompleteEvent?.Invoke(result);
+    }
+
+    /// <summary>
+    /// QueryGameSession callback
+    /// </summary>
+    /// <param name="result"></param>
+    private void OnQueryGameSessionCompleted(Result<PaginatedResponse<SessionV2GameSession>> result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log($"Successfully obtained the game session details");
+        }
+        else
+        {
+            BytewarsLogger.LogWarning($"{result.Error}");
+        }
+
+        OnQueryGameSessionCompleteEvent?.Invoke(result);
+
     }
 
     #endregion

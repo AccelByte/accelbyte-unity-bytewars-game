@@ -51,6 +51,7 @@ public class LoadingPanel : MonoBehaviour
         infoText.text = loadingInfo;
         if (cancelCallback!=null)
         {
+            cancelBtn.onClick.RemoveAllListeners();
             cancelBtn.gameObject.SetActive(true);
             cancelBtn.onClick.AddListener(cancelCallback);
         }

@@ -283,7 +283,6 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
                 case SessionV2DsStatus.AVAILABLE:
                     await Delay();
                     OnDSAvailable?.Invoke(true);
-                    await Delay();
                     TravelToDS(session, chachedIngameMode);
                     UnbindMatchmakingEvent();
                     break;
