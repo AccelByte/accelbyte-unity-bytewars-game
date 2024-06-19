@@ -69,6 +69,7 @@ public class GameManager : NetworkBehaviour
     private int _gameTimeLeft;
 
     public static readonly int TravelingDelay = 1;
+    private bool isGameStarted = false;
 
     public bool IsDedicatedServer { get { return IsServer && !IsHost && !IsClient; } }
 
@@ -158,8 +159,15 @@ public class GameManager : NetworkBehaviour
 
     private void SetupGame()
     {
+        if (!InGameState.Equals(InGameState.None))
+        {
+            BytewarsLogger.LogWarning("Cannot setup game. Game is already setup.");
+            return;
+        }
+
         if (!SetInGameState(InGameState.Initializing))
         {
+            BytewarsLogger.LogWarning("Cannot setup game. Failed to initialize game state.");
             return;
         }
 
@@ -239,6 +247,7 @@ public class GameManager : NetworkBehaviour
     
     public void ResetCache()
     {
+        isGameStarted = false;
         _gameMode = GameModeEnum.MainMenu;
         InGameMode = InGameMode.None;
         connectedClients.Clear();
@@ -520,8 +529,14 @@ public class GameManager : NetworkBehaviour
 
     public async void StartGame(GameModeSO gameModeSo)
     {
-        //TODO change to switch to in game menu
-        
+        if (isGameStarted)
+        {
+            BytewarsLogger.LogWarning("Cannot start game. Game has already started.");
+            return;
+        }
+
+        isGameStarted = true;
+
         GameData.GameModeSo = gameModeSo;
         _gameMode = gameModeSo.gameMode;
 
@@ -532,6 +547,7 @@ public class GameManager : NetworkBehaviour
 
     public void RestartLocalGame()
     {
+        InGameState = InGameState.None;
         _menuManager.CloseInGameMenu();
         ResetLevel();
         SetupGame();
@@ -775,22 +791,32 @@ public class GameManager : NetworkBehaviour
     
     public async void StartOnlineGame()
     {
+        if (!IsServer || !IsOwner)
+        {
+            BytewarsLogger.LogWarning("Cannot start online game. Instance is not the server or host.");
+            return;
+        }
+
+        if (isGameStarted)
+        {
+            BytewarsLogger.LogWarning("Cannot start online game. Game has already started.");
+            return;
+        }
+        
+        isGameStarted = true;
+
         _serverHelper.CancelCountdown();
         _gameMode = GameData.GameModeSo.gameMode;
         SetGameModeClientRpc(_gameMode);
 
         OnStartingGameClientRpc();
-        
-        if (!IsServer || !IsOwner)
-        {
-            return;
-        }
 
         await Task.Delay(TimeSpan.FromSeconds(TravelingDelay));
 
         SceneEventProgressStatus status = NetworkManager.SceneManager.LoadScene(GameConstant.GameSceneName, LoadSceneMode.Single);
         if (status != SceneEventProgressStatus.Started)
         {
+            isGameStarted = false;
             BytewarsLogger.LogWarning($"Failed to load {GameConstant.GameSceneName} " +
                                       $"with a {nameof(SceneEventProgressStatus)}: {status}");
         }
