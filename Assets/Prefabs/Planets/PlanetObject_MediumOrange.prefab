@@ -69,8 +69,23 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: bfaf569ec9a337a43bb3c4aca6218f07, type: 2}
     - target: {fileID: 3421930481197425942, guid: f04f183033116a84eb2b05689548f323,
         type: 3}
+      propertyPath: mass
+      value: 60000
+      objectReference: {fileID: 0}
+    - target: {fileID: 3421930481197425942, guid: f04f183033116a84eb2b05689548f323,
+        type: 3}
+      propertyPath: scale
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3421930481197425942, guid: f04f183033116a84eb2b05689548f323,
+        type: 3}
       propertyPath: m_mass
       value: 60000
+      objectReference: {fileID: 0}
+    - target: {fileID: 3421930481197425942, guid: f04f183033116a84eb2b05689548f323,
+        type: 3}
+      propertyPath: radius
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 3421930481197425942, guid: f04f183033116a84eb2b05689548f323,
         type: 3}
@@ -87,6 +102,21 @@ PrefabInstance:
       propertyPath: _renderer
       value: 
       objectReference: {fileID: 7438875111192804352}
+    - target: {fileID: 3421930481197425942, guid: f04f183033116a84eb2b05689548f323,
+        type: 3}
+      propertyPath: meshRenderer
+      value: 
+      objectReference: {fileID: 7438875111192804352}
+    - target: {fileID: 3421930481197425942, guid: f04f183033116a84eb2b05689548f323,
+        type: 3}
+      propertyPath: glowPulseRate
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3421930481197425942, guid: f04f183033116a84eb2b05689548f323,
+        type: 3}
+      propertyPath: glowPulseScale
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 6316847988675104935, guid: f04f183033116a84eb2b05689548f323,
         type: 3}
       propertyPath: m_Name

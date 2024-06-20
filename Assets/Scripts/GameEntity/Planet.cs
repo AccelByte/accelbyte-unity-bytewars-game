@@ -1,65 +1,67 @@
-using System.Collections;
-using System.Collections.Generic;
-using Unity.Netcode;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using UnityEngine;
 
+[RequireComponent(typeof(MeshRenderer))]
 public class Planet : GameEntityAbs
 {
-    public float m_scale = 1.0f;
-    #if !UNITY_SERVER || BYTEWARS_DEBUG
-    public float m_glowPulseRate = 2.0f;
-    public float m_glowPulseScale = 3.0f;
-    float m_baseGlowMin = 0.8f;
-    float m_baseGlowMax = 1.0f;
-    float m_glowMultiplier = 1.0f;
-    #endif
-    [SerializeField] private float m_mass;
-    [SerializeField]
-    private float m_radius;
+    [SerializeField] private Renderer meshRenderer;
+    [SerializeField] private float mass;
+    [SerializeField] private float radius;
+    [SerializeField] private float scale = 1.0f;
 
-    [SerializeField] private Renderer _renderer;
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        m_scale = m_radius * 2.0f;
-        transform.localScale = Vector3.one * m_scale;
-#if UNITY_SERVER && !BYTEWARS_DEBUG
-        _renderer.enabled = false;
-        _renderer.material = null;
-#else
-        m_baseGlowMin = _renderer.material.GetFloat("_GlowMin");
-        m_baseGlowMax = _renderer.material.GetFloat("_GlowMax");
-#endif
-    }
 #if !UNITY_SERVER
-    void Update()
+    [SerializeField] private float glowPulseRate = 2.0f;
+    [SerializeField] private float glowPulseScale = 3.0f;
+    private float baseGlowMin = 0.8f;
+    private float baseGlowMax = 1.0f;
+    private float glowMultiplier = 1.0f;
+#endif
+
+    private void Start()
     {
-        m_glowMultiplier = Mathf.Lerp(m_glowMultiplier, 1.0f, m_glowPulseRate * Time.deltaTime);        
-        _renderer.material.SetFloat("_GlowMin", m_baseGlowMin * m_glowMultiplier); 
-        _renderer.material.SetFloat("_GlowMax", m_baseGlowMax * m_glowMultiplier);
+        scale = radius * 2.0f;
+        transform.localScale = Vector3.one * scale;
+#if UNITY_SERVER && !BYTEWARS_DEBUG
+        meshRenderer.enabled = false;
+        meshRenderer.material = null;
+#else
+        baseGlowMin = meshRenderer.material.GetFloat("_GlowMin");
+        baseGlowMax = meshRenderer.material.GetFloat("_GlowMax");
+#endif
+    }
+
+#if !UNITY_SERVER
+    private void Update()
+    {
+        glowMultiplier = Mathf.Lerp(glowMultiplier, 1.0f, glowPulseRate * Time.deltaTime);        
+        meshRenderer.material.SetFloat("_GlowMin", baseGlowMin * glowMultiplier); 
+        meshRenderer.material.SetFloat("_GlowMax", baseGlowMax * glowMultiplier);
     }
 #endif
+
     public override void OnHitByMissile()
-    {    
-        #if !UNITY_SERVER
-        m_glowMultiplier = m_glowPulseScale;
-        #endif
+    {
+#if !UNITY_SERVER
+        glowMultiplier = glowPulseScale;
+#endif
     }
     
     public override float GetScale()
     {
-        return m_scale;
+        return scale;
     }
 
     public override float GetRadius()
     {
-        return m_radius;
+        return radius;
     }
 
     public override float GetMass()
     {
-        return m_mass;
+        return mass;
     }
 
     public override void Reset()

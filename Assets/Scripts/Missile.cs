@@ -1,64 +1,80 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 
+[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(ParticleSystem))]
 public class Missile : GameEntityAbs
 {
     private const float ScoreIncrement = 100;
-    [SerializeField]
-    private MissileExplosion missileExplosion;
-    public InGamePopupTextUI m_popupScoreTextPrefab;
-    public float m_skimDeltaForIncrementSeconds = 0.25f;
-    public float m_additionalSkimScoreMultiplier = 2.0f;
-    public float scoreIncrement = ScoreIncrement;
-    public float m_maxTimeAlive = 20.0f;
-    public float m_skimDistanceThreshold = 1.0f;
-    [SerializeField] private float _mass;
-    [SerializeField] private float _radius;
-    [SerializeField] private MeshFilter _mesh;
-    [SerializeField] private Renderer _renderer;
-    [SerializeField] private ParticleSystem _particleSystem;
+    private const float SyncMissileSecond = 1;
+
+    [Header("Missile Components"), SerializeField] private MissileExplosion missileExplosion;
+    [SerializeField] private MeshFilter meshFilter;
+    [SerializeField] private Renderer meshRenderer;
+    [SerializeField] private ParticleSystem missileParticleSystem;
     [SerializeField] private AudioClip travelSoundClip;
     [SerializeField] private AudioClip fireSoundClip;
-    private AudioSource _travelAudioSource;
-    private AudioSource _fireAudioSource;
-    private float mTimeSkimmingPlanetReward = 0.0f;
-    private float mTimeAlive = 0.0f;
-    private float mScore = 0.0f;
-    private Vector3 velocity = Vector3.zero;
-    private PlayerState mOwningPlayerState;
-    private Color mColour;
-    private State mState = State.ClearShip;
+    [SerializeField] private InGamePopupTextUI popupScoreTextPrefab;
+
+    [Header("Missile Attributes"), SerializeField] private float mass = 1f;
+    [SerializeField] private float radius = 0.1f;
+    [SerializeField] private float skimDeltaForIncrementSeconds = 0.25f;
+    [SerializeField] private float additionalSkimScoreMultiplier = 2.0f;
+    [SerializeField] private float scoreIncrement = ScoreIncrement;
+    [SerializeField] private float maxTimeAlive = 20.0f;
+    [SerializeField] private float skimDistanceThreshold = 1.0f;
+
+    private int id;
     private bool isOnServer;
-    private bool isOnClient;
-    private const float SyncMissileSecond = 1;
+    private float timeSkimmingPlanetReward = 0.0f;
+    private float timeAlive = 0.0f;
+    private float score = 0.0f;
     private float syncMissileTimer = 0;
+
+    private AudioSource travelAudioSource;
+    private AudioSource fireAudioSource;
+    private Vector3 velocity = Vector3.zero;
+    private PlayerState owningPlayerState;
+    private Color missileColor;
+    private State missileState = State.ClearShip;
+    
+    public event Action<ulong> OnMissileDestroyed;
+
     private enum State
     {
         ClearShip,
         Alive,
         FlaggedForDestruction
     }
+
     private void Start()
     {
-        List<Vector3> outerVerts = new List<Vector3>();
-        outerVerts.Add(new Vector3(0, 20, 0));
-        outerVerts.Add(new Vector3(10, 0, 0));
-        outerVerts.Add(new Vector3(10, -20, 0));
-        outerVerts.Add(new Vector3(0, -20, 0));
+        List<Vector3> outerVerts = new()
+        {
+            new Vector3(0, 20, 0),
+            new Vector3(10, 0, 0),
+            new Vector3(10, -20, 0),
+            new Vector3(0, -20, 0)
+        };
 
+        List<Vector3> innerVerts = new()
+        {
+            new Vector3(0, 10, 0),
+            new Vector3(5, 0, 0),
+            new Vector3(5, -15, 0),
+            new Vector3(0, -15, 0)
+        };
 
-        List<Vector3> innerVerts = new List<Vector3>();
-        innerVerts.Add(new Vector3(0, 10, 0));
-        innerVerts.Add(new Vector3(5, 0, 0));
-        innerVerts.Add(new Vector3(5, -15, 0));
-        innerVerts.Add(new Vector3(0, -15, 0));
+        NeonObject playerGeometry = new(outerVerts, innerVerts);
 
-        NeonObject playerGeometry = new NeonObject(outerVerts, innerVerts);
-
-        Mesh mesh = new Mesh();
-        _mesh.mesh = mesh;
+        meshFilter.mesh = new Mesh();
+        Mesh mesh = meshFilter.mesh;
 
         mesh.Clear();
         mesh.vertices = playerGeometry.vertexList.ToArray();
@@ -68,321 +84,342 @@ public class Missile : GameEntityAbs
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
     }
-    
-    public void Init(PlayerState owningPlayerState, 
-        Vector3 position, Quaternion rotation, Vector3 velocity,
-        Color color)
+
+    public void Init(PlayerState owningPlayerState, Vector3 position, Quaternion rotation, Vector3 velocity, Color color)
     {
+        this.velocity = velocity;
+        this.owningPlayerState = owningPlayerState;
+        missileColor = color;
+
         isOnServer = NetworkManager.Singleton.IsListening && NetworkManager.Singleton.IsServer;
-        isOnClient = NetworkManager.Singleton.IsListening && NetworkManager.Singleton.IsClient;
-        mState = State.ClearShip;
-        mColour = color;
-        mOwningPlayerState = owningPlayerState;
-        var transform1 = transform;
-        transform1.position = position;
-        transform1.rotation = rotation;
-        InitColor(mColour);
+        missileState = State.ClearShip;
 
-        // Tie the particle system lifetime to missile Max Time Alive so the particle emission falloff curve lines up to when the missile dies.
-        // Note: the curve is tuned so the effect dies out across the range [0.85, 1], which works well for a max lifetime of ~20 seconds but may need readjusted if that value changes.
+        transform.SetPositionAndRotation(position, rotation);
+        InitColor(color);
 
-        
-        // particle system has to stop to change duration
-        _particleSystem.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+        missileParticleSystem.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+        timeSkimmingPlanetReward = 0;
+        scoreIncrement = ScoreIncrement;
+        score = 0;
+        timeAlive = 0;
+
 #if !UNITY_SERVER
         AddFx();
 #endif
-        mTimeSkimmingPlanetReward = 0;
-        scoreIncrement = ScoreIncrement;
-        mScore = 0;
-        mTimeAlive = 0;
-        this.velocity = velocity;
+
         GameManager.Instance.ActiveGEs.Add(this);
     }
 
     private void AddFx()
     {
-        var main = _particleSystem.main;
-        main.duration = m_maxTimeAlive;
-        _particleSystem.Play(false);
-        if (_travelAudioSource == null)
+        ParticleSystem.MainModule main = missileParticleSystem.main;
+        main.duration = maxTimeAlive;
+
+        missileParticleSystem.Play(false);
+        if (travelAudioSource == null)
         {
-            _travelAudioSource = gameObject.AddComponent<AudioSource>();
-            _travelAudioSource.clip = travelSoundClip;
-            _travelAudioSource.loop = true;
+            travelAudioSource = gameObject.AddComponent<AudioSource>();
+            travelAudioSource.clip = travelSoundClip;
+            travelAudioSource.loop = true;
         }
 
-        if (_fireAudioSource == null)
+        if (fireAudioSource == null)
         {
-            _fireAudioSource = gameObject.AddComponent<AudioSource>();
-            _fireAudioSource.clip = fireSoundClip;
+            fireAudioSource = gameObject.AddComponent<AudioSource>();
+            fireAudioSource.clip = fireSoundClip;
         }
 
         float volume = AudioManager.Instance.GetCurrentVolume(AudioManager.AudioType.SfxAudio);
-        _travelAudioSource.volume = volume;
-        _fireAudioSource.volume = volume;
+        travelAudioSource.volume = volume;
+        fireAudioSource.volume = volume;
         if (volume > 0.01)
         {
-            _travelAudioSource.Play();
-            _fireAudioSource.Play();
+            travelAudioSource.Play();
+            fireAudioSource.Play();
         }
         else
         {
-            _travelAudioSource.Stop();
+            travelAudioSource.Stop();
         }
     }
 
     private void InitColor(Color color)
     {
-        if(_renderer)
-            _renderer.material.SetVector("_PlayerColour", color);
+        if (meshRenderer)
+        {
+            meshRenderer.material.SetVector("_PlayerColour", color);
+        }
     }
 
-    void Update()
+    private void Update()
     {
         UpdatePosition();
-        mTimeAlive += Time.deltaTime;
-        var t = transform;
-        if ( mState == State.FlaggedForDestruction )
+        timeAlive += Time.deltaTime;
+
+        if (IsOutOfBound())
         {
-            OnDestroyMissile(t.position, t.rotation);            
+            OnDestroyMissile(transform.position, transform.rotation);
         }
-        else if( mTimeAlive > 1.0f )
+
+        if (missileState == State.FlaggedForDestruction)
         {
-            if( GetIsSkimmingObject() )
+            OnDestroyMissile(transform.position, transform.rotation);
+        }
+        else if (timeAlive > 1.0f)
+        {
+            if (GetIsSkimmingObject())
             {
-                mTimeSkimmingPlanetReward += Time.deltaTime;
+                timeSkimmingPlanetReward += Time.deltaTime;
             }
             else
             {
-                mTimeSkimmingPlanetReward = 0.0f;
+                timeSkimmingPlanetReward = 0.0f;
             }
 
-            if( mTimeSkimmingPlanetReward > m_skimDeltaForIncrementSeconds )
+            if (timeSkimmingPlanetReward > skimDeltaForIncrementSeconds)
             {
-                mScore += scoreIncrement;
+                score += scoreIncrement;
 #if !UNITY_SERVER
-    ShowScorePopupText(transform.position, mColour, scoreIncrement);            
+                ShowScorePopupText(transform.position, missileColor, scoreIncrement);
 #endif
-                mTimeSkimmingPlanetReward = 0.0f;
-                scoreIncrement *= m_additionalSkimScoreMultiplier;
+                timeSkimmingPlanetReward = 0.0f;
+                scoreIncrement *= additionalSkimScoreMultiplier;
             }
 
-            if( mTimeAlive > m_maxTimeAlive )
+            if (timeAlive > maxTimeAlive)
             {
-                OnDestroyMissile(t.position, t.rotation);
+                OnDestroyMissile(transform.position, transform.rotation);
             }
         }
     }
-    
-    void UpdatePosition()
+
+    private void UpdatePosition()
     {
         Vector3 totalForceThisFrame = GetTotalForceOnObject();
-        Vector3 acceleration = totalForceThisFrame / _mass;
-        var deltaTime = Time.deltaTime;
+        Vector3 acceleration = totalForceThisFrame / mass;
+        float deltaTime = Time.deltaTime;
+
         velocity += acceleration * deltaTime;
-        transform.position += velocity * deltaTime;
-        transform.rotation = Quaternion.LookRotation(velocity, Vector3.forward) 
-                             * Quaternion.AngleAxis(90.0f, Vector3.right);
+        transform.position += velocity * deltaTime; 
+        transform.rotation = Quaternion.LookRotation(velocity, Vector3.forward) * Quaternion.AngleAxis(90f, Vector3.right);
+
         if (isOnServer)
         {
             syncMissileTimer += Time.deltaTime;
-            if (syncMissileTimer >= SyncMissileSecond)
+
+            if (syncMissileTimer < SyncMissileSecond)
             {
-                syncMissileTimer = 0;
-                var t = transform;
-                GameManager.Instance.MissileSyncClientRpc(mOwningPlayerState.clientNetworkId, _id, 
-                    velocity, t.position, t.rotation);
+                return;
             }
+
+            syncMissileTimer = 0;
+            GameManager.Instance.MissileSyncClientRpc(owningPlayerState.clientNetworkId,
+                id, velocity, transform.position, transform.rotation);
         }
     }
 
     public void Sync(Vector3 serverVelocity, Vector3 position, Quaternion rotation)
     {
         velocity = serverVelocity;
-        var transform1 = transform;
-        transform1.position = position;
-        transform1.rotation = rotation;
+
+        transform.SetPositionAndRotation(position, rotation);
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!NetworkManager.Singleton.IsListening || NetworkManager.Singleton.IsServer)
+        if (NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsServer)
         {
-            char prefix = other.gameObject.name[0];
-            bool willBeDestroyed = false;
-            Transform t = transform;
-            if (prefix.Equals(InGameFactory.PlayerInstancePrefix))
+            return;
+        }
+
+        char prefix = other.gameObject.name[0];
+        bool willBeDestroyed = false;
+        Transform t = transform;
+
+        if (prefix.Equals(InGameFactory.PlayerInstancePrefix))
+        {
+            if (missileState == State.ClearShip)
             {
-                if (mState == State.ClearShip)
-                {
-                    mState = State.Alive;
-                    return;
-                }
-                willBeDestroyed = true;
-                var player = other.GetComponent<Player>();
-                GameManager.Instance.OnObjectHit(player, this);
-                GameManager.Instance
-                    .MissileHitClientRpc(mOwningPlayerState.clientNetworkId, _id,-1,
-                        t.position, t.rotation);
-            } 
-            else if (prefix.Equals(InGameFactory.PlanetInstancePrefix))
-            {
-                var planet = other.GetComponent<Planet>();
-                planet.OnHitByMissile();
-                willBeDestroyed = true;
-                GameManager.Instance
-                    .MissileHitClientRpc(mOwningPlayerState.clientNetworkId, _id, planet.GetId(),
-                        t.position, t.rotation);
+                missileState = State.Alive;
+                return;
             }
 
-            if (willBeDestroyed)
-            {
-                mState = State.FlaggedForDestruction;
-            }
+            willBeDestroyed = true;
+            Player player = other.GetComponent<Player>();
+            GameManager.Instance.OnObjectHit(player, this);
+            GameManager.Instance.MissileHitClientRpc(owningPlayerState.clientNetworkId, 
+                id, -1, t.position, t.rotation);
+        }
+        else if (prefix.Equals(InGameFactory.PlanetInstancePrefix))
+        {
+            Planet planet = other.GetComponent<Planet>();
+            planet.OnHitByMissile();
+            willBeDestroyed = true;
+            GameManager.Instance.MissileHitClientRpc(owningPlayerState.clientNetworkId, 
+                id, planet.GetId(), t.position, t.rotation);
+        }
+
+        if (willBeDestroyed)
+        {
+            missileState = State.FlaggedForDestruction;
         }
     }
 
-    Vector3 GetTotalForceOnObject()
+    private Vector3 GetTotalForceOnObject()
     {
         Vector3 totalForce = Vector3.zero;
 
-        foreach (var activeObject in GameManager.Instance.ActiveGEs)
+        IEnumerable<Planet> activePlanets = GameManager.Instance.ActiveGEs.OfType<Planet>();
+        foreach (GameEntityAbs activePlanet in activePlanets)
         {
-            if (activeObject is not Planet) continue;
-            float force = 50.0f * _mass * activeObject.GetMass();
-            var position = activeObject.transform.position;
-            var missilePosition = transform.position;
-            float distanceBetween = Vector3.Distance(missilePosition, position);
-            force /= Mathf.Pow(distanceBetween * 100.0f, 1.5f);
+            Vector3 planetPosition = activePlanet.transform.position;
+            Vector3 missilePosition = transform.position;
+            float distanceBetween = Vector3.Distance(missilePosition, planetPosition);
 
-            Vector3 direction = (position - missilePosition).normalized;
+            float gravitationalFieldRadius = activePlanet.GetRadius() * 5;
+            bool withinGravitationalField = distanceBetween < gravitationalFieldRadius;
+            if (!withinGravitationalField)
+            {
+                continue;
+            }
 
-            totalForce += direction * (0.01f * force);
+            const int forceMultiplier = 50;
+            float force = forceMultiplier * mass * activePlanet.GetMass();
+            Vector3 direction = (planetPosition - missilePosition).normalized;
+
+            totalForce += 0.01f * force * direction / Mathf.Pow(distanceBetween * 100.0f, 1.5f);
         }
 
-        return totalForce;        
+        return totalForce;
     }
 
-    void OnDestroyMissile(Vector3 pos, Quaternion rot)
+    private void OnDestroyMissile(Vector3 pos, Quaternion rot)
     {
-        #if !UNITY_SERVER
-        ShowMissileExplosion(pos, rot, mColour);
-        #endif
-        OnMissileDestroyed?.Invoke(mOwningPlayerState.clientNetworkId);
+#if !UNITY_SERVER
+        ShowMissileExplosion(pos, rot, missileColor);
+#endif
+        OnMissileDestroyed?.Invoke(owningPlayerState.clientNetworkId);
         Reset();
     }
 
     public void Destruct(Vector3 pos, Quaternion rot)
     {
-       OnDestroyMissile(pos, rot);
+        OnDestroyMissile(pos, rot);
     }
 
     private void ShowMissileExplosion(Vector3 position, Quaternion rotation, Vector4 color)
     {
-        if(missileExplosion)
+        if (missileExplosion)
         {
-            var explosion = GameManager.Instance.Pool.Get(missileExplosion) as MissileExplosion;
-            var transform1 = transform;
+            MissileExplosion explosion = GameManager.Instance.Pool.Get(missileExplosion);
+
             explosion.Init(position, rotation, color);
         }
     }
 
     private void ShowScorePopupText(Vector3 position, Vector4 color, float score)
     {
-        var popUpText = GameManager.Instance.Pool.Get(m_popupScoreTextPrefab) as InGamePopupTextUI;
+        InGamePopupTextUI popUpText = GameManager.Instance.Pool.Get(popupScoreTextPrefab);
+
         popUpText.Init(position, color, score.ToString());
     }
 
-    bool GetIsSkimmingObject()
+    private bool GetIsSkimmingObject()
     {
-        foreach( var ge in GameManager.Instance.ActiveGEs)
+        foreach (GameEntityAbs ge in GameManager.Instance.ActiveGEs)
         {
-            if(ge)
+            if (!ge || ge.gameObject == gameObject)
             {
-                if (ge.gameObject != gameObject)
-                {
-                    float distance = Vector3.Distance(ge.transform.position, gameObject.transform.position);
-                    float combinedRadius =  GetRadius() + ge.GetRadius();
+                continue;
+            }
 
-                    if (distance - combinedRadius < m_skimDistanceThreshold)
-                    {
-                        return true;
-                    }
-                }
+            float distance = Vector3.Distance(ge.transform.position, gameObject.transform.position);
+            float combinedRadius = GetRadius() + ge.GetRadius();
+
+            if (distance - combinedRadius < skimDistanceThreshold)
+            {
+                return true;
             }
         }
 
         return false;
     }
 
+    private bool IsOutOfBound()
+    {
+        Vector2 center = new(0, 0);
+        float width = GameConstant.MaxMissileArea.x;
+        float height = GameConstant.MaxMissileArea.y;
+
+        Rect rect = new(center.x - width / 2, center.y - height / 2, width, height);
+        Vector3 pos = transform.position;
+
+        return !rect.Contains(new Vector2(pos.x, pos.y));
+    }
+
     public float GetScore()
     {
-        return mScore;
+        return score;
     }
 
     public PlayerState GetOwningPlayerState()
     {
-        return mOwningPlayerState;
+        return owningPlayerState;
     }
 
     public override float GetScale()
     {
-        //scale is for planet for other game entity it always 1
         return 1.0f;
     }
 
     public override float GetRadius()
     {
-        return _radius;
+        return radius;
     }
 
     public override float GetMass()
     {
-        return _mass;
+        return mass;
     }
 
     public override void OnHitByMissile()
     {
-        Debug.Log("missile hit by missile");
+        BytewarsLogger.Log("missile hit by missile");
     }
 
     public override void Reset()
     {
-        mState = State.ClearShip;
+        missileState = State.ClearShip;
         if (GameManager.Instance.InGameState == InGameState.Playing)
         {
             GameManager.Instance.ActiveGEs.Remove(this);
         }
-        mTimeSkimmingPlanetReward = 0;
+
+        timeSkimmingPlanetReward = 0;
         scoreIncrement = ScoreIncrement;
-        mTimeAlive = 0;
+        timeAlive = 0;
         gameObject.SetActive(false);
+
 #if !UNITY_SERVER
-        if (_travelAudioSource)
+        if (travelAudioSource)
         {
-            _travelAudioSource.Stop();
+            travelAudioSource.Stop();
         }
 #endif
     }
 
-    private int _id;
     public override void SetId(int id)
     {
-        _id = id;
+        this.id = id;
     }
 
     public override int GetId()
     {
-        return _id;
+        return id;
     }
 
     public void SetPlayerState(PlayerState newPlayerState)
     {
-        mOwningPlayerState = newPlayerState;
+        owningPlayerState = newPlayerState;
     }
-    /// <summary>
-    /// event with owning player client network id parameter
-    /// </summary>
-    public event Action<ulong> OnMissileDestroyed;
 }

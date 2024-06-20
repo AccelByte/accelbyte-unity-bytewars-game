@@ -199,7 +199,7 @@ public class GameManager : NetworkBehaviour
         bool isSinglePlayer = _gameMode == GameModeEnum.SinglePlayer;
         if (isSinglePlayer && Players.TryGetValue(1, out Player player))
         {
-            player.playerInput.enabled = false;
+            player.PlayerInput.enabled = false;
         }
         
         SetInGameState(InGameState.PreGameCountdown);
@@ -504,7 +504,7 @@ public class GameManager : NetworkBehaviour
         Player player = InGameFactory.SpawnReconnectedShip(clientNetworkId, _serverHelper, Pool);
         if (player)
         {
-            player.SetFiredMissilesID(firedMissilesId);
+            player.SetFiredMissilesId(firedMissilesId);
             Players.TryAdd(clientNetworkId, player);
         }
 
@@ -539,6 +539,8 @@ public class GameManager : NetworkBehaviour
 
         GameData.GameModeSo = gameModeSo;
         _gameMode = gameModeSo.gameMode;
+
+        AudioManager.Instance.PlaySfx("Enter_Simulate");
 
         await ShowTravelingLoading();
 
@@ -727,7 +729,7 @@ public class GameManager : NetworkBehaviour
             Time.timeScale = 1;
         }
 
-        if (IsLocalGame() && _inGameCamera)
+        if (_inGameCamera)
         {
             _inGameCamera.enabled = state == InGameState.Playing;
         }

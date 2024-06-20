@@ -99,20 +99,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0487aacd349f6a3419c865aa6ba594d7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_powerBarUIPrefab: {fileID: 905130339957781962, guid: bc3f36490ab5da743817884e2c83fe1c,
+  _renderer: {fileID: 7993289826749942192}
+  powerBarUIPrefab: {fileID: 905130339957781962, guid: bc3f36490ab5da743817884e2c83fe1c,
     type: 3}
-  m_missilePrefab: {fileID: 5119555350153725107, guid: 0cee5cf55fbf3c841a602e1715c3f34f,
+  shipDestroyedEffectPrefab: {fileID: 7380730269538933391, guid: 601b863479823ac4cacca11af8026f04,
     type: 3}
-  m_shipDestroyedEffectPrefab: {fileID: 7380730269538933391, guid: 601b863479823ac4cacca11af8026f04,
+  missilePrefab: {fileID: 5119555350153725107, guid: 0cee5cf55fbf3c841a602e1715c3f34f,
     type: 3}
-  m_missileTrailPrefab: {fileID: 4799660512040940187, guid: f6d7e8949bfe280469c9e2c815cb66d7,
+  missileTrailPrefab: {fileID: 4799660512040940187, guid: f6d7e8949bfe280469c9e2c815cb66d7,
     type: 3}
   playerInput: {fileID: 2807402129045789727}
-  m_minMissileSpeed: 1.5
-  m_maxMissileSpeed: 9
-  _renderer: {fileID: 7993289826749942192}
-  _mass: 1
-  _radius: 0.5
+  mass: 1
+  radius: 0.5
+  missileCooldown: 1.5
+  minMissileSpeed: 1.5
+  maxMissileSpeed: 9
 --- !u!114 &2807402129045789727
 MonoBehaviour:
   m_ObjectHideFlags: 0
