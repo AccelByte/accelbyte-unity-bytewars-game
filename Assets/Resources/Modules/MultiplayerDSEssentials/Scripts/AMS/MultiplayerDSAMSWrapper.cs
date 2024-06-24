@@ -9,8 +9,9 @@ using AccelByte.Server;
 
 public class MultiplayerDSAMSWrapper : GameSessionUtilityWrapper
 {
-    public event Action OnAMSConnectionOpened;
-    public event Action OnAMSDrainReceived;
+    public event Action OnAMSConnectionOpened = delegate {};
+    public event Action OnAMSConnectionClosed = delegate {};
+    public event Action OnAMSDrainSignalReceived = delegate {};
 
     private DedicatedServer ds;
     private ServerAMS ams;
@@ -28,41 +29,116 @@ public class MultiplayerDSAMSWrapper : GameSessionUtilityWrapper
     void Start()
     {
         ds = AccelByteSDK.GetServerRegistry().GetApi().GetDedicatedServer();
-        ams = AccelByteSDK.GetServerRegistry().GetAMS();
-        if (ams == null)
+        if (ds == null)
         {
-            BytewarsLogger.LogWarning("[AMS] AMS is null");
-        }
-        else
-        {
-            ams.OnOpen += OnAMSConnected;
-            ams.Disconnecting += OnAMSDisconnecting;
-        }
-        dsHub = AccelByteSDK.GetServerRegistry().GetApi().GetDsHub();
-    }
-
-    #region Events Functions
-
-    public void SubscribeAMSEvents()
-    {
-        if (ams == null)
-        {
+            BytewarsLogger.LogWarning("AccelByte Dedicated Server interface is null");
             return;
         }
 
+        ams = AccelByteSDK.GetServerRegistry().GetAMS();
+        if (ams == null)
+        {
+            BytewarsLogger.LogWarning("AccelByte AMS interface is null");
+            return;
+        }
+
+        dsHub = AccelByteSDK.GetServerRegistry().GetApi().GetDsHub();
+        if (dsHub == null)
+        {
+            BytewarsLogger.LogWarning("AccelByte DSHub interface is null");
+            return;
+        }
+    }
+
+    public void LoginWithClientCredentials(ResultCallback resultCallback = null)
+    {
+        BytewarsLogger.Log("Logging in DS to AccelByte.");
+
+        ds?.LoginWithClientCredentials(
+            result => OnLoginWithClientCredentialsCompleted(result, resultCallback)
+        );
+    }
+
+    private void OnLoginWithClientCredentialsCompleted(Result result, ResultCallback callback = null)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log("DS login success.");
+        }
+        else
+        {
+            BytewarsLogger.Log($"DS login failed. Error code: {result.Error.Code}, message: {result.Error.Message}");
+        }
+
+        callback?.Invoke(result);
+    }
+
+    #region AMS Functions
+
+    public void SendReadyMessageToAMS()
+    {
+        BytewarsLogger.Log("Sending DS ready to AMS.");
+        ams?.SendReadyMessage();
+    }
+
+    public void DisconnectFromAMS()
+    {
+        BytewarsLogger.Log($"Disconnecting DS from AMS.");
+        ams?.Disconnect();
+    }
+
+    public void SubscribeAMSEvents()
+    {
 #if UNITY_STANDALONE_WIN || UNITY_STANDALONE_LINUX
-        OnAMSConnectionOpened?.Invoke();
+        OnAMSConnected();
 #else
         if(ams.IsConnected)
         {
-            OnAMSConnectionOpened?.Invoke();
+            OnAMSConnected();
         }
         else
         {
             ams.OnOpen += OnAMSConnected;
         }
 #endif
-        ams.OnDrainReceived += () => OnAMSDrainReceived?.Invoke();
+        ams.OnDrainReceived += OnAMSDrainReceived;
+        ams.Disconnected += OnAMSDisconnected;
+    }
+
+    private void OnAMSConnected()
+    {
+        BytewarsLogger.Log("DS is connected to AMS.");
+        OnAMSConnectionOpened?.Invoke();
+        ams.OnOpen -= OnAMSConnected;
+    }
+
+    private void OnAMSDisconnected(WsCloseCode wsCloseCode)
+    {
+        BytewarsLogger.Log($"DS disconnected from AMS. Disconnect code: {wsCloseCode}");
+
+        // If disconnected intentionally, continue to disconnect DS from DSHub.
+        if (wsCloseCode.Equals(WsCloseCode.Normal))
+        {
+            BytewarsLogger.Log("Disconnecting DS from DSHub.");
+            ams.Disconnected -= OnAMSDisconnected;
+            dsHub.Disconnect();
+        }
+    }
+
+    private void OnAMSDrainReceived()
+    {
+        BytewarsLogger.Log($"DS received drain signal from AMS.");
+        OnAMSDrainSignalReceived?.Invoke();
+    }
+
+    #endregion
+
+    #region DSHub Functions
+
+    public void ConnectToDSHub(string serverId)
+    {
+        BytewarsLogger.Log($"Connecting DS to DSHub by dsid {serverId}");
+        dsHub?.Connect(serverId);
     }
 
     public void SubscribeDSHubEvents()
@@ -72,44 +148,30 @@ public class MultiplayerDSAMSWrapper : GameSessionUtilityWrapper
         dsHub.MatchmakingV2ServerClaimed += OnServerClaimed;
     }
 
-    private void OnServerClaimed(Result<ServerClaimedNotification> result)
-    {
-        if (result.IsError)
-        {
-            BytewarsLogger.LogWarning($"error: {result.Error.Message}");
-        }
-        else
-        {
-            BytewarsLogger.Log($"ds success claimed {result.Value}");
-            GameData.ServerSessionID = result.Value.sessionId;
-        }
-    }
-
-    private void OnAMSConnected()
-    {
-        BytewarsLogger.Log("[AMS] AMS Connected!");
-        OnAMSConnectionOpened?.Invoke();
-        ams.OnOpen -= OnAMSConnected;
-    }
-
     private void OnDSHubConnected()
     {
         BytewarsLogger.Log($"DS connected to DSHub");
-
     }
 
     private void OnDSHubDisconnected(WsCloseCode wsCloseCode)
     {
+        BytewarsLogger.Log($"DS disconnected from DSHub. Disconnect code: {wsCloseCode}");
+
         switch (wsCloseCode)
         {
             case WsCloseCode.Normal:
-                BytewarsLogger.Log("DS disconnected from DSHub, trying to reconnect..");
+                // DS disconnected from DSHub intentionally. Signal that the DS connection is closed.
+                OnAMSConnectionClosed?.Invoke();
                 break;
             case WsCloseCode.Undefined or WsCloseCode.Abnormal or WsCloseCode.NoStatus:
-                // Reconnect to DS
-                if (!String.IsNullOrEmpty(DedicatedServerId) && dsHub != null)
+                if (!string.IsNullOrEmpty(DedicatedServerId) && dsHub != null)
                 {
+                    BytewarsLogger.Log("DS disconnected from DSHub unexpectedly. Trying to reconnect.");
                     ConnectToDSHub(DedicatedServerId);
+                }
+                else
+                {
+                    BytewarsLogger.LogWarning("DS disconnected from DSHub unexpectedly and unable to reconnect because of the dsid is empty.");
                 }
                 break;
         }
@@ -117,57 +179,18 @@ public class MultiplayerDSAMSWrapper : GameSessionUtilityWrapper
 
     #endregion
 
-    #region AB Service Functions
-
-    public void LoginWithClientCredentials(ResultCallback resultCallback = null)
+    private void OnServerClaimed(Result<ServerClaimedNotification> result)
     {
-        ds?.LoginWithClientCredentials(
-            result => OnLoginWithClientCredentialsCompleted(result, resultCallback)
-        );
-    }
-
-    public void SendReadyMessageToAMS()
-    {
-        ams?.SendReadyMessage();
-    }
-
-    public void ConnectToDSHub(string serverId)
-    {
-        dsHub?.Connect(serverId);
-    }
-
-    public void Disconnect()
-    {
-        ams.Disconnect();
-    }
-
-    private void OnAMSDisconnecting(Result<DisconnectNotif> result)
-    {
-        if (!result.IsError)
+        if (result.IsError)
         {
-            BytewarsLogger.Log("DS disconnected from DSHub, trying to reconnect..");
-        }
-    }
-
-    #endregion
-
-    #region Callback Functions
-
-    private void OnLoginWithClientCredentialsCompleted(Result result, ResultCallback customCallback = null)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log("Server login success.");
+            BytewarsLogger.LogWarning($"Failed to claim DS. Error: {result.Error.Message}");
         }
         else
         {
-            BytewarsLogger.Log($"Server login failed. Error code: {result.Error.Code}, message: {result.Error.Message}");
+            BytewarsLogger.Log($"Success to claim DS: {result.Value}");
+            GameData.ServerSessionID = result.Value.sessionId;
         }
-
-        customCallback?.Invoke(result);
     }
-
-    #endregion
 
 #endif
 }

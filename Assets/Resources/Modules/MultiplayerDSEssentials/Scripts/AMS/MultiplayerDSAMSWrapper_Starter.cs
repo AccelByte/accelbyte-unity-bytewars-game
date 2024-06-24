@@ -11,8 +11,9 @@ using UnityEngine;
 public class MultiplayerDSAMSWrapper_Starter: MonoBehaviour
 {
     public event Action OnAMSConnectionOpened = delegate {};
-    public event Action OnAMSDrainReceived = delegate {};
-    
+    public event Action OnAMSConnectionClosed = delegate {};
+    public event Action OnAMSDrainSignalReceived = delegate {};
+
 #if UNITY_SERVER
 
     // Put your code here

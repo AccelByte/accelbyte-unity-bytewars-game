@@ -27,7 +27,7 @@ public class MultiplayerDSAMSHelper : MonoBehaviour
         matchmakingDSWrapperServer.BackFillProposal();
         matchmakingDSWrapperServer.OnServerSessionUpdate();
 
-        GameManager.Instance.OnDeregisterServer += ShutdownDS;
+        GameManager.Instance.OnDeregisterServer += DeregisterDSFromAMS;
 
         LoginServer();
     }
@@ -37,44 +37,33 @@ public class MultiplayerDSAMSHelper : MonoBehaviour
         amsWrapper.LoginWithClientCredentials(OnLoginServerCompleted);
     }
 
-    private void HandleAMS()
-    {
-        amsWrapper.OnAMSConnectionOpened += RegisterDSToAMS;
-        amsWrapper.OnAMSDrainReceived += ShutdownDS;
-        amsWrapper.SubscribeAMSEvents();
-    }
-
-    private void RegisterDSToAMS()
-    {
-        BytewarsLogger.Log("[AMS] Sending ready to AMS");
-        amsWrapper.SendReadyMessageToAMS();
-        HandleDSHubConnection();
-    }
-
-    public void HandleDSHubConnection()
-    {
-        string dsId = amsWrapper.DedicatedServerId;
-        BytewarsLogger.Log($"will connect to dsid {dsId}");
-        amsWrapper.ConnectToDSHub(dsId);
-        amsWrapper.SubscribeDSHubEvents();
-    }
-
-    #region Callback Functions
-
     private void OnLoginServerCompleted(Result result)
     {
         if (!result.IsError)
         {
-            HandleAMS();
+            amsWrapper.OnAMSConnectionOpened += RegisterDSToAMS;
+            amsWrapper.OnAMSDrainSignalReceived += DeregisterDSFromAMS;
+            amsWrapper.OnAMSConnectionClosed += ShutdownDS;
+            amsWrapper.SubscribeAMSEvents();
         }
     }
 
-    #endregion
+    private void RegisterDSToAMS()
+    {
+        amsWrapper.SendReadyMessageToAMS();
+
+        string dsId = amsWrapper.DedicatedServerId;
+        amsWrapper.ConnectToDSHub(dsId);
+        amsWrapper.SubscribeDSHubEvents();
+    }
+
+    private void DeregisterDSFromAMS() 
+    {
+        amsWrapper.DisconnectFromAMS();
+    }
 
     private void ShutdownDS()
     {
-        amsWrapper.Disconnect();
-
         BytewarsLogger.Log($"Shutting down DS..");
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.ExitPlaymode();
