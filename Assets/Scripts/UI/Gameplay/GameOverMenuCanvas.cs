@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -77,9 +81,13 @@ public class GameOverMenuCanvas : MenuCanvas
 
     public void Countdown(int countdownSecond)
     {
-        if(!countdownContainer.gameObject.activeSelf)
+        if(!countdownContainer.gameObject.activeSelf) 
+        {
             countdownContainer.gameObject.SetActive(true);
-        countdownTxt.text = "Game Over, Server will be shutdown in: " + countdownSecond;
+        }
+            
+        countdownTxt.text = $"Quitting in: {countdownSecond}";
+
         if (countdownSecond <= 0)
         {
             countdownContainer.gameObject.SetActive(false);
