@@ -120,9 +120,12 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
         }
         else
         {
-            var publicUserData = result.Value;
+            PublicUserData publicUserData = result.Value;
+            string truncatedUserId = publicUserData.userId[..5];
             GameData.CachedPlayerState.avatarUrl = publicUserData.avatarUrl;
-            GameData.CachedPlayerState.playerName = publicUserData.displayName;
+            GameData.CachedPlayerState.playerName = string.IsNullOrEmpty(publicUserData.displayName) ?
+                $"Player-{truncatedUserId}" : publicUserData.displayName;
+
             loginHandler.OnLoginCompleted(Result<TokenData,OAuthError>.CreateOk(tokenData));
         }
     }
