@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using System;
+using System.Collections.Generic;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -16,22 +17,27 @@ public class SessionEssentialsWrapper_Starter : MonoBehaviour
     /// <summary>
     /// This event will be raised after JoinSession is complete
     /// </summary>
-    public event Action<Result<SessionV2GameSession>> OnJoinSessionCompleteEvent;
+    //TODO: Copy OnJoinSessionCompleteEvent event here
 
     /// <summary>
     /// This event will be raised after CreateSession is complete
     /// </summary>
-    public event Action<Result<SessionV2GameSession>> OnCreateSessionCompleteEvent;
+    //TODO: Copy OnCreateSessionCompleteEvent event here
 
     /// <summary>
     /// This event will be raised after LeaveSession is complete
     /// </summary>
-    public event Action<Result<SessionV2GameSession>> OnLeaveSessionCompleteEvent;
+    //TODO: Copy OnLeaveSessionCompleteEvent event here
 
     /// <summary>
     /// This event will be raised after GetGameSessionDetailsById is complete
     /// </summary>
     public event Action<Result<SessionV2GameSession>> OnGetSessionDetailsCompleteEvent;
+
+    /// <summary>
+    /// This event will be raised after QueryGameSession is complete
+    /// </summary>
+    public event Action<Result<PaginatedResponse<SessionV2GameSession>>> OnQueryGameSessionCompleteEvent;
 
     protected void Awake()
     {
@@ -54,7 +60,7 @@ public class SessionEssentialsWrapper_Starter : MonoBehaviour
     /// <param name="sessionId"></param>
     protected internal void JoinSession(string sessionId)
     {
-        session.JoinGameSession(sessionId, OnJoinSessionCompleted);
+        //TODO: Copy your code here
     }
 
     /// <summary>
@@ -67,14 +73,21 @@ public class SessionEssentialsWrapper_Starter : MonoBehaviour
     }
 
     /// <summary>
-    /// This method will invoke OnGetSessionDetailsCompleteEvent and return SessionRequestPayload.
-    /// You can filter it by add _tutorialType static flag from class who called this method. 
+    /// This method will invoke OnGetSessionDetailsCompleteEvent return Result<SessionV2GameSession>.
     /// </summary>
     /// <param name="sessionId"></param>
-    /// <param name="sourceFilePath">this will capture class name who called this method, leave it empty</param>
     protected void GetGameSessionDetailsById(string sessionId)
     {
         session.GetGameSessionDetailsBySessionId(sessionId, OnGetGameSessionDetailsByIdComplete);
+    }
+
+    /// <summary>
+    /// This method will invoke OnQueryGameSessionCompleteEvent return Result<PaginatedResponse<SessionV2GameSession>>.
+    /// </summary>
+    /// <param name="sessionId"></param>
+    protected void QueryGameSession(Dictionary<string, object> request)
+    {
+        session.QueryGameSession(request, OnQueryGameSessionCompleted);
     }
 
     #region Session Callback
@@ -82,64 +95,24 @@ public class SessionEssentialsWrapper_Starter : MonoBehaviour
     /// CreateSession Callback
     /// </summary>
     /// <param name="result"></param>
-    /// <param name="tutorialType"></param>
-    private void OnCreateSessionCompleted(Result<SessionV2GameSession> result)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"Successfully created game session");
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
-        }
-
-        OnCreateSessionCompleteEvent?.Invoke(result);
-    }
+    //TODO: Copy OnCreateSessionCompleted callback here
 
     /// <summary>
     /// JoinSession Callback
     /// </summary>
     /// <param name="result"></param>
-    /// <param name="tutorialType"></param>
-    private void OnJoinSessionCompleted(Result<SessionV2GameSession> result)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"Successfully joined the game session");
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
-        }
-
-        OnJoinSessionCompleteEvent?.Invoke(result);
-    }
+    //TODO: Copy OnJoinSessionCompleted callback here
 
     /// <summary>
     /// LeaveSession callback
     /// </summary>
     /// <param name="result"></param>
-    /// <param name="tutorialType"></param>
-    private void OnLeaveSessionCompleted(Result<SessionV2GameSession> result)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"Successfully left the game session");
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
-        }
-
-        OnLeaveSessionCompleteEvent?.Invoke(result);
-    }
+    //TODO: Copy OnLeaveSessionCompleted callback here
 
     /// <summary>
     /// GetGameSessionDetailsById callback
     /// </summary>
     /// <param name="result"></param>
-    /// <param name="tutorialType"></param>
     private void OnGetGameSessionDetailsByIdComplete(Result<SessionV2GameSession> result)
     {
         if (!result.IsError)
@@ -148,10 +121,28 @@ public class SessionEssentialsWrapper_Starter : MonoBehaviour
         }
         else
         {
-            BytewarsLogger.LogWarning($"{result.Error}");
+            BytewarsLogger.LogWarning($"Error : {result.Error.Message}");
         }
 
         OnGetSessionDetailsCompleteEvent?.Invoke(result);
+    }
+
+    /// <summary>
+    /// QueryGameSession callback
+    /// </summary>
+    /// <param name="result"></param>
+    private void OnQueryGameSessionCompleted(Result<PaginatedResponse<SessionV2GameSession>> result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log($"Successfully obtained the game session details");
+        }
+        else
+        {
+            BytewarsLogger.LogWarning($"Error: {result.Error.Message}");
+        }
+
+        OnQueryGameSessionCompleteEvent?.Invoke(result);
     }
 
     #endregion

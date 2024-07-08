@@ -30,7 +30,8 @@ public class SessionMenuHandler_Starter : MenuCanvas
     private List<RectTransform> panels = new List<RectTransform>();
     
     private string cachedSessionId;
-        
+    //TODO: Copy your SessionEssentialsWrapper_Starter code here
+
     public enum SessionMenuView
     {
         Default,
@@ -92,12 +93,15 @@ public class SessionMenuHandler_Starter : MenuCanvas
             joinedPanel,
             failedPanel
         };
-        
+
+        //TODO: Copy your code here
+
     }
 
     // Start is called before the first frame update
     void Start()
     {
+        //TODO: Copy your code here
         
         createEliminationButton.onClick.AddListener(OnEliminationButtonClicked);
         leaveButton.onClick.AddListener(OnLeaveSessionButtonClicked);
@@ -116,41 +120,35 @@ public class SessionMenuHandler_Starter : MenuCanvas
         MenuManager.Instance.OnBackPressed();
     }
 
-    private void OnLeaveSessionCompleted(Result<SessionV2GameSession> result)
-    {
-        if (!result.IsError)
-        {
-            MenuManager.Instance.OnBackPressed();
-        } 
-        else
-        {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
-            MenuManager.Instance.OnBackPressed();
-        }
-    }
-
     private void OnCancelButtonClicked()
     {
         StopAllCoroutines();
         MenuManager.Instance.OnBackPressed();
     }
 
+    private void OnEliminationButtonClicked()
+    {
+        //TODO: Copy your code here
+        
+        CurrentView = SessionMenuView.Creating;
+        Button button = creatingPanel.gameObject.GetComponentInChildren<Button>();
+        button.gameObject.SetActive(true);
+    }
+
     private void OnLeaveSessionButtonClicked()
     {
         //TODO: Copy your code here
+        MenuManager.Instance.OnBackPressed();
     }
-    
+
     private void OnCreateSessionCompleted(Result<SessionV2GameSession> result)
     {
-        if (!result.IsError)
-        {
-            CurrentView = SessionMenuView.Joining;
-            StartCoroutine(DelayCallback(sessionView => Helper(result, sessionView)));
-        }
-        else
-        {
-            CurrentView = SessionMenuView.Failed;
-        }
+        //TODO: Copy your code here
+    }
+
+    private void OnLeaveSessionCompleted(Result<SessionV2GameSession> result)
+    {
+        //TODO: Copy your code here
     }
 
     private void Helper(Result<SessionV2GameSession> result, SessionMenuView sessionMenuView)
@@ -176,27 +174,6 @@ public class SessionMenuHandler_Starter : MenuCanvas
         }
     }
     
-    private void OnEliminationButtonClicked()
-    {
-        Dictionary<InGameMode, 
-        Dictionary<GameSessionServerType, 
-        SessionV2GameSessionCreateRequest>> sessionConfig = GameSessionConfig.SessionCreateRequest;
-        
-        if (!sessionConfig.TryGetValue(InGameMode.None, out var matchTypeDict))
-        {
-            return;
-        }
-
-        if (!matchTypeDict.TryGetValue(GameSessionServerType.None, out var request))
-        {
-            return;
-        }
-
-        CurrentView = SessionMenuView.Creating;
-        var button = creatingPanel.gameObject.GetComponentInChildren<Button>();
-        button.gameObject.SetActive(true);
-    }
-    
     private IEnumerator DelayCallback(Action<SessionMenuView> action)
     {
         yield return new WaitForSeconds(1);
@@ -208,12 +185,12 @@ public class SessionMenuHandler_Starter : MenuCanvas
     private void OnEnable()
     {
         CurrentView = SessionMenuView.Default;
+        //TODO: Copy your code here
     }
 
     private void OnDisable()
     {
-
-        UnSubcribeSessionEvents();
+        //TODO: Copy your code here
     }
 
     public override GameObject GetFirstButton()

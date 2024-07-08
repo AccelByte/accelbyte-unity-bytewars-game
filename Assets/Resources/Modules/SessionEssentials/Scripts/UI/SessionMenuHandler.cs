@@ -187,21 +187,23 @@ public class SessionMenuHandler : MenuCanvas
     private void OnEliminationButtonClicked()
     {
         Dictionary<InGameMode, 
-        Dictionary<GameSessionServerType, 
-        SessionV2GameSessionCreateRequest>> sessionConfig = GameSessionConfig.SessionCreateRequest;
+            Dictionary<GameSessionServerType, 
+                SessionV2GameSessionCreateRequest>> sessionConfig = GameSessionConfig.SessionCreateRequest;
         
         if (!sessionConfig.TryGetValue(InGameMode.None, out var matchTypeDict))
         {
+            BytewarsLogger.LogWarning("InGame Mode Not found");
             return;
         }
 
         if (!matchTypeDict.TryGetValue(GameSessionServerType.None, out var request))
         {
+            BytewarsLogger.LogWarning("GameSessionServerType Not found");
             return;
         }
 
         CurrentView = SessionMenuView.Creating;
-        var button = creatingPanel.gameObject.GetComponentInChildren<Button>();
+        Button button = creatingPanel.gameObject.GetComponentInChildren<Button>();
         button.gameObject.SetActive(true);
         sessionEssentialsWrapper.CreateSession(request);
     }

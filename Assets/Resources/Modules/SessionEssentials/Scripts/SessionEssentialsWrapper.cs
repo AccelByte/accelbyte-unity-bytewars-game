@@ -74,20 +74,19 @@ public class SessionEssentialsWrapper : MonoBehaviour
     }
 
     /// <summary>
-    /// This method will invoke OnGetSessionDetailsCompleteEvent and return SessionRequestPayload.
+    /// This method will invoke OnGetSessionDetailsCompleteEvent return Result<SessionV2GameSession>.
     /// </summary>
     /// <param name="sessionId"></param>
-    /// <param name="sourceFilePath">this will capture class name who called this method, leave it empty</param>
     protected void GetGameSessionDetailsById(string sessionId)
     {
         session.GetGameSessionDetailsBySessionId(sessionId, OnGetGameSessionDetailsByIdComplete);
     }
 
     /// <summary>
-    /// This method will invoke OnGetSessionDetailsCompleteEvent and return SessionRequestPayload.
+    /// This method will invoke OnQueryGameSessionCompleteEvent return Result<PaginatedResponse<SessionV2GameSession>>.
     /// </summary>
     /// <param name="sessionId"></param>
-    protected void QueryGameSession(Dictionary<string, object> request = null)
+    protected void QueryGameSession(Dictionary<string, object> request)
     {
         session.QueryGameSession(request, OnQueryGameSessionCompleted);
     }
@@ -105,7 +104,7 @@ public class SessionEssentialsWrapper : MonoBehaviour
         }
         else
         {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
+            BytewarsLogger.LogWarning($"Error : {result.Error.Message}");
         }
 
         OnCreateSessionCompleteEvent?.Invoke(result);
@@ -123,7 +122,7 @@ public class SessionEssentialsWrapper : MonoBehaviour
         }
         else
         {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
+            BytewarsLogger.LogWarning($"Error : {result.Error.Message}");
         }
 
         OnJoinSessionCompleteEvent?.Invoke(result);
@@ -141,7 +140,7 @@ public class SessionEssentialsWrapper : MonoBehaviour
         }
         else
         {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
+            BytewarsLogger.LogWarning($"Error : {result.Error.Message}");
         }
 
         OnLeaveSessionCompleteEvent?.Invoke(result);
@@ -159,7 +158,7 @@ public class SessionEssentialsWrapper : MonoBehaviour
         }
         else
         {
-            BytewarsLogger.LogWarning($"{result.Error}");
+            BytewarsLogger.LogWarning($"Error : {result.Error.Message}");
         }
 
         OnGetSessionDetailsCompleteEvent?.Invoke(result);
@@ -177,7 +176,7 @@ public class SessionEssentialsWrapper : MonoBehaviour
         }
         else
         {
-            BytewarsLogger.LogWarning($"{result.Error}");
+            BytewarsLogger.LogWarning($"Error : {result.Error.Message}");
         }
 
         OnQueryGameSessionCompleteEvent?.Invoke(result);
