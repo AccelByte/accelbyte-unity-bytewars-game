@@ -51,8 +51,6 @@ public class GameManager : NetworkBehaviour
     public ulong ClientNetworkId => _clientHelper.ClientNetworkId;
     
     private const string NotEnoughPlayer = "Not enough players, shutting down DS in: ";
-    private const int MinPlayerForOnlineGame = 2;
-    private const int MinTeamForOnlineGame = 2;
     
     private readonly Dictionary<ulong, GameClientController> connectedClients = new();
     private readonly Dictionary<string, GameEntityAbs> _gamePrefabDict = new();
@@ -360,8 +358,8 @@ public class GameManager : NetworkBehaviour
                 // Player might reconnect in the middle of game, missile will not reset
                 RemoveConnectedClient(clientNetworkId, isInGameScene, false);
 
-                // Start in game countdown to shutdown server if no connected clients.
-                if (connectedClients.Count < MinPlayerForOnlineGame)
+                // Start the in-game countdown to shut down the server if the required active team is not met.
+                if (_serverHelper.GetActiveTeamsCount() < GameData.GameModeSo.minimumTeamCountToPlay)
                 {
                     SetInGameState(InGameState.ShuttingDown);
                 }
@@ -1040,8 +1038,9 @@ public class GameManager : NetworkBehaviour
     private void OnPreGameTimerUpdated(int timerSecond)
     {
         _hud.UpdatePreGameCountdown(timerSecond);
-        bool areEnoughPlayersConnected =
-            !IsLocalGame() && NetworkManager.Singleton.ConnectedClients.Count >= MinPlayerForOnlineGame;
+        bool areEnoughPlayersConnected = 
+            !IsLocalGame() && 
+            _serverHelper.GetActiveTeamsCount() >= GameData.GameModeSo.minimumTeamCountToPlay;
         
         if (timerSecond == 0)
         {

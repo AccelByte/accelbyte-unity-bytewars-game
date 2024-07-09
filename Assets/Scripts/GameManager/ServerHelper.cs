@@ -59,11 +59,6 @@ public class ServerHelper
         if (!_connectedPlayerState.ContainsKey(clientNetworkId))
         {
             _connectedPlayerState.Add(clientNetworkId, playerState);
-            BytewarsLogger.Log($"Nani Kore: {_connectedPlayerState.Count}");
-        }
-        else
-        {
-            BytewarsLogger.Log($"Nani Kore Wow: {_connectedPlayerState.Count}");
         }
 
         // Add new team state if not yet.
@@ -74,12 +69,6 @@ public class ServerHelper
                 teamColour = gameMode.teamColours[teamIndex],
                 teamIndex = teamIndex
             });
-
-            BytewarsLogger.Log($"Nani Kore: {_connectedTeamState.Count}");
-        }
-        else
-        {
-            BytewarsLogger.Log($"Nani Kore Wow: {_connectedTeamState.Count}");
         }
 
         return playerState;
@@ -90,16 +79,7 @@ public class ServerHelper
         BytewarsLogger.Log($"GetTeamAssignment called: target team count {gameMode.teamCount}, target player per team: ${gameMode.playerPerTeamCount}");
 
         int teamIndex = NoTeamIndex;
-
-        Dictionary<int, int> teamMemberCount = new Dictionary<int, int>();
-        foreach (KeyValuePair<int, TeamState> teamState in _connectedTeamState) 
-        {
-            teamMemberCount.Add(teamState.Value.teamIndex, 0);
-        }
-        foreach (KeyValuePair<ulong, PlayerState> playerState in _connectedPlayerState)
-        {
-            teamMemberCount[playerState.Value.teamIndex]++;
-        }
+        Dictionary<int, int> teamMemberCount = GetTeamsMemberCount();
 
         // Elimination game mode.
         if (gameMode.playerPerTeamCount == 1)
@@ -178,6 +158,17 @@ public class ServerHelper
     private void RemovePlayerStateDirectly(ulong clientNetworkId, int teamIndex, bool removeTeamIfEmpty)
     {
         _connectedPlayerState.Remove(clientNetworkId);
+
+        // Auto remove team if empty.
+        if (removeTeamIfEmpty)
+        {
+            Dictionary<int, int> teamsMemberCount = GetTeamsMemberCount();
+            int activeMember = teamsMemberCount.Keys.Contains(teamIndex) ? teamsMemberCount[teamIndex] : 0;
+            if (activeMember <= 0)
+            {
+                _connectedTeamState.Remove(teamIndex);
+            }
+        }
     }
 
     public void UpdatePlayerStates(TeamState[] teamStates, PlayerState[] playerStates)
@@ -240,7 +231,6 @@ public class ServerHelper
         }
     }
     
-
     public TeamState[] GetTeamStates()
     {
         return _connectedTeamState.Values.ToArray();
@@ -251,6 +241,7 @@ public class ServerHelper
         _connectedPlayerState = states.m_playerStates;
         _connectedTeamState = states.m_teamStates;
     }
+
     public bool IsGameOver()
     {
         Dictionary<int, int> teamInGameIndexLive = new Dictionary<int, int>();
@@ -319,6 +310,38 @@ public class ServerHelper
             }
         }
         return result;
+    }
+
+    /// <summary>
+    /// Get the number of team that still has active member.
+    /// </summary>
+    /// <returns>Return number of team that still has active member.</returns>
+    public int GetActiveTeamsCount()
+    {
+        return GetTeamsMemberCount().Where(team => team.Value > 0).Count();
+    }
+
+    /// <summary>
+    /// Get the number of team member for each teams.
+    /// </summary>
+    /// <returns>Return a dictionary with team index as the key and number of team member as the value.</returns>
+    public Dictionary<int, int> GetTeamsMemberCount()
+    {
+        Dictionary<int, int> teamMemberCount = new Dictionary<int, int>();
+        foreach (KeyValuePair<int, TeamState> teamState in _connectedTeamState)
+        {
+            teamMemberCount.Add(teamState.Value.teamIndex, 0);
+        }
+        foreach (KeyValuePair<ulong, PlayerState> playerState in _connectedPlayerState)
+        {
+            int teamIndex = playerState.Value.teamIndex;
+            if (teamMemberCount.Keys.Contains(teamIndex))
+            {
+                teamMemberCount[teamIndex]++;
+            }
+        }
+
+        return teamMemberCount;
     }
 
     private Dictionary<string, Player> disconnectedPlayers = new Dictionary<string, Player>();
