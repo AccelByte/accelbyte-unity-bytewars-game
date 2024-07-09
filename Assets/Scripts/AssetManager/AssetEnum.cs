@@ -62,7 +62,6 @@ public enum AssetEnum
 	MainMenuUiConfig,
 	ManagingFriendsAssetConfig,
 	MatchLobbyMenuCanvas,
-	MatchLobbyTeamMenuCanvas,
 	MatchmakingSessionAssetConfig,
 	MatchmakingSessionDS,
 	MatchmakingSessionDS_Starter,
@@ -120,6 +119,5 @@ public enum AssetEnum
 	StatsEssentialsAssetConfig,
 	StatsProfileMenuCanvas,
 	StatsProfileMenuCanvas_Starter,
-	TeamPanel,
 	TutorialModuleConfig,
 }

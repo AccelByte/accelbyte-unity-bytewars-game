@@ -36,7 +36,6 @@ public class MenuManager : MonoBehaviour
     {
         { AssetEnum.MainMenuCanvas, 0 },
         { AssetEnum.MatchLobbyMenuCanvas, 0 },
-        { AssetEnum.MatchLobbyTeamMenuCanvas, 0 },
         // tutorialmodules specifics
         { AssetEnum.LoginMenuCanvas, 0 },
         { AssetEnum.LoginMenuCanvas_Starter, 0 },
