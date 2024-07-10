@@ -109,7 +109,7 @@ public class PartyHelper : MonoBehaviour
                 members.Remove(member);
 
                 // skip update party data if the current logged-in player's status is part of ignored status
-                if (member.id == _authWrapper.userData.user_id) return;
+                if (member.id == _authWrapper.UserData.user_id) return;
             }
         }
         UpdatePartyMembersData(members.ToArray(), leaderId);

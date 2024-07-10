@@ -70,7 +70,7 @@ public class PlayWithPartyHelper : MonoBehaviour
         Button joinButton = joinButtonGameObject.GetComponent<Button>();
         joinButton.enabled = true; // enable button by default
         if (!String.IsNullOrWhiteSpace(PartyHelper.CurrentPartyId)
-            && authWrapper.userData.user_id != PartyHelper.CurrentLeaderUserId)
+            && authWrapper.UserData.user_id != PartyHelper.CurrentLeaderUserId)
         {
             joinButton.enabled = false; // disable if player is a party member
         }
@@ -78,7 +78,7 @@ public class PlayWithPartyHelper : MonoBehaviour
 
     private void OnJoinButtonClicked(string sessionId)
     {
-        if (authWrapper.userData.user_id == PartyHelper.CurrentLeaderUserId)
+        if (authWrapper.UserData.user_id == PartyHelper.CurrentLeaderUserId)
         {
             foreach (PartyMemberData member in PartyHelper.PartyMembersData)
             {

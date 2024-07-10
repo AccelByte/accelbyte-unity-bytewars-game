@@ -9,6 +9,11 @@ using AccelByte.Models;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEditor;
+using UnityEngine.EventSystems;
+using UnityEngine.Events;
+
+
 
 #if UNITY_EDITOR
 using ParrelSync;
@@ -16,6 +21,18 @@ using ParrelSync;
 
 public class LoginHandler_Starter : MenuCanvas
 {
+    public delegate void LoginHandlerDelegate(TokenData tokenData);
+    public static event LoginHandlerDelegate onLoginCompleted = delegate {};
+
+    public UnityAction OnRetryLoginClicked
+    {
+        set
+        {
+            retryLoginButton.onClick.RemoveAllListeners();
+            retryLoginButton.onClick.AddListener(value);
+        }
+    }
+
     //Declare each view panels
     [SerializeField] private GameObject loginStatePanel;
     [SerializeField] private GameObject loginLoadingPanel;
@@ -25,12 +42,13 @@ public class LoginHandler_Starter : MenuCanvas
     [SerializeField] private Button loginWithDeviceIdButton;
     [SerializeField] private Button retryLoginButton;
     [SerializeField] private Button quitGameButton;
+    [SerializeField] private Button loginWithSteamButton;
     [SerializeField] private TMP_Text failedMessageText;
-    
-    //Paste AuthEssentialsSubsystem_Starter from "Put it All together" unit here (step number 3)
-    //Paste LoginType from "Put it All together" unit unit here (step number 4)
-    
-    
+
+
+    //TODO: Copy AuthEssentialsSubsystem_Starter here
+    //TODO: Copy LoginType here
+
     #region LoginView enum
     public enum LoginView
     {
@@ -52,26 +70,39 @@ public class LoginHandler_Starter : MenuCanvas
 
     #endregion
 
+    //TODO: Copy OnEnable() here
 
-    //Paste Start() function from "Add a Login Menu" here (step number 4)
-    //then change it using code from "Put it All together" unit (step number 3)
+    //TODO: Copy OnLoginWithDeviceIdButtonClicked()
 
-
-
-    //initially Paste Login() function login from "Add a Login Menu" here (step number 3)
-    //then change it using code from "Put it All together" unit (step number 5)
+    //TODO: Copy Start() here
+    //TODO: then update it using code from "Put it All together"
 
 
-    //Paste all callback function from "Add a Login Menu" here (step number 5)
-    //Then update OnLoginWithDeviceIdButtonClicked and OnRetryLoginButtonClicked from "Put it All together" unit (step number 6)
+    //TODO: Copy Login() function here
+    //TODO: then change it using code from "Put it All together"
+
+
+    //TODO: Copy all callback function from "Add a Login Menu" here
+    //TODO: Then update OnLoginWithDeviceIdButtonClicked and OnRetryLoginButtonClicked from "Put it All together"
+
     private void OnQuitGameButtonClicked()
     {
+#if UNITY_EDITOR
+        EditorApplication.ExitPlaymode();
+#else
         Application.Quit();
+#endif
     }
 
     
-    
-    //Paste OnLoginCompleted using snippet from "Put it All together" unit here (step number 2)
+    //TODO: Copy OnLoginCompleted() from "Put it All together"
+
+
+    IEnumerator SetSelectedGameObject(GameObject gameObjectToSelect)
+    {
+        yield return new WaitForEndOfFrame();
+        EventSystem.current.SetSelectedGameObject(gameObjectToSelect);
+    }
 
 
     public override GameObject GetFirstButton()
@@ -83,6 +114,22 @@ public class LoginHandler_Starter : MenuCanvas
     {
         return AssetEnum.LoginMenuCanvas_Starter;
     }
-    
+
+    public Button GetLoginButton(LoginType loginType)
+    {
+        switch (loginType)
+        {
+            case LoginType.Steam:
+                return loginWithSteamButton;
+            case LoginType.DeviceId:
+                return loginWithDeviceIdButton;
+        }
+        return null;
+    }
+
+    public void SetView(LoginView loginView)
+    {
+        CurrentView = loginView;
+    }
 
 }

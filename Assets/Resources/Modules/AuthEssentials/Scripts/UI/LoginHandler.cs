@@ -20,18 +20,8 @@ using ParrelSync;
 
 public class LoginHandler : MenuCanvas
 {
-    [SerializeField] private GameObject loginStatePanel;
-    [SerializeField] private GameObject loginLoadingPanel;
-    [SerializeField] private GameObject loginFailedPanel;
-    [SerializeField] private Button loginWithDeviceIdButton;
-    [SerializeField] private Button retryLoginButton;
-    [SerializeField] private Button quitGameButton;
-    [SerializeField] private TMP_Text failedMessageText;
-    [SerializeField] private Button loginWithSteamButton;
-
     public delegate void LoginHandlerDelegate(TokenData tokenData);
     public static event LoginHandlerDelegate onLoginCompleted = delegate {};
-
     public UnityAction OnRetryLoginClicked
     {
         set
@@ -40,9 +30,16 @@ public class LoginHandler : MenuCanvas
             retryLoginButton.onClick.AddListener(value);
         }
     }
-
-    private AuthEssentialsWrapper _authWrapper;
-    private LoginType _lastLoginMethod;
+    [SerializeField] private GameObject loginStatePanel;
+    [SerializeField] private GameObject loginLoadingPanel;
+    [SerializeField] private GameObject loginFailedPanel;
+    [SerializeField] private Button loginWithDeviceIdButton;
+    [SerializeField] private Button retryLoginButton;
+    [SerializeField] private Button quitGameButton;
+    [SerializeField] private TMP_Text failedMessageText;
+    [SerializeField] private Button loginWithSteamButton;
+    private AuthEssentialsWrapper authWrapper;
+    private LoginType lastLoginMethod;
         
     #region LoginView enum
     public enum LoginView
@@ -85,7 +82,7 @@ public class LoginHandler : MenuCanvas
     private void Start()
     {
         // get auth's subsystem
-        _authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
+        authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
         loginWithDeviceIdButton.onClick.AddListener(OnLoginWithDeviceIdButtonClicked);
         retryLoginButton.onClick.AddListener(OnRetryLoginButtonClicked);
         quitGameButton.onClick.AddListener(OnQuitGameButtonClicked);
@@ -99,9 +96,9 @@ public class LoginHandler : MenuCanvas
     private void Login(LoginType loginMethod)
     {
         CurrentView = LoginView.LoginLoading;
-        _lastLoginMethod = loginMethod;
+        lastLoginMethod = loginMethod;
         OnRetryLoginClicked = OnRetryLoginButtonClicked;
-        _authWrapper.Login(loginMethod, OnLoginCompleted);
+        authWrapper.Login(loginMethod, OnLoginCompleted);
     }
 
     public void OnLoginCompleted(Result<TokenData, OAuthError> result)
@@ -110,11 +107,11 @@ public class LoginHandler : MenuCanvas
         {
             onLoginCompleted.Invoke(result.Value);
             MenuManager.Instance.ChangeToMenu(AssetEnum.MainMenuCanvas);
-            Debug.Log($"[LoginHandler.OnLoginCompleted] success: {result.Value.ToJsonString()}");
+            BytewarsLogger.Log($"[LoginHandler.OnLoginCompleted] success: {result.Value.ToJsonString()}");
         }
         else
         {
-            failedMessageText.text = "Login Failed: "  + result.Error.error;
+            failedMessageText.text = $"Login Failed: {result.Error.error}";
             CurrentView = LoginView.LoginFailed;
             StartCoroutine(SetSelectedGameObject(retryLoginButton.gameObject));
         }
@@ -155,7 +152,7 @@ public class LoginHandler : MenuCanvas
         // try login with the username and password specified with command-line arguments
         if (username != "" && password != "")
         {
-            _authWrapper.LoginWithUsername(username, password, OnLoginCompleted);
+            authWrapper.LoginWithUsername(username, password, OnLoginCompleted);
         }
         
     }
@@ -182,7 +179,7 @@ public class LoginHandler : MenuCanvas
 
     private void OnRetryLoginButtonClicked()
     {
-        Login(_lastLoginMethod);
+        Login(lastLoginMethod);
     }
     
     private void OnQuitGameButtonClicked()
@@ -204,6 +201,7 @@ public class LoginHandler : MenuCanvas
     {
         return AssetEnum.LoginMenuCanvas;
     }
+    
     public Button GetLoginButton(LoginType loginType)
     {
         switch (loginType)

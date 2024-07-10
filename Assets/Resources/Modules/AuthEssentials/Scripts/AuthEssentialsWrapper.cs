@@ -12,7 +12,12 @@ using UnityEngine;
 
 public class AuthEssentialsWrapper : MonoBehaviour
 {
-    // AccelByte's Multi Registry references
+
+    public static event Action<UserProfile> OnUserProfileReceived = delegate { };
+    public TokenData UserData;
+    public UserProfile UserProfile { get; private set; }
+
+    // AGS Game SDK references
     private ApiClient apiClient;
     private User user;
     private UserProfiles userProfiles;
@@ -21,11 +26,6 @@ public class AuthEssentialsWrapper : MonoBehaviour
     // required variables to login with other platform outside AccelByte
     private PlatformType platformType;
     private string platformToken;
-
-    public TokenData userData;
-    public UserProfile UserProfile { get; private set; }
-
-    public static event Action<UserProfile> OnUserProfileReceived = delegate { };
 
     private void Awake()
     {
@@ -199,7 +199,7 @@ public class AuthEssentialsWrapper : MonoBehaviour
             BytewarsLogger.Log("Login user successful.");
 
             GameData.CachedPlayerState.playerId = result.Value.user_id;
-            userData = result.Value;
+            UserData = result.Value;
 
             GetUserProfile();
             CheckLobbyConnection();

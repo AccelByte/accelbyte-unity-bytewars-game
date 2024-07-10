@@ -82,7 +82,7 @@ public class LeaderboardMenu : MenuCanvas
 
     private void InitializeLeaderboardRequiredValues()
     {
-        currentUserData = authWrapper.userData;
+        currentUserData = authWrapper.UserData;
         currentLeaderboardCode = LeaderboardSelectionMenu.chosenLeaderboardCode;
         currentCycleType = LeaderboardCycleMenu.chosenCycleType;
     }

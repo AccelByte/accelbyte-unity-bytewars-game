@@ -78,10 +78,10 @@ public class PartyHandler : MenuCanvas
 
     private void DisplayOnlyCurrentPlayer()
     {
-        string displayName = _authWrapper.userData.display_name;
+        string displayName = _authWrapper.UserData.display_name;
         if (String.IsNullOrEmpty(displayName))
         {
-            displayName = DefaultDisplayName + _authWrapper.userData.user_id.Substring(0, 5);
+            displayName = DefaultDisplayName + _authWrapper.UserData.user_id.Substring(0, 5);
         }
 
         partyMemberEntryPanels[0].SwitchView(PartyEntryView.MemberInfo);
@@ -105,7 +105,7 @@ public class PartyHandler : MenuCanvas
             }
 
             // Set MemberInfoPanel to be interactable only to other players' MemberInfoPanel
-            bool isOtherPanel = _authWrapper.userData.user_id != partyMemberData.UserId;
+            bool isOtherPanel = _authWrapper.UserData.user_id != partyMemberData.UserId;
             partyMemberEntryPanels[index].SetMemberInfoPanelInteractable(isOtherPanel);
         }
     }

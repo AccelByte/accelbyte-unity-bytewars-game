@@ -181,7 +181,7 @@ public class FriendDetailsMenuHandler : MenuCanvas
             return;
         }
         
-        bool selfPartyLeader = authEssentialsWrapper.userData.user_id == PartyHelper.CurrentLeaderUserId;
+        bool selfPartyLeader = authEssentialsWrapper.UserData.user_id == PartyHelper.CurrentLeaderUserId;
         bool partyLeader = UserId == PartyHelper.CurrentLeaderUserId;
         bool inParty = PartyHelper.PartyMembersData.Any(data => data.UserId == UserId);
 
