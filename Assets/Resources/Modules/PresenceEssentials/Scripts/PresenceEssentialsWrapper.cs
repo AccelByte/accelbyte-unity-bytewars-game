@@ -46,7 +46,7 @@ public class PresenceEssentialsWrapper : MonoBehaviour
         PartyEssentialsWrapper.OnLeaveParty += OnLeaveParty;
 
         SceneManager.sceneLoaded += OnSceneLoaded;
-        MenuManager.menuChanged += OnMenuChanged;
+        MenuManager.OnMenuChanged += OnMenuChanged;
     }
     
     private void Start()
@@ -78,7 +78,7 @@ public class PresenceEssentialsWrapper : MonoBehaviour
         PartyEssentialsWrapper.OnLeaveParty -= OnLeaveParty;
 
         SceneManager.sceneLoaded -= OnSceneLoaded;
-        MenuManager.menuChanged -= OnMenuChanged;
+        MenuManager.OnMenuChanged -= OnMenuChanged;
 
         friendsEssentialsWrapper.CachedFriendUserIds.ItemAdded -= OnFriendUserIdAdded;
 

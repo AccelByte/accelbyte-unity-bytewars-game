@@ -73,16 +73,24 @@ public class MainMenu : MenuCanvas
     
     private static void OnQuitButtonPressed()
     {
-        var authEssentialsModule = TutorialModuleManager.Instance.GetModule(TutorialType.AuthEssentials);
-        
-        if(authEssentialsModule.isActive)
-        {
-            OnQuitPressed?.Invoke(QuitGame);
-        }
-        else
-        {
-            QuitGame();
-        }
+        MenuManager.Instance.PromptMenu.ShowPromptMenu(
+            header: "Quit Game", 
+            message: "Are you sure you want to quit the game?", 
+            cancelText: "No", 
+            cancelAction: null,
+            confirmText: "Yes", 
+            confirmAction: () =>
+            {
+                bool authEssentialsActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.AuthEssentials);
+                if (authEssentialsActive)
+                {
+                    OnQuitPressed?.Invoke(QuitGame);
+                }
+                else
+                {
+                    QuitGame();
+                }
+            });
     }
 
     private static void QuitGame()

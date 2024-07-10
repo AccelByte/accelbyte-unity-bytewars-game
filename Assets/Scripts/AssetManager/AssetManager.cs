@@ -1,4 +1,7 @@
-using System;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,12 +10,17 @@ using Object = UnityEngine.Object;
 
 public class AssetManager : MonoBehaviour
 {
-    public const string ModuleFolder = "Modules";
-    public static AssetManager Singleton { get; private set; }
-    private readonly Dictionary<string, object> _assets = new Dictionary<string, object>();
-    private readonly Dictionary<string, Object> _textAssets = new Dictionary<string, Object>();
     private const string TutorialDataSuffix = "AssetConfig";
-    public GameManager GameManagerPrefab;
+    public const string ModuleFolder = "Modules";
+
+    [SerializeField] private GameManager gameManagerPrefab;
+
+    private readonly Dictionary<string, object> assets = new();
+    private readonly Dictionary<string, Object> textAssets = new();
+    private readonly Dictionary<TutorialType, TutorialModuleData> tutorialModules = new();
+
+    public static AssetManager Singleton { get; private set; }
+    public GameManager GameManagerPrefab => gameManagerPrefab;
     
     private void Awake()
     {
@@ -21,54 +29,48 @@ public class AssetManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
         if (Singleton == null)
         {
             Singleton = this;
             DontDestroyOnLoad(gameObject);
         }
+
         LoadAssets();
     }
 
     private void LoadAssets()
     {
-        var objects = Resources.LoadAll(ModuleFolder);
-        foreach (var obj in objects)
+        Object[] objects = Resources.LoadAll(ModuleFolder);
+
+        foreach (Object obj in objects)
         {
-            if (_assets.ContainsKey(obj.name))
+            if (assets.ContainsKey(obj.name))
             {
-                //Debug.Log("already contain: "+obj.name);
                 continue;
             }
-            _assets.Add(obj.name, obj);
+
+            assets.Add(obj.name, obj);
         }
-        //Debug.Log("assets length: "+_assets.Count);
-    }
-    
-    #region Getter Functions
-    
-    /// <summary>
-    /// how to access it?
-    /// <code>object obj = AssetManager.Singleton.GetAsset(AssetEnum.Grid);</code>
-    /// </summary>
-    /// <param name="eAssetEnum"></param>
-    /// <returns></returns>
-    public object GetAsset(AssetEnum eAssetEnum)
-    {
-        string assetName = eAssetEnum.ToString();
-        if (_assets.TryGetValue(assetName, out var result))
-        {
-            return result;
-        }
-        return null;
     }
 
-    public object GetAsset(String assetName)
+    #region Getter Functions
+
+    /// <summary>
+    /// Get asset by AssetEnum.
+    /// </summary>
+    /// <param name="assetEnum"></param>
+    /// <returns>Asset object</returns>
+    public object GetAsset(AssetEnum assetEnum)
     {
-        if (_assets.TryGetValue(assetName, out var result))
-        {
-            return result;
-        }
-        return null;
+        string assetName = assetEnum.ToString();
+        
+        return GetAsset(assetName);
+    }
+
+    private object GetAsset(string assetName)
+    {
+        return assets.TryGetValue(assetName, out object result) ? result : null;
     }
 
     /// <summary>
@@ -80,7 +82,7 @@ public class AssetManager : MonoBehaviour
     {
         List<Object> desiredObjects = new List<Object>();
 
-        foreach (Object assetObject in _assets.Values)
+        foreach (Object assetObject in assets.Values)
         {
             string[] assetPath = Directory.GetFiles(Application.dataPath, assetObject.name + "*", SearchOption.AllDirectories);
 
@@ -99,37 +101,36 @@ public class AssetManager : MonoBehaviour
     /// <returns>array of TextAssets objects</returns>
     public Object[] GetTextAssets()
     {
-        if (_textAssets.Count >= 0)
+        if (textAssets.Count >= 0)
         {
-            foreach (Object assetObject in _assets.Values)
+            foreach (Object assetObject in assets.Values)
             {
-                if (assetObject is TextAsset && !_textAssets.ContainsKey(assetObject.name))
+                if (assetObject is TextAsset && !textAssets.ContainsKey(assetObject.name))
                 {
-                    _textAssets.Add(assetObject.name, assetObject);
+                    textAssets.Add(assetObject.name, assetObject);
                 }
             }
         }
         
-        return _textAssets.Values.ToArray();
+        return textAssets.Values.ToArray();
     }
-    
 
-    private Dictionary<TutorialType, TutorialModuleData> tutorialModules =
-        new Dictionary<TutorialType, TutorialModuleData>();
     public Dictionary<TutorialType, TutorialModuleData> GetTutorialModules()
     {
-        var tutorialGameObjects = _assets
-            .Where(kvp => kvp.Key.EndsWith(TutorialDataSuffix)
-                          && kvp.Value is TutorialModuleData);
-        foreach (var keyValuePair in tutorialGameObjects)
+        IEnumerable<KeyValuePair<string, object>> tutorialGameObjects = assets
+            .Where(kvp => kvp.Key.EndsWith(TutorialDataSuffix) && kvp.Value is TutorialModuleData);
+
+        foreach (KeyValuePair<string, object> keyValuePair in tutorialGameObjects)
         {
-            var tmd = keyValuePair.Value as TutorialModuleData;
+            TutorialModuleData tmd = keyValuePair.Value as TutorialModuleData;
             if (tmd.isBaseModule)
             {
                 continue;
             }
+
             tutorialModules.TryAdd(tmd.type, tmd);
         }
+
         return tutorialModules;
     }
     

@@ -98,17 +98,19 @@ public class FindFriendsMenuHandler : MenuCanvas
 
         friendsEssentialsWrapper.GetUserByFriendCode(query, result =>
         {
-            OnUsersFriendCodeFound(result, fallbackAction: () =>
+            OnUsersFriendCodeFound(result, query, fallbackAction: () =>
             {
                 BytewarsLogger.Log("Friend code not found, searching by exact display name");
                 
-                friendsEssentialsWrapper.GetUserByExactDisplayName(query, OnUsersDisplayNameFound);
+                friendsEssentialsWrapper.GetUserByExactDisplayName(query, result => OnUsersDisplayNameFound(result, query));
             });
         });
     }
 
     private void SendFriendInvitation(string userId)
     {
+        MenuManager.Instance.PromptMenu.ShowLoadingPrompt("Sending friend request...");
+
         friendsEssentialsWrapper.SendFriendRequest(userId, OnSendRequestComplete);
     }
     
@@ -121,18 +123,19 @@ public class FindFriendsMenuHandler : MenuCanvas
     
     #region Callback Functions
     
-    private void OnUsersDisplayNameFound(Result<PublicUserInfo> result)
+    private void OnUsersDisplayNameFound(Result<PublicUserInfo> result, string query)
     {
         if (result.IsError)
         {
             CurrentView = FindFriendsView.LoadFailed;
+            loadingFailedPanel.GetComponentInChildren<TMP_Text>().text = $"Query for '{query}' had no results.";
             return;
         }
-        
+
         CreateFriendEntry(result.Value.userId, result.Value.displayName);
     }
     
-    private void OnUsersFriendCodeFound(Result<PublicUserData> result, Action fallbackAction = null)
+    private void OnUsersFriendCodeFound(Result<PublicUserData> result, string query, Action fallbackAction = null)
     {
         if (result.IsError)
         {
@@ -143,6 +146,7 @@ public class FindFriendsMenuHandler : MenuCanvas
             }
             
             CurrentView = FindFriendsView.LoadFailed;
+            loadingFailedPanel.GetComponentInChildren<TMP_Text>().text = $"Query for '{query}' had no results.";
             return;
         }
         
@@ -151,22 +155,46 @@ public class FindFriendsMenuHandler : MenuCanvas
         {
             BytewarsLogger.Log("Found friend code with self entry");
             
-            CurrentView = FindFriendsView.Default;
+            CurrentView = FindFriendsView.LoadFailed;
+            loadingFailedPanel.GetComponentInChildren<TMP_Text>().text = "Cannot add self as friend.";
             return;
         }
 
+        SendFriendInvitation(userData.userId);
         CreateFriendEntry(userData.userId, userData.displayName);
     }
     
     private void OnSendRequestComplete(IResult result)
     {
-        if (result.IsError || userResult is null)
+        if (result.IsError || userResult == null)
         {
+            // TODO: Update this error code when SDK has the correct error code for this case.
+            const ErrorCode FriendRequestAlreadySent = (ErrorCode)11973;
+            const ErrorCode FriendRequestAwaitingResponse = (ErrorCode)11974;
+
+            Dictionary<ErrorCode, string> errorMessages = new()
+            {
+                { FriendRequestAlreadySent, "You have already sent a friend request to this user." },
+                { FriendRequestAwaitingResponse, "This user has already sent you a friend request." },
+                { ErrorCode.FriendRequestConflictFriendship, "You are already friends with this user." },
+                { ErrorCode.PlayerBlocked, "You have blocked this user or this user has blocked you." }
+            };
+
+            string errorMessage = "Failed to send friend request. Please try again later.";
+            if (errorMessages.TryGetValue(result.Error.Code, out string message))
+            {
+                errorMessage = message;
+            }
+
+            MenuManager.Instance.PromptMenu.ShowPromptMenu("Friend Request Failed",
+                errorMessage, "OK", null);
             return;
         }
+
+        MenuManager.Instance.PromptMenu.ShowPromptMenu("Friend Request Sent", 
+            "Friend request has been sent successfully.", "OK", null);
         
-        FindFriendsEntryHandler entryHandler = userResult.GetComponent<FindFriendsEntryHandler>();
-        if (entryHandler is null)
+        if (!userResult.TryGetComponent(out FindFriendsEntryHandler entryHandler))
         {
             return;
         }
