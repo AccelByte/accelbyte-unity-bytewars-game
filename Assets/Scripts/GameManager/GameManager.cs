@@ -705,6 +705,13 @@ public class GameManager : NetworkBehaviour
                         OnGameOverShutDownCountdown);
                 }
 
+                if (IsHost || IsServer)
+                {
+                    UpdatePlayerStatesClientRpc(
+                        _serverHelper.ConnectedTeamStates.Values.ToArray(),
+                        _serverHelper.ConnectedPlayerStates.Values.ToArray());
+                }
+
                 if (!IsDedicatedServer)
                 {
                     if (InGamePause.IsPausing())
