@@ -353,8 +353,8 @@ public class GameManager : NetworkBehaviour
         }
         else if (isInGameScene)
         {
-            if (IsServer)
-            {
+            if (IsServer && InGameState != InGameState.GameOver)
+            {                
                 // Player might reconnect in the middle of game, missile will not reset
                 RemoveConnectedClient(clientNetworkId, isInGameScene, false);
 
