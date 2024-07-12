@@ -150,9 +150,9 @@ public class PlayWithPartyHelper : MonoBehaviour
     {
         switch (configurationName)
         {
-            case GameSessionConfig.UnitySessionEliminationDs or GameSessionConfig.UnitySessionEliminationP2P or GameSessionConfig.UnitySessionEliminationDSAMS:
+            case GameSessionConfig.UnitySessionEliminationDS or GameSessionConfig.UnitySessionEliminationP2P or GameSessionConfig.UnitySessionEliminationDSAMS:
                 return InGameMode.CreateMatchEliminationGameMode;
-            case GameSessionConfig.UnitySessionDeathMatchDs or GameSessionConfig.UnitySessionDeathMatchP2P or GameSessionConfig.UnitySessionTeamDeathmatchDSAMS:
+            case GameSessionConfig.UnitySessionTeamDeathmatchDS or GameSessionConfig.UnitySessionTeamDeathmatchP2P or GameSessionConfig.UnitySessionTeamDeathmatchDSAMS:
                 return InGameMode.CreateMatchDeathMatchGameMode;
             default:
                 return InGameMode.None;

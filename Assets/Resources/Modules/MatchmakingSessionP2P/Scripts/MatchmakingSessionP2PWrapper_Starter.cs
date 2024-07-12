@@ -15,7 +15,7 @@ public class MatchmakingSessionP2PWrapper_Starter : MatchmakingSessionWrapper
     private string cachedSessionId;
     private bool isEventsListened = false;
     private bool isMatchTicketExpired = false;
-    private InGameMode chachedIngameMode = InGameMode.None;
+    private InGameMode selectedInGameMode = InGameMode.None;
     private GameSessionServerType gameSessionServerType = GameSessionServerType.PeerToPeer;
     protected internal event Action OnMatchmakingWithP2PStarted;
     protected internal event Action OnMatchTicketP2PCreated;
@@ -81,17 +81,7 @@ public class MatchmakingSessionP2PWrapper_Starter : MatchmakingSessionWrapper
     /// </summary>
     private void RegisterMatchmakingEventListener()
     {
-        BindMatchmakingStartedNotification();
-        BindMatchFoundNotification();
-        BindMatchmakingExpiredNotification();
-        BindOnDSUpdateNotification();
-
-        OnMatchStarted += OnMatchStartedCallback;
-        OnMatchFound += OnMatchFoundCallback;
-        OnMatchExpired += OnMatchExpiredCallback;
-        OnMatchTicketCreated += OnMatchTicketCreatedCallback;
-        OnMatchTicketDeleted += OnMatchTicketDeletedCallback;
-        OnDSStatusUpdate += OnDSStatusUpdateCallback;
+        //Copy your code here
     }
 
     /// <summary>
@@ -99,17 +89,7 @@ public class MatchmakingSessionP2PWrapper_Starter : MatchmakingSessionWrapper
     /// </summary>
     private void DeRegisterMatchmakingEventListener()
     {
-        UnBindMatchmakingStartedNotification();
-        UnBindMatchFoundNotification();
-        UnBindMatchmakingExpiredNotification();
-        UnBindOnDSUpdateNotification();
-
-        OnMatchStarted -= OnMatchStartedCallback;
-        OnMatchFound -= OnMatchFoundCallback;
-        OnMatchExpired -= OnMatchExpiredCallback;
-        OnMatchTicketCreated -= OnMatchTicketCreatedCallback;
-        OnMatchTicketDeleted -= OnMatchTicketDeletedCallback;
-        OnDSStatusUpdate -= OnDSStatusUpdateCallback;
+        //Copy your code here
     }
 
     private void OnMatchStartedCallback(Result<MatchmakingV2MatchmakingStartedNotification> result)
@@ -174,10 +154,7 @@ public class MatchmakingSessionP2PWrapper_Starter : MatchmakingSessionWrapper
 
     private async void StartJoinToGameSession(MatchmakingV2MatchFoundNotification result)
     {
-        OnJoinSessionCompleteEvent += OnJoiningSessionCompleted;
-        OnMatchmakingWithP2PJoinSessionStarted?.Invoke();
-        await Delay();
-        JoinSession(result.id);
+        //Copy your code here
     }
 
     private void OnClientLeave()
@@ -203,27 +180,7 @@ public class MatchmakingSessionP2PWrapper_Starter : MatchmakingSessionWrapper
 
     private void OnJoiningSessionCompleted(Result<SessionV2GameSession> result)
     {
-        if (!result.IsError)
-        {
-            OnJoinSessionCompleteEvent -= OnJoiningSessionCompleted;
-            BytewarsLogger.Log($"Joined to session : {cachedSessionId} - Waiting DS Status");
-            
-            if(result.Value.leaderId == GameData.CachedPlayerState.playerId)
-            {
-                OnMatchmakingWithP2PJoinSessionCompleted?.Invoke(true);
-            } 
-            else
-            {
-                OnMatchmakingWithP2PJoinSessionCompleted?.Invoke(false);
-            }
-            GetP2PStatus(result.Value);
-        }
-        else
-        {
-            BytewarsLogger.Log($"Error : {result.Error.Message}");
-            OnMatchmakingWithP2PError?.Invoke(result.Error.Message);
-        }
-
+        //Copy your code here
     }
 
     #region MatchmakingDSEventHandler
@@ -239,81 +196,19 @@ public class MatchmakingSessionP2PWrapper_Starter : MatchmakingSessionWrapper
         await Task.Delay(1000);
     }
 
-
     #endregion EventHandler
 
     #region Lobby service notification
 
     private async void GetP2PStatus(SessionV2GameSession session)
     {
-        SessionV2DsInformation dsInfo = session.dsInformation;
-            switch (dsInfo.status)
-            {
-                case SessionV2DsStatus.NEED_TO_REQUEST:
-                    BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}");
-                    await Delay();
-                    StartP2PConnection(GameData.CachedPlayerState.playerId, session);
-                    UnbindMatchmakingEvent();
-                    break;
-            }
-    }
-
-
-    private async void OnDSStatusUpdateCallback(Result<SessionV2DsStatusUpdatedNotification> result)
-    {
-        BytewarsLogger.Log($"{GameData.CachedPlayerState.playerId}");
-        if (!result.IsError)
-        {
-            SessionV2GameSession session = result.Value.session;
-            SessionV2DsInformation dsInfo = session.dsInformation;
-
-            BytewarsLogger.Log($"DS Status updated: {dsInfo.status}");
-            switch (dsInfo.status)
-            {
-                case SessionV2DsStatus.FAILED_TO_REQUEST:
-                    BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}");
-                    await Delay();
-                    UnbindMatchmakingEvent();
-                    StartP2PConnection(GameData.CachedPlayerState.playerId, session);
-                    break;
-                case SessionV2DsStatus.REQUESTED:
-                    BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}, Waiting");
-                    break;
-                case SessionV2DsStatus.ENDED:
-                    BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}, send ended notification");
-                    UnbindMatchmakingEvent();
-                    break;
-            }
-        }
-        else
-        {
-            OnMatchmakingWithP2PError?.Invoke($"Error: {result.Error.Message}");
-            BytewarsLogger.LogWarning($"Error: {result.Error.Message}");
-        }
+        //Copy your code here
     }
 
     private void StartP2PConnection(string currentUserId, SessionV2GameSession gameSession)
     {
-        var leaderUserId = gameSession.leaderId;
-        if (!String.IsNullOrWhiteSpace(leaderUserId))
-        {
-            if (currentUserId.Equals(leaderUserId))
-            {
-                GameData.ServerSessionID = gameSession.id;
-                P2PHelper.StartAsHost(chachedIngameMode, gameSession.id);
-            }
-            else
-            {
-                P2PHelper.StartAsP2PClient(leaderUserId, chachedIngameMode, gameSession.id);
-            }
-        }
-        else
-        {
-            OnMatchmakingWithP2PError?.Invoke($"GameSession.id {gameSession.id} has empty/null leader id: {gameSession.leaderId}");
-        }
+        //Copy your code here
     }
-
-
     
     #endregion
 }

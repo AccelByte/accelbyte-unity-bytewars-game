@@ -15,7 +15,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     private string cachedSessionId;
     private bool isEventsListened = false;
     private bool isMatchTicketExpired = false;
-    private InGameMode chachedIngameMode = InGameMode.None;
+    private InGameMode selectedInGameMode = InGameMode.None;
     private GameSessionServerType gameSessionServerType = GameSessionServerType.DedicatedServer;
     protected internal event Action OnMatchmakingWithDSStarted;
     protected internal event Action OnMatchTicketDSCreated;
@@ -39,17 +39,18 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     /// <summary>
     /// Start a matchmaking
     /// </summary>
-    /// <param name="matchPool"></param>
+    /// <param name="inGameMode">ingame mode enum</param>
     protected internal async void StartDSMatchmaking(InGameMode inGameMode)
     {
         isMatchTicketExpired = false;
-        chachedIngameMode = inGameMode;
+        selectedInGameMode = inGameMode;
         Dictionary<InGameMode, 
         Dictionary<GameSessionServerType, 
         SessionV2GameSessionCreateRequest>> sessionConfig = GameSessionConfig.SessionCreateRequest;
         
-        if (!sessionConfig.TryGetValue(chachedIngameMode, out var matchTypeDict))
+        if (!sessionConfig.TryGetValue(selectedInGameMode, out var matchTypeDict))
         {
+            BytewarsLogger.LogWarning("Matchtype Not Found");
             OnMatchmakingWithDSError.Invoke("Unable to get session configuration");
             return;
         }
@@ -61,6 +62,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 
         if (!matchTypeDict.TryGetValue(gameSessionServerType, out var request))
         {
+            BytewarsLogger.LogWarning("SessionV2GameSessionCreateRequest Not Found");
             OnMatchmakingWithDSError.Invoke("Unable to get matchpool");
             return;
         }
@@ -241,13 +243,19 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
             OnJoinSessionCompleteEvent -= OnJoiningSessionCompleted;
             BytewarsLogger.Log($"Joined to session : {cachedSessionId} - Waiting DS Status");
             OnMatchmakingWithDSJoinSessionCompleted?.Invoke();
+            BytewarsLogger.Log($"DS Status : {result.Value.dsInformation.StatusV2}");
+
+            if (result.Value.dsInformation.StatusV2 == SessionV2DsStatus.AVAILABLE)
+            {
+                TravelToDS(result.Value, selectedInGameMode);
+                UnbindMatchmakingEvent();
+            }
         }
         else
         {
             BytewarsLogger.Log($"Error : {result.Error.Message}");
             OnMatchmakingWithDSError?.Invoke(result.Error.Message);
         }
-
     }
 
     #region MatchmakingDSEventHandler
@@ -256,7 +264,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     {
         matchTicket = string.Empty;
         cachedSessionId = string.Empty;
-        chachedIngameMode = InGameMode.None;
+        selectedInGameMode = InGameMode.None;
     }
 
     private async Task Delay(int milliseconds=1000)
@@ -267,7 +275,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 
     #endregion EventHandler
 
-    #region Lobby service notification
+    #region DS notification Callback
 
     private async void OnDSStatusUpdateCallback(Result<SessionV2DsStatusUpdatedNotification> result)
     {
@@ -283,27 +291,24 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
                 case SessionV2DsStatus.AVAILABLE:
                     await Delay();
                     OnDSAvailable?.Invoke(true);
-                    TravelToDS(session, chachedIngameMode);
+                    TravelToDS(session, selectedInGameMode);
                     UnbindMatchmakingEvent();
                     break;
                 case SessionV2DsStatus.FAILED_TO_REQUEST:
-                    BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}");
                     OnDSError?.Invoke($"DS Status: {dsInfo.status}");
                     UnbindMatchmakingEvent();
                     break;
                 case SessionV2DsStatus.REQUESTED:
-                    BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}, Waiting");
                     break;
                 case SessionV2DsStatus.ENDED:
-                    BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}, send ended notification");
                     UnbindMatchmakingEvent();
                     break;
             }
         }
         else
         {
+            BytewarsLogger.LogWarning($"Error: {result.Error.Message}");
             OnDSError?.Invoke($"Error: {result.Error.Message}");
-            Debug.Log($"Error: {result.Error.Message}");
         }
     }
     #endregion

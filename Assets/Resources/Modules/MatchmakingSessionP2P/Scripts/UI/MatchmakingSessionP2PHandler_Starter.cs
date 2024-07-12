@@ -8,6 +8,7 @@ using UnityEngine;
 
 public class MatchmakingSessionP2PHandler_Starter : MenuCanvas
 {
+    //TODO: Copy your MatchmakingSessionP2PWrapper_Starter here
     private InGameMode selectedGameMode = InGameMode.None;
     private const string eliminationInfo = "Elimination Match (Peer To Peer)";
     private const string teamdeathmatchInfo = "Team Death Match (Peer To Peer)";
@@ -17,34 +18,8 @@ public class MatchmakingSessionP2PHandler_Starter : MenuCanvas
 
     public void ClickPeerToPeerButton()
     {
-        MenuCanvas menu = MenuManager.Instance.GetCurrentMenu();
-        if (menu is MatchmakingSessionServerTypeSelection serverTypeSelection)
-        {
-            InitWrapper();
-            selectedGameMode = serverTypeSelection.SelectedGameMode;
-        }
-        else
-        {
-            BytewarsLogger.LogWarning("Current menu is not server type selection menu while try to matchmaking with Peer to Peer");
-        }
-        switch (selectedGameMode)
-        {
-            case InGameMode.OnlineDeathMatchGameMode:
-                ShowLoading($"Start {teamdeathmatchInfo}...",
-                    $"Start {teamdeathmatchInfo} is timed out",
-                    matchmakingTimeoutSec);
-                break;
-            case InGameMode.OnlineEliminationGameMode:
-                ShowLoading($"Start {eliminationInfo}...",
-                    $"Start {eliminationInfo} is timed out",
-                    matchmakingTimeoutSec);
-                break;
-            default:
-                string errorMsg = $"No Peer To Peer MatchPoolName for {selectedGameMode}";
-                BytewarsLogger.LogWarning(errorMsg);
-                ShowError(errorMsg);
-                break;
-        }
+        //TODO: Copy your code here
+        BytewarsLogger.Log("Start Create Match Ticket for P2P is Not Implemented");
     }
 
     private void InitWrapper()

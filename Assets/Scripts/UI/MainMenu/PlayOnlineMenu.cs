@@ -24,9 +24,10 @@ public class PlayOnlineMenu : MenuCanvas
     private void SetModuleButtonVisibility()
     {
 #if !BYTEWARS_DEBUG
-        var isCreateSessionBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.SessionEssentials);
-        var isQuickPlayBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithDS);
-        var isCreateBrowseMatchBtnActive = (TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithDS) 
+        bool isCreateSessionBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.SessionEssentials);
+        bool isQuickPlayBtnActive = (TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithDS) 
+            || TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithP2P));
+        bool isCreateBrowseMatchBtnActive = (TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithDS) 
             || TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithP2P));
 
         createSessionButton.gameObject.SetActive(isCreateSessionBtnActive);

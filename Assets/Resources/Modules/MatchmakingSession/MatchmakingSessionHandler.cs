@@ -13,8 +13,6 @@ public class MatchmakingSessionHandler : MenuCanvas
     private Button teamDeathMatchButton;
     [SerializeField]
     private Button backButton;
-    private const string eliminationWithP2PMatchPoolName = "unity-elimination-p2p";
-    private const string teamdeathmatchWithP2PMatchPoolName = "unity-teamdeathmatch-p2p";
 
     private void Start()
     {

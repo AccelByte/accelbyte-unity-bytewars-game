@@ -185,7 +185,6 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
         Reset();
     }
 
-
     private async Task Delay()
     {
         await Task.Delay(1500);

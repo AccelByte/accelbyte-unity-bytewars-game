@@ -16,7 +16,7 @@ public class MatchmakingSessionP2PWrapper : MatchmakingSessionWrapper
     private string cachedSessionId;
     private bool isEventsListened = false;
     private bool isMatchTicketExpired = false;
-    private InGameMode chachedIngameMode = InGameMode.None;
+    private InGameMode selectedInGameMode = InGameMode.None;
     private GameSessionServerType gameSessionServerType = GameSessionServerType.PeerToPeer;
     protected internal event Action OnMatchmakingWithP2PStarted;
     protected internal event Action OnMatchTicketP2PCreated;
@@ -43,19 +43,21 @@ public class MatchmakingSessionP2PWrapper : MatchmakingSessionWrapper
     protected internal async void StartP2PMatchmaking(InGameMode inGameMode)
     {
         isMatchTicketExpired = false;
-        chachedIngameMode = inGameMode;
+        selectedInGameMode = inGameMode;
         
         Dictionary<InGameMode, 
         Dictionary<GameSessionServerType, 
         SessionV2GameSessionCreateRequest>> sessionConfig = GameSessionConfig.SessionCreateRequest;
         
-        if (!sessionConfig.TryGetValue(chachedIngameMode, out var matchTypeDict))
+        if (!sessionConfig.TryGetValue(selectedInGameMode, out var matchTypeDict))
         {
+            BytewarsLogger.LogWarning("Matchtype Not Found");
             return;
         }
 
         if (!matchTypeDict.TryGetValue(gameSessionServerType, out var request))
         {
+            BytewarsLogger.LogWarning("SessionV2GameSessionCreateRequest Not Found");
             return;
         }
 
@@ -111,14 +113,12 @@ public class MatchmakingSessionP2PWrapper : MatchmakingSessionWrapper
         BindMatchmakingStartedNotification();
         BindMatchFoundNotification();
         BindMatchmakingExpiredNotification();
-        BindOnDSUpdateNotification();
 
         OnMatchStarted += OnMatchStartedCallback;
         OnMatchFound += OnMatchFoundCallback;
         OnMatchExpired += OnMatchExpiredCallback;
         OnMatchTicketCreated += OnMatchTicketCreatedCallback;
         OnMatchTicketDeleted += OnMatchTicketDeletedCallback;
-        OnDSStatusUpdate += OnDSStatusUpdateCallback;
     }
 
     /// <summary>
@@ -129,14 +129,12 @@ public class MatchmakingSessionP2PWrapper : MatchmakingSessionWrapper
         UnBindMatchmakingStartedNotification();
         UnBindMatchFoundNotification();
         UnBindMatchmakingExpiredNotification();
-        UnBindOnDSUpdateNotification();
 
         OnMatchStarted -= OnMatchStartedCallback;
         OnMatchFound -= OnMatchFoundCallback;
         OnMatchExpired -= OnMatchExpiredCallback;
         OnMatchTicketCreated -= OnMatchTicketCreatedCallback;
         OnMatchTicketDeleted -= OnMatchTicketDeletedCallback;
-        OnDSStatusUpdate -= OnDSStatusUpdateCallback;
     }
 
     private void OnMatchStartedCallback(Result<MatchmakingV2MatchmakingStartedNotification> result)
@@ -285,40 +283,6 @@ public class MatchmakingSessionP2PWrapper : MatchmakingSessionWrapper
             }
     }
 
-
-    private async void OnDSStatusUpdateCallback(Result<SessionV2DsStatusUpdatedNotification> result)
-    {
-        BytewarsLogger.Log($"{GameData.CachedPlayerState.playerId}");
-        if (!result.IsError)
-        {
-            SessionV2GameSession session = result.Value.session;
-            SessionV2DsInformation dsInfo = session.dsInformation;
-
-            BytewarsLogger.Log($"DS Status updated: {dsInfo.status}");
-            switch (dsInfo.status)
-            {
-                case SessionV2DsStatus.FAILED_TO_REQUEST:
-                    BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}");
-                    await Delay();
-                    UnbindMatchmakingEvent();
-                    StartP2PConnection(GameData.CachedPlayerState.playerId, session);
-                    break;
-                case SessionV2DsStatus.REQUESTED:
-                    BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}, Waiting");
-                    break;
-                case SessionV2DsStatus.ENDED:
-                    BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}, send ended notification");
-                    UnbindMatchmakingEvent();
-                    break;
-            }
-        }
-        else
-        {
-            OnMatchmakingWithP2PError?.Invoke($"Error: {result.Error.Message}");
-            BytewarsLogger.LogWarning($"Error: {result.Error.Message}");
-        }
-    }
-
     private void StartP2PConnection(string currentUserId, SessionV2GameSession gameSession)
     {
         var leaderUserId = gameSession.leaderId;
@@ -327,11 +291,11 @@ public class MatchmakingSessionP2PWrapper : MatchmakingSessionWrapper
             if (currentUserId.Equals(leaderUserId))
             {
                 GameData.ServerSessionID = gameSession.id;
-                P2PHelper.StartAsHost(chachedIngameMode, gameSession.id);
+                P2PHelper.StartAsHost(selectedInGameMode, gameSession.id);
             }
             else
             {
-                P2PHelper.StartAsP2PClient(leaderUserId, chachedIngameMode, gameSession.id);
+                P2PHelper.StartAsP2PClient(leaderUserId, selectedInGameMode, gameSession.id);
             }
         }
         else
@@ -340,7 +304,5 @@ public class MatchmakingSessionP2PWrapper : MatchmakingSessionWrapper
         }
     }
 
-
-    
     #endregion
 }

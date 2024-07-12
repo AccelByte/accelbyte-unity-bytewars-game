@@ -80,7 +80,7 @@ public class BrowseMatchItemModel
     private void SetMatchTypeAndServerType(SessionV2GameSession gameSession)
     {
         var gameSessionName = gameSession.configuration.name;
-        if (gameSessionName.Equals(GameSessionConfig.UnitySessionEliminationDs))
+        if (gameSessionName.Equals(GameSessionConfig.UnitySessionEliminationDS))
         {
             GameMode = InGameMode.CreateMatchEliminationGameMode;
             SessionServerType = GameSessionServerType.DedicatedServer;
@@ -90,12 +90,12 @@ public class BrowseMatchItemModel
             GameMode = InGameMode.CreateMatchEliminationGameMode;
             SessionServerType = GameSessionServerType.PeerToPeer;
         }
-        else if (gameSessionName.Equals(GameSessionConfig.UnitySessionDeathMatchDs))
+        else if (gameSessionName.Equals(GameSessionConfig.UnitySessionTeamDeathmatchDS))
         {
             GameMode = InGameMode.CreateMatchDeathMatchGameMode;
             SessionServerType = GameSessionServerType.DedicatedServer;
         }
-        else if (gameSessionName.Equals(GameSessionConfig.UnitySessionDeathMatchP2P))
+        else if (gameSessionName.Equals(GameSessionConfig.UnitySessionTeamDeathmatchP2P))
         {
             GameMode = InGameMode.CreateMatchDeathMatchGameMode;
             SessionServerType = GameSessionServerType.PeerToPeer;

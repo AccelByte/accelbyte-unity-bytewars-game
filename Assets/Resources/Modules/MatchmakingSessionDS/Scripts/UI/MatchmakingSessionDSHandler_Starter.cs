@@ -12,36 +12,17 @@ public class MatchmakingSessionDSHandler_Starter : MenuCanvas
     private const int matchmakingTimeoutSec = 90;
     private const int joinSessionTimeoutSec = 60;
     private const int cancelMatchmakingTimeoutSec = 30;
+    //TODO: Copy MatchmakingSessionDSWrapper_Starter here
 
     public void ClickDedicatedServerButton()
     {
-        MenuCanvas menu = MenuManager.Instance.GetCurrentMenu();
-        if (menu is MatchmakingSessionServerTypeSelection serverTypeSelection)
-        {
-            InitWrapper();
-            selectedGameMode = serverTypeSelection.SelectedGameMode;
-        }
-        else
-        {
-            BytewarsLogger.LogWarning("Current menu is not server type selection menu while try to matchmaking with DS");
-            return;
-        }
-        switch (selectedGameMode)
-        {
-            case InGameMode.OnlineDeathMatchGameMode:
-                break;
-            case InGameMode.OnlineEliminationGameMode:
-                break;
-            default:
-                string errorMsg = $"No Dedicated Server Match Pool for {selectedGameMode}";
-                BytewarsLogger.LogWarning(errorMsg);
-                ShowError(errorMsg);
-                break;
-        }
+        //TODO: Copy Your code here
     }
 
     private void InitWrapper()
     {
+        //TODO: Copy Your code here
+
 
         BindMatchmakingEvent();
 
@@ -130,6 +111,7 @@ public class MatchmakingSessionDSHandler_Starter : MenuCanvas
 
     private void OnDSTimeOut()
     {
+        //TODO: Copy your code here
         Reset();
     }
 
@@ -140,6 +122,7 @@ public class MatchmakingSessionDSHandler_Starter : MenuCanvas
 
     private void CancelDSMatchmaking()
     {
+        //TODO: Copy your code here
         ShowLoading("Cancelling Match", "Cancelling match is timed out", cancelMatchmakingTimeoutSec);
     }
 
