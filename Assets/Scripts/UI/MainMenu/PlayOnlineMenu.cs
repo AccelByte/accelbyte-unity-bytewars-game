@@ -28,7 +28,7 @@ public class PlayOnlineMenu : MenuCanvas
         bool isQuickPlayBtnActive = (TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithDS) 
             || TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithP2P));
         bool isCreateBrowseMatchBtnActive = (TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithDS) 
-            || TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithP2P));
+            || TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithP2P));
 
         createSessionButton.gameObject.SetActive(isCreateSessionBtnActive);
         quickPlayButton.gameObject.SetActive(isQuickPlayBtnActive);

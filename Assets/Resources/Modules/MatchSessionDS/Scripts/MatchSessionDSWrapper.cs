@@ -9,7 +9,7 @@ using AccelByte.Models;
 public class MatchSessionDSWrapper : MatchSessionWrapper
 {
     public static Action OnCreateMatchSessionDS;
-    public static Action<Result<SessionV2GameSession>> OnJoinMatchSessionDS;
+    public static Action<InGameMode, Result<SessionV2GameSession>> OnJoinMatchSessionDS;
 
     private void Awake()
     {
@@ -42,14 +42,14 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
         lobby.SessionV2DsStatusChanged -= OnDSStatusChanged;
     }
 
-    private void JoinMatchSessionDS(Result<SessionV2GameSession> result)
+    private void JoinMatchSessionDS(InGameMode gameMode, Result<SessionV2GameSession> result)
     {
         if (!result.IsError)
         {
             BytewarsLogger.Log($"Session Configuration Template Type : {result.Value.configuration.type}");
             if (result.Value.dsInformation.status == SessionV2DsStatus.AVAILABLE)
             {
-                TravelToDS(result.Value, RequestedGameMode);
+                TravelToDS(result.Value, gameMode);
             }
         }
         else
@@ -66,8 +66,9 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
             BytewarsLogger.Log($"DS Status: {dsStatus}");
             if (dsStatus == SessionV2DsStatus.AVAILABLE)
             {
+                BytewarsLogger.Log($"{SelectedGameMode}");
                 lobby.SessionV2DsStatusChanged -= OnDSStatusChanged;
-                TravelToDS(result.Value.session, RequestedGameMode);
+                TravelToDS(result.Value.session, SelectedGameMode);
                 UnbindMatchSessionDSEvents();
             }
         } 

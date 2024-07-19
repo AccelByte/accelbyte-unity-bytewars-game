@@ -13,8 +13,7 @@ using UnityEngine;
 public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
 {
     public static Action OnCreateMatchSessionDS;
-    public static Action<Result<SessionV2GameSession>> OnJoinMatchSessionDS;
-    public event Action OnStartGame;
+    public static Action<InGameMode, Result<SessionV2GameSession>> OnJoinMatchSessionDS;
 
     private void Awake()
     {
@@ -41,7 +40,7 @@ public class MatchSessionDSWrapper_Starter : MatchSessionWrapper
         //TODO: Copy your code here
     }
 
-    private void JoinMatchSessionDS(Result<SessionV2GameSession> result)
+    private void JoinMatchSessionDS(InGameMode gameMode, Result<SessionV2GameSession> result)
     {
         //TODO: Copy your code here
     } 

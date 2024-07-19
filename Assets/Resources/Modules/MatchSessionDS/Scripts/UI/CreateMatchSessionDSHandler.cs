@@ -110,6 +110,7 @@ public class CreateMatchSessionDSHandler : MenuCanvas
 
     private void CancelCreateMatch()
     {
+        Reset();
         ShowInfo("Match session creation cancelled");
         matchSessionDSWrapper.OnCreateMatchCancelled?.Invoke();
         matchSessionDSWrapper.CancelCreateMatchSession();

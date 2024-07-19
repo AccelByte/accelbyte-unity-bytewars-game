@@ -31,7 +31,7 @@ public class LoadingMenuCanvas : MenuCanvas
     // Start is called before the first frame update
     void Start()
     {
-        StartAnimate();
+        // StartAnimate();
     }
 
     private void StartAnimate()

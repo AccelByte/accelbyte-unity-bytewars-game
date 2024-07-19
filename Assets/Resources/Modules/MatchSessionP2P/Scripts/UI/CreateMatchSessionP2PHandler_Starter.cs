@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -8,30 +8,11 @@ public class CreateMatchSessionP2PHandler_Starter : MenuCanvas
 {
     private const int createMatchSessionTimeoutSec = 60;
     private const int joinMatchSessionTimeoutSec = 60;
+    //TODO: Copy your MatchSessionP2PWrapper_Starter here
 
     public void ClickPeerToPeerButton()
     {
-        InGameMode selectedGameMode = InGameMode.None;
-
-        MenuCanvas menu = MenuManager.Instance.GetCurrentMenu();
-        if (menu is MatchSessionServerTypeSelection serverTypeSelection)
-        {
-            selectedGameMode = serverTypeSelection.SelectedGameMode;
-            InitWrapper();
-        }
-        else
-        {
-            BytewarsLogger.LogWarning("Current menu is not server type selection menu while try to create match with DS");
-            return;
-        }
-
         //TODO: Copy your code here
-
-        ShowLoading(
-            "Creating Match Session (P2P)...",
-            "Creating Match Session (P2P) is timed out.",
-            createMatchSessionTimeoutSec,
-            CancelCreateMatch);
     }
 
     private void InitWrapper()
@@ -94,7 +75,6 @@ public class CreateMatchSessionP2PHandler_Starter : MenuCanvas
     private void CancelCreateMatch()
     {
         Reset();
-        HideLoading();
 
         //TODO: Copy your code here
     }

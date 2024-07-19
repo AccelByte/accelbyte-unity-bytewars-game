@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -166,7 +167,9 @@ public class MatchmakingSessionP2PWrapper_Starter : MatchmakingSessionWrapper
 
     public void LeaveCurrentSession()
     {
-        LeaveSession(cachedSessionId);
+        //Copy your code here
+        BytewarsLogger.Log("Leave GameSession is not implemented");
+
     }
 
     private void OnLeaveSessionComplete(Result<SessionV2GameSession> result)

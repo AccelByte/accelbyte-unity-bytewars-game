@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0c946b292dbcfa2418ef1a2b2e60b8b7, type: 3}
-  m_Name: MatchSessionP2PAssetConfig
+  m_Name: MatchSessionWithP2PAssetConfig
   m_EditorClassIdentifier: 
   isBaseModule: 0
   disableUI: 0
@@ -28,15 +28,15 @@ MonoBehaviour:
   - {fileID: 11500000, guid: ea7ddd00be56467ea496e86375ae93f4, type: 3}
   starterHelperScripts:
   - {fileID: 11500000, guid: 2c3633fd4d6144a47a5c63bd157ed798, type: 3}
-  starterScript: {fileID: 11500000, guid: bbf7fad230804cb4099e50dd182b788d, type: 3}
+  starterScript: {fileID: 11500000, guid: 42f69721ae83833479f0a2598f3cba9f, type: 3}
   starterMenuUIPrefab: {fileID: -7524062483161039920, guid: 7fa376fd90284f144af074942c43dc19,
     type: 3}
   starterAdditionalMenuUIPrefabs:
   - {fileID: 6978800506033015114, guid: a0f44daee85c86c44a35a44a5e6f501d, type: 3}
   isStarterActive: 0
   moduleDependencies:
-  - {fileID: 11400000, guid: b4c868ff7e72cc840963d5a37178f14d, type: 2}
-  - {fileID: 11400000, guid: e06d635c5abde8446a7137452792df96, type: 2}
+  - {fileID: 11400000, guid: 06d0dd029e7ccad4695a7993e63c09af, type: 2}
+  - {fileID: 11400000, guid: 9ac30e5634c093c4996b2e5ee6d1dfc3, type: 2}
   instantiatedPrefabType: 0
   instantiatedGameObjectName: 
   prefabClassType: 0

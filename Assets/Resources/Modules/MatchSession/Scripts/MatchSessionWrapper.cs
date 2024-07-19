@@ -20,7 +20,7 @@ public class MatchSessionWrapper : GameSessionUtilityWrapper
     protected internal Action<bool> OnCreatedMatchSession;
     protected internal Action<string> OnJoinedMatchSession;
     protected internal Action<string> OnCreateOrJoinError;
-    protected internal InGameMode RequestedGameMode = InGameMode.None;
+    protected internal InGameMode SelectedGameMode = InGameMode.None;
     private SessionV2GameSession gameSession;
 
     protected void Awake()
@@ -37,7 +37,7 @@ public class MatchSessionWrapper : GameSessionUtilityWrapper
         GameManager.Instance.OnClientLeaveSession += LeaveCurrentGameSession;
         lobby.SessionV2GameSessionMemberChanged += OnV2GameSessionMemberChanged;
 
-        RequestedGameMode = inGameMode;
+        SelectedGameMode = inGameMode;
         ConnectionHandler.Initialization();
         
         Dictionary<InGameMode, 
@@ -99,7 +99,7 @@ public class MatchSessionWrapper : GameSessionUtilityWrapper
     {
         GameManager.Instance.OnClientLeaveSession += LeaveCurrentGameSession;
         lobby.SessionV2GameSessionMemberChanged += OnV2GameSessionMemberChanged;
-        RequestedGameMode = gameMode;
+        SelectedGameMode = gameMode;
 
         JoinSession(sessionId);
     }
@@ -138,18 +138,23 @@ public class MatchSessionWrapper : GameSessionUtilityWrapper
     {
         if (!result.IsError)
         {
+
             gameSession = result.Value;
             UpdateCachedGameSession(gameSession);
+            BytewarsLogger.Log($"Successfully created the match session");  
             BytewarsLogger.Log($"OnCreatedMatchSession: true");
             BytewarsLogger.Log($"Session Configuration Template Type : {gameSession.configuration.type}");
             OnCreatedMatchSession?.Invoke(true);
+            bool isStarterActive = false;
             switch (gameSession.configuration.type)
             {
                 case SessionConfigurationTemplateType.DS:
-                    MatchSessionDSWrapper.OnCreateMatchSessionDS?.Invoke();
+                    isStarterActive = IsStarterActive(TutorialType.MatchmakingWithDS);
+                    HandleCreateMatchSessionDS(isStarterActive, result);
                     break;
                 case SessionConfigurationTemplateType.P2P:
-                    MatchSessionP2PWrapper.OnCreateMatchSessionP2P?.Invoke(RequestedGameMode, result);
+                    isStarterActive = IsStarterActive(TutorialType.MatchmakingWithP2P);
+                    HandleCreateMatchSessionP2P(isStarterActive, SelectedGameMode, result);
                     break;
                 default:
                     break;
@@ -182,14 +187,18 @@ public class MatchSessionWrapper : GameSessionUtilityWrapper
         {
             gameSession = result.Value;
             UpdateCachedGameSession(gameSession);
+            BytewarsLogger.Log($"Successfully joined the match session");
             BytewarsLogger.Log($"Session Configuration Template Type : {gameSession.configuration.type}");
+            bool isStarterActive = false;
             switch (gameSession.configuration.type)
             {
                 case SessionConfigurationTemplateType.DS:
-                    MatchSessionDSWrapper.OnJoinMatchSessionDS.Invoke(result);
+                    isStarterActive = IsStarterActive(TutorialType.MatchSessionWithDS);
+                    HandleJoinsMatchSessionDS(isStarterActive, result);
                     break;
                 case SessionConfigurationTemplateType.P2P:
-                    MatchSessionP2PWrapper.OnJoinMatchSessionP2P?.Invoke(RequestedGameMode ,result);
+                    isStarterActive = IsStarterActive(TutorialType.MatchmakingWithP2P);
+                    HandleJoinsMatchSessionP2P(isStarterActive, SelectedGameMode, result);
                     break;
                 default:
                     break;
@@ -201,6 +210,55 @@ public class MatchSessionWrapper : GameSessionUtilityWrapper
             OnCreateOrJoinError?.Invoke(result.Error.Message);
         }
     }
+
+    private void HandleCreateMatchSessionDS(bool isStarterActive, Result<SessionV2GameSession> result)
+    {
+        if (isStarterActive)
+        {
+            MatchSessionDSWrapper_Starter.OnCreateMatchSessionDS.Invoke();
+        }
+        else
+        {
+            MatchSessionDSWrapper.OnCreateMatchSessionDS?.Invoke();
+        }
+    }
+
+    private void HandleJoinsMatchSessionDS(bool isStarterActive, Result<SessionV2GameSession> result)
+    {
+        if (isStarterActive)
+        {
+            MatchSessionDSWrapper_Starter.OnJoinMatchSessionDS.Invoke(SelectedGameMode, result);
+        }
+        else
+        {
+            MatchSessionDSWrapper.OnJoinMatchSessionDS.Invoke(SelectedGameMode, result);
+        }
+    }
+
+    private void HandleCreateMatchSessionP2P(bool isStarterActive, InGameMode selectedGameMode, Result<SessionV2GameSession> result)
+    {
+        if (isStarterActive)
+        {
+            MatchSessionP2PWrapper_Starter.OnCreateMatchSessionP2P.Invoke(SelectedGameMode, result);
+        }
+        else
+        {
+            MatchSessionP2PWrapper.OnCreateMatchSessionP2P?.Invoke(SelectedGameMode, result);
+        }
+    }
+
+    private void HandleJoinsMatchSessionP2P(bool isStarterActive, InGameMode selectedGameMode, Result<SessionV2GameSession> result)
+    {
+        if (isStarterActive)
+        {
+            MatchSessionP2PWrapper_Starter.OnJoinMatchSessionP2P?.Invoke(selectedGameMode, result);
+        }
+        else
+        {
+            MatchSessionP2PWrapper.OnJoinMatchSessionP2P?.Invoke(selectedGameMode, result);
+        }
+    }
+
 
     private void OnLeaveCustomSessionCompleted(Result<SessionV2GameSession> result)
     {
@@ -226,5 +284,12 @@ public class MatchSessionWrapper : GameSessionUtilityWrapper
     {
         gameSession = session;
         SessionCache.SetJoinedSessionIdAndLeaderUserId(session.id, session.leaderId);
+    }
+
+    private static bool IsStarterActive(TutorialType tutorialType)
+    {
+        ModuleModel module = TutorialModuleManager.Instance.GetModule(tutorialType);
+
+        return module.isStarterActive;
     }
 }

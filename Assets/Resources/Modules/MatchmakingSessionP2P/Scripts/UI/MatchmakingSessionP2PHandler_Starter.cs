@@ -19,7 +19,6 @@ public class MatchmakingSessionP2PHandler_Starter : MenuCanvas
     public void ClickPeerToPeerButton()
     {
         //TODO: Copy your code here
-        BytewarsLogger.Log("Start Create Match Ticket for P2P is Not Implemented");
     }
 
     private void InitWrapper()

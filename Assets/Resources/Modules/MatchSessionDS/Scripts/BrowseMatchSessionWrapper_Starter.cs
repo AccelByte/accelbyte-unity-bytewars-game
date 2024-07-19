@@ -18,9 +18,16 @@ public class BrowseMatchSessionWrapper_Starter : MatchSessionWrapper
     private static Action<BrowseMatchResult> onQueryMatchSessionFinished;
     private static Action<BrowseMatchResult> onQueryNextPageMatchSessionFinished;
 
-    private void Start()
+    protected internal void BindEvents()
     {
-        // Copy Start code here
+        base.BindEvents();
+        OnBrowseMatchSessionCompleteEvent += OnBrowseMatchSessionsComplete;
+    }
+
+    protected internal void UnbindEvents()
+    {
+        base.UnbindEvents();
+        OnBrowseMatchSessionCompleteEvent -= OnBrowseMatchSessionsComplete;
     }
 
     #region BrowseMatchSession

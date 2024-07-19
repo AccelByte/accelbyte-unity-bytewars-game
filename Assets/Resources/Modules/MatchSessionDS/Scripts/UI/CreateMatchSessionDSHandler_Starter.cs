@@ -8,34 +8,11 @@ public class CreateMatchSessionDSHandler_Starter : MenuCanvas
 {
     private const int createMatchSessionTimeoutSec = 60;
     private const int joinMatchSessionTimeoutSec = 60;
-
+    //TODO: Copy your code here
+    
     public void ClickDedicatedServerButton()
     {
-        InGameMode selectedGameMode = InGameMode.None;
-        GameSessionServerType selectedSessionServerType =
-            TutorialModuleManager.Instance.IsModuleActive(TutorialType.MultiplayerDSEssentials) ?
-            GameSessionServerType.DedicatedServerAMS :
-            GameSessionServerType.DedicatedServer;
-
-        MenuCanvas menu = MenuManager.Instance.GetCurrentMenu();
-        if (menu is MatchSessionServerTypeSelection serverTypeSelection)
-        {
-            selectedGameMode = serverTypeSelection.SelectedGameMode;
-            InitWrapper();
-        }
-        else
-        {
-            BytewarsLogger.LogWarning("Current menu is not server type selection menu while try to create match with DS");
-            return;
-        }
-
         //TODO: Copy your code here
-
-        ShowLoading(
-            "Creating Match Session (Dedicated Server)...",
-            "Creating Match Session (Dedicated Server) is timed out.",
-            createMatchSessionTimeoutSec,
-            CancelCreateMatch);
     }
 
     private void InitWrapper()
@@ -98,8 +75,7 @@ public class CreateMatchSessionDSHandler_Starter : MenuCanvas
     private void CancelCreateMatch()
     {
         Reset();
-        HideLoading();
-
+        
         //TODO: Copy your code here
     }
 

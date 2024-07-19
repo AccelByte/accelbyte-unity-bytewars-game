@@ -26,6 +26,7 @@ public class BrowseMatchMenuCanvas : MenuCanvas
     private readonly List<SessionV2GameSession> gameSessionList = new List<SessionV2GameSession>();
     private const float ViewItemHeight = 75;
     private BrowseMatchSessionWrapper browseMatchSessionWrapper;
+    private MatchSessionWrapper matchSessionWrapper;
     private MatchSessionDSWrapper matchSessionDSWrapper;
     private MatchSessionP2PWrapper matchSessionP2PWrapper;
 
@@ -34,6 +35,7 @@ public class BrowseMatchMenuCanvas : MenuCanvas
     private void Start()
     {
         browseMatchSessionWrapper = TutorialModuleManager.Instance.GetModuleClass<BrowseMatchSessionWrapper>();
+        matchSessionWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionWrapper>();
         matchSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionDSWrapper>();
         matchSessionP2PWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionP2PWrapper>();
 
@@ -78,9 +80,9 @@ public class BrowseMatchMenuCanvas : MenuCanvas
         }
 
         browseMatchSessionWrapper.BindEvents();
-        matchSessionDSWrapper.BindEvents();
-        matchSessionDSWrapper.OnJoinedMatchSession += OnJoinedMatchSession;
-        matchSessionDSWrapper.OnCreateOrJoinError += OnCreateOrJoinError;
+        matchSessionWrapper.BindEvents();
+        matchSessionWrapper.OnJoinedMatchSession += OnJoinedMatchSession;
+        matchSessionWrapper.OnCreateOrJoinError += OnCreateOrJoinError;
         matchSessionDSWrapper.BindMatchSessionDSEvents();
         matchSessionP2PWrapper.BindMatchSessionP2PEvents();
         isEventsListened = true;
@@ -94,7 +96,7 @@ public class BrowseMatchMenuCanvas : MenuCanvas
     private void UnbindEvent()
     {
         browseMatchSessionWrapper.UnbindEvents();
-        matchSessionDSWrapper.UnbindEvents();
+        matchSessionWrapper.UnbindEvents();
         matchSessionDSWrapper.UnbindMatchSessionDSEvents();
         matchSessionP2PWrapper.UnbindMatchSessionP2PEvents();
         isEventsListened = false;
@@ -111,7 +113,7 @@ public class BrowseMatchMenuCanvas : MenuCanvas
 
     private void OnBrowseMatchSessionFinished(BrowseMatchResult result)
     {
-        if (String.IsNullOrEmpty(result.ErrorMessage))
+        if (string.IsNullOrEmpty(result.ErrorMessage))
         {
             HideLoadingBackToMainPanel();
             if (result.Result.Length<1)
@@ -129,6 +131,7 @@ public class BrowseMatchMenuCanvas : MenuCanvas
             ShowError(result.ErrorMessage);
         }
     }
+
     private void CancelBrowseMatchSession()
     {
         HideLoadingBackToMainPanel();
@@ -150,7 +153,7 @@ public class BrowseMatchMenuCanvas : MenuCanvas
 
     private void OnNextPageMatchSessionsRetrieved(BrowseMatchResult nextPageResult)
     {
-        if (String.IsNullOrEmpty(nextPageResult.ErrorMessage))
+        if (string.IsNullOrEmpty(nextPageResult.ErrorMessage))
         {
             RenderResult(nextPageResult.Result, loadedModels.Count);
         }
@@ -167,13 +170,13 @@ public class BrowseMatchMenuCanvas : MenuCanvas
     private void JoinMatch(JoinMatchSessionRequest request)
     {
         ShowLoading("Joining Match Session...", CancelJoinMatchSession);
-        matchSessionDSWrapper.JoinMatchSession(request.MatchSessionId, request.GameMode);
+        matchSessionWrapper.JoinMatchSession(request.MatchSessionId, request.GameMode);
     }
 
     private void CancelJoinMatchSession()
     {
         HideLoadingBackToMainPanel();
-        matchSessionDSWrapper.CancelJoinMatchSession();
+        matchSessionWrapper.CancelJoinMatchSession();
     }
 
     private void OnJoinedMatchSession(string errorMessage)
