@@ -537,12 +537,18 @@ public class GameManager : NetworkBehaviour
 
         GameData.GameModeSo = gameModeSo;
         _gameMode = gameModeSo.gameMode;
+        InGameMode = GetEnumFromGameMode(gameModeSo);
 
         AudioManager.Instance.PlaySfx("Enter_Simulate");
 
         await ShowTravelingLoading();
 
         SceneManager.LoadScene(GameConstant.GameSceneBuildIndex);
+    }
+
+    private InGameMode GetEnumFromGameMode(GameModeSO gameModeSo)
+    {
+        return (InGameMode)Enum.Parse(typeof(InGameMode), gameModeSo.name);
     }
 
     public void RestartLocalGame()
@@ -694,7 +700,6 @@ public class GameManager : NetworkBehaviour
 
             case InGameState.GameOver:
                 OnGameOver.Invoke(_gameMode, InGameMode, ConnectedPlayerStates.Values.ToList());
-
                 _serverHelper.CancelCountdown();
 
                 bool isShuttingDown = GameData.GameModeSo.gameOverShutdownCountdown > -1;
@@ -721,6 +726,7 @@ public class GameManager : NetworkBehaviour
 
                     _hud.gameObject.SetActive(false);
                     _menuManager.ShowInGameMenu(AssetEnum.GameOverMenuCanvas);
+                    InGameState = InGameState.None;
                 }
                 break;
         }
