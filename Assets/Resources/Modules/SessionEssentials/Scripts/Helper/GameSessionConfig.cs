@@ -1,9 +1,10 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
 using System.Collections.Generic;
 using AccelByte.Models;
+using UnityEngine;
 
 public class GameSessionConfig
 {
@@ -14,6 +15,9 @@ public class GameSessionConfig
     public const string UnitySessionTeamDeathmatchP2P = "unity-teamdeathmatch-p2p";
     public const string UnitySessionEliminationDSAMS = "unity-elimination-ds-ams";
     public const string UnitySessionTeamDeathmatchDSAMS = "unity-teamdeathmatch-ds-ams";
+
+    private static readonly string UnitySessionClientVersion = TutorialModuleUtil.IsOverrideDedicatedServerVersion() ? Application.version : string.Empty;
+
     public static readonly Dictionary<InGameMode, Dictionary<GameSessionServerType, SessionV2GameSessionCreateRequest>>
             SessionCreateRequest =
                 new Dictionary<InGameMode, Dictionary<GameSessionServerType, SessionV2GameSessionCreateRequest>>()
@@ -42,6 +46,7 @@ public class GameSessionConfig
                                     joinability = SessionV2Joinability.OPEN,
                                     configurationName = UnitySessionEliminationDS,
                                     matchPool = UnitySessionEliminationDS,
+                                    clientVersion = UnitySessionClientVersion
                                 }
                             },
                             {
@@ -60,6 +65,7 @@ public class GameSessionConfig
                                     joinability = SessionV2Joinability.OPEN,
                                     configurationName = UnitySessionEliminationDSAMS,
                                     matchPool = UnitySessionEliminationDSAMS,
+                                    clientVersion = UnitySessionClientVersion
                                 }
                             }
                         }
@@ -74,6 +80,7 @@ public class GameSessionConfig
                                     joinability = SessionV2Joinability.OPEN,
                                     configurationName = UnitySessionTeamDeathmatchDS,
                                     matchPool = UnitySessionTeamDeathmatchDS,
+                                    clientVersion = UnitySessionClientVersion
                                 }
                             },
                             {
@@ -92,6 +99,7 @@ public class GameSessionConfig
                                     joinability = SessionV2Joinability.OPEN,
                                     configurationName = UnitySessionTeamDeathmatchDSAMS,
                                     matchPool = UnitySessionTeamDeathmatchDSAMS,
+                                    clientVersion = UnitySessionClientVersion
                                 }
                             }
                         }
@@ -106,6 +114,7 @@ public class GameSessionConfig
                                     joinability = SessionV2Joinability.OPEN,
                                     configurationName = UnitySessionEliminationDS,
                                     matchPool = UnitySessionEliminationDS,
+                                    clientVersion = UnitySessionClientVersion
                                 }
                             },
                             {
@@ -124,6 +133,7 @@ public class GameSessionConfig
                                     joinability = SessionV2Joinability.OPEN,
                                     configurationName = UnitySessionEliminationDSAMS,
                                     matchPool = UnitySessionEliminationDSAMS,
+                                    clientVersion = UnitySessionClientVersion
                                 }
                             }
                         }
@@ -136,6 +146,7 @@ public class GameSessionConfig
                                     joinability = SessionV2Joinability.OPEN,
                                     configurationName = UnitySessionTeamDeathmatchDS,
                                     matchPool = UnitySessionTeamDeathmatchDS,
+                                    clientVersion = UnitySessionClientVersion
                                 }
                             },
                             {
@@ -154,6 +165,7 @@ public class GameSessionConfig
                                     joinability = SessionV2Joinability.OPEN,
                                     configurationName = UnitySessionTeamDeathmatchDSAMS,
                                     matchPool = UnitySessionTeamDeathmatchDSAMS,
+                                    clientVersion = UnitySessionClientVersion
                                 }
                             }
                         }
