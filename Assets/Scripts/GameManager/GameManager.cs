@@ -1010,6 +1010,13 @@ public class GameManager : NetworkBehaviour
     
     #region Countdowns and Timers
     
+    public void StartShutdownCountdown(int countdown)
+    {
+        _serverHelper.StartCoroutineCountdown(this,
+            countdown, OnLobbyShutdownCountdown);
+
+    }
+    
     private void OnLobbyShutdownCountdown(int countdownSeconds)
     {
         //no player connected no need to update client UI for lobby shutdown

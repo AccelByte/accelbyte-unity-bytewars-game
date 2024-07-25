@@ -22,7 +22,7 @@ public class Reconnect : MonoBehaviour
         }
         else
         {
-            BytewarsLogger.LogWarning("can't start as client, unity transport is null");
+            BytewarsLogger.LogWarning("Cannot start as client, unity transport is null");
         }
     }
 
@@ -47,7 +47,7 @@ public class Reconnect : MonoBehaviour
         }
         else
         {
-            Debug.LogError("can't start as host, unity transport is null");
+            BytewarsLogger.LogWarning("Cannot start as host, unity transport is null");
         }
     }
 
@@ -71,7 +71,7 @@ public class Reconnect : MonoBehaviour
         yield return wait3Seconds;
         var connectionData = GameUtility.ToByteArray(initialConnectionData);
         NetworkManager.Singleton.NetworkConfig.ConnectionData = connectionData;
-        Debug.Log("reconnect start client");
+        BytewarsLogger.Log("Reconnect start client");
         NetworkManager.Singleton.StartClient();
         reconnectionInProgress = false;
     }
@@ -80,7 +80,7 @@ public class Reconnect : MonoBehaviour
         Dictionary<ulong, GameClientController> connectedClients, InGameState inGameState, ServerType serverType,
         Dictionary<ulong, Player> players, int gameTimeLeft, ClientHelper clientHelper)
     {
-        Debug.Log($"OnClientConnected IsServer:{isServer} isOwner:{isOwner} clientNetworkId:{clientNetworkId}");
+        BytewarsLogger.Log($"OnClientConnected IsServer:{isServer} isOwner:{isOwner} clientNetworkId:{clientNetworkId}");
         isIntentionallyDisconnect = false;
         var game = GameManager.Instance;
         if (isOwner && isServer)
@@ -100,7 +100,7 @@ public class Reconnect : MonoBehaviour
             if (gameClient)
             {
                 connectedClients.Add(clientNetworkId, gameClient);
-                Debug.Log($"clientNetworkId: {clientNetworkId} connected");
+                BytewarsLogger.Log($"ClientNetworkId: {clientNetworkId} connected");
                 if (isInGameScene && inGameState != InGameState.GameOver)
                 {
                     if (players.TryGetValue(clientNetworkId, out var serverPlayer))
@@ -141,7 +141,7 @@ public class Reconnect : MonoBehaviour
     public void OnClientStopped(bool isHost, InGameState inGameState, ServerHelper serverHelper, ulong clientNetworkId,
         InGameMode inGameMode)
     {
-        Debug.Log($"OnClientStopped isHost:{isHost} clientNetworkId:{clientNetworkId}");
+        BytewarsLogger.Log($"OnClientStopped isHost:{isHost} clientNetworkId:{clientNetworkId}");
         if (isHost)
         {
             GameManager.Instance.ResetCache();
@@ -177,7 +177,7 @@ public class Reconnect : MonoBehaviour
                 {
                     if(!isIntentionallyDisconnect) 
                     {
-                        lobby.ShowStatus("disconnected from server, trying to reconnect...");
+                        lobby.ShowStatus("Disconnected from server, trying to reconnect...");
                     }
                 }
             }            

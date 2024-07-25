@@ -146,6 +146,8 @@ public class MultiplayerDSAMSWrapper : GameSessionUtilityWrapper
         dsHub.OnConnected += OnDSHubConnected;
         dsHub.OnDisconnected += OnDSHubDisconnected;
         dsHub.MatchmakingV2ServerClaimed += OnServerClaimed;
+        dsHub.GameSessionV2Ended += OnGameSessionEnded;
+        dsHub.GameSessionV2MemberChanged += OnGameSessionMemberChanged;
     }
 
     private void OnDSHubConnected()
@@ -187,8 +189,33 @@ public class MultiplayerDSAMSWrapper : GameSessionUtilityWrapper
         }
         else
         {
-            BytewarsLogger.Log($"Success to claim DS: {result.Value}");
+            BytewarsLogger.Log($"Success to claim DS: {result.Value.sessionId}");
             GameData.ServerSessionID = result.Value.sessionId;
+        }
+    }
+
+    public void OnGameSessionMemberChanged(Result<SessionV2GameSession> result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log(result.Value.ToJsonString());
+        }
+        else
+        {
+            BytewarsLogger.LogWarning($"Failed to receive session member changed notification, code: {result.Error.Code} reason: {result.Error.Message}");
+        }
+    }
+
+    private void OnGameSessionEnded(Result<SessionEndedNotification> result)
+    {
+        if (!result.IsError)
+        {
+            GameManager.Instance.StartShutdownCountdown(10);
+            BytewarsLogger.Log(result.Value.ToJsonString());
+        }
+        else
+        {
+            BytewarsLogger.LogWarning($"Failed to receive session ended notification, code: {result.Error.Code} reason: {result.Error.Message}");
         }
     }
 
