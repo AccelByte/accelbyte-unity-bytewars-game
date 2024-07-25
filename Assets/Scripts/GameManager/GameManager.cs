@@ -326,7 +326,10 @@ public class GameManager : NetworkBehaviour
 
         if (isInMenuScene)
         {
-            OnDisconnectedInMainMenu?.Invoke(reason);
+            if (ClientNetworkId == clientNetworkId)
+            {
+                OnDisconnectedInMainMenu?.Invoke(reason);
+            }
 
             if (_menuManager.IsLoading)
             {
@@ -359,7 +362,7 @@ public class GameManager : NetworkBehaviour
                 RemoveConnectedClient(clientNetworkId, isInGameScene, false);
 
                 // Start the in-game countdown to shut down the server if the required active team is not met.
-                if (_serverHelper.GetActiveTeamsCount() < GameData.GameModeSo.minimumTeamCountToPlay)
+                if (_serverHelper.GetActiveTeamsCount() <= GameData.GameModeSo.minimumTeamCountToPlay)
                 {
                     SetInGameState(InGameState.ShuttingDown);
                 }
