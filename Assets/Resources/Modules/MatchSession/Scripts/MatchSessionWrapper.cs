@@ -35,6 +35,7 @@ public class MatchSessionWrapper : GameSessionUtilityWrapper
     protected internal void CreateMatchSession(InGameMode inGameMode, GameSessionServerType sessionServerType)
     {
         GameManager.Instance.OnClientLeaveSession += LeaveCurrentGameSession;
+        GameManager.OnDisconnectedInMainMenu += DisconnectFromServer;
         lobby.SessionV2GameSessionMemberChanged += OnV2GameSessionMemberChanged;
 
         SelectedGameMode = inGameMode;
@@ -98,15 +99,30 @@ public class MatchSessionWrapper : GameSessionUtilityWrapper
     protected internal void JoinMatchSession(string sessionId, InGameMode gameMode)
     {
         GameManager.Instance.OnClientLeaveSession += LeaveCurrentGameSession;
+        GameManager.OnDisconnectedInMainMenu += DisconnectFromServer;
         lobby.SessionV2GameSessionMemberChanged += OnV2GameSessionMemberChanged;
         SelectedGameMode = gameMode;
 
         JoinSession(sessionId);
     }
 
+    private void DisconnectFromServer(string reason)
+    {
+        if (!string.IsNullOrEmpty(reason))
+        {
+            OnCreateOrJoinError?.Invoke(reason);
+            BytewarsLogger.LogWarning(reason);
+        } 
+        else
+        {
+            LeaveCurrentGameSession();
+        }
+    }
+
     protected internal void LeaveCurrentGameSession()
     {
         GameManager.Instance.OnClientLeaveSession -= LeaveCurrentGameSession;
+        GameManager.OnDisconnectedInMainMenu -= DisconnectFromServer;
         lobby.SessionV2GameSessionMemberChanged -= OnV2GameSessionMemberChanged;
         LeaveSession(gameSession.id);
     }
