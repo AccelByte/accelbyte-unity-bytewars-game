@@ -471,11 +471,6 @@ public class GameManager : NetworkBehaviour
     private void RemoveConnectedClientRpc(ulong clientNetworkId, TeamState[] teamStates,
         PlayerState[] playerStates, bool isResetMissile)
     {
-        if (IsHost)
-        {
-            return;
-        }
-
         UpdateInGamePlayerState(teamStates, playerStates);
         connectedClients.Remove(clientNetworkId);
 
