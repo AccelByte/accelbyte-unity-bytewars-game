@@ -106,12 +106,16 @@ public class FriendRequestsMenuHandler : MenuCanvas
 
     private void AcceptFriendInvitation(string userId)
     {
-        friendsEssentialsWrapper.AcceptFriend(userId, result => OnInvitationResponseCompleted(userId, result));
+        MenuManager.Instance.PromptMenu.ShowLoadingPrompt(FriendsHelper.AcceptingFriendRequestMessage);
+
+        friendsEssentialsWrapper.AcceptFriend(userId, OnAcceptInvitationCompleted);
     }
 
     private void DeclineFriendInvitation(string userId)
     {
-        friendsEssentialsWrapper.DeclineFriend(userId, result => OnInvitationResponseCompleted(userId, result));
+        MenuManager.Instance.PromptMenu.ShowLoadingPrompt(FriendsHelper.RejectingFriendRequestMessage);
+
+        friendsEssentialsWrapper.DeclineFriend(userId, OnDeclineInvitationCompleted);
     }
 
     #endregion Main Functions
@@ -157,7 +161,7 @@ public class FriendRequestsMenuHandler : MenuCanvas
             return;
         }
 
-        if (result.Value is null || !friendRequests.TryGetValue(userId, out GameObject friendEntry))
+        if (result.Value == null || !friendRequests.TryGetValue(userId, out GameObject friendEntry))
         {
             return;
         }
@@ -167,24 +171,34 @@ public class FriendRequestsMenuHandler : MenuCanvas
         friendImage.sprite = Sprite.Create(result.Value, imageRect, Vector2.zero);
     }
 
-    private void OnInvitationResponseCompleted(string userId, IResult result)
+    private void OnAcceptInvitationCompleted(IResult result)
     {
         if (result.IsError)
         {
+            MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptErrorTitle,
+                result.Error.Message, "OK", null);
             return;
         }
-        
-        Destroy(friendRequests[userId]);
-        
-        if (friendRequests.ContainsKey(userId))
+
+        MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptMessageTitle,
+            FriendsHelper.FriendRequestAcceptedMessage, "OK", null);
+
+        LoadIncomingFriendRequests();
+    }
+
+    private void OnDeclineInvitationCompleted(IResult result)
+    {
+        if (result.IsError)
         {
-            friendRequests.Remove(userId);
+            MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptErrorTitle,
+                result.Error.Message, "OK", null);
+            return;
         }
 
-        if (friendRequests.Count <= 0)
-        {
-            CurrentView = FriendRequestsView.Default;
-        }
+        MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptMessageTitle,
+            FriendsHelper.FriendRequestRejectedMessage, "OK", null);
+
+        LoadIncomingFriendRequests();
     }
     
     private void OnIncomingFriendRequest(string userId)

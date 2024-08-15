@@ -3,7 +3,6 @@
 // and restrictions contact your company contract manager.
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -27,9 +26,6 @@ public class FindFriendsMenuHandler : MenuCanvas
     [SerializeField] private RectTransform resultContentPanel;
 
     [Header("Menu Components"), SerializeField] private Button backButton;
-    
-    private const string FriendCodeCopiedMessage = "Copied!";
-    private const string FriendCodePreloadMessage = "...";
     
     private GameObject userResult;
     
@@ -107,11 +103,14 @@ public class FindFriendsMenuHandler : MenuCanvas
         });
     }
 
-    private void SendFriendInvitation(string userId)
+    private void SendFriendInvitation(string userId, bool usingFriendCode = false)
     {
-        MenuManager.Instance.PromptMenu.ShowLoadingPrompt("Sending friend request...");
+        if (!usingFriendCode)
+        {
+            MenuManager.Instance.PromptMenu.ShowLoadingPrompt(FriendsHelper.SendingFriendRequestMessage);
+        }
 
-        friendsEssentialsWrapper.SendFriendRequest(userId, OnSendRequestComplete);
+        friendsEssentialsWrapper.SendFriendRequest(userId, result => OnSendRequestComplete(result, usingFriendCode));
     }
     
     private void RetrievedUserAvatar(string userId)
@@ -128,7 +127,8 @@ public class FindFriendsMenuHandler : MenuCanvas
         if (result.IsError)
         {
             CurrentView = FindFriendsView.LoadFailed;
-            loadingFailedPanel.GetComponentInChildren<TMP_Text>().text = $"Query for '{query}' had no results.";
+            string queryNotFoundMessage = FriendsHelper.QueryNotFoundMessage.Replace("%QUERY%", query);
+            loadingFailedPanel.GetComponentInChildren<TMP_Text>().text = queryNotFoundMessage;
             return;
         }
 
@@ -146,7 +146,8 @@ public class FindFriendsMenuHandler : MenuCanvas
             }
             
             CurrentView = FindFriendsView.LoadFailed;
-            loadingFailedPanel.GetComponentInChildren<TMP_Text>().text = $"Query for '{query}' had no results.";
+            string queryNotFoundMessage = FriendsHelper.QueryNotFoundMessage.Replace("%QUERY%", query);
+            loadingFailedPanel.GetComponentInChildren<TMP_Text>().text = queryNotFoundMessage;
             return;
         }
         
@@ -156,43 +157,40 @@ public class FindFriendsMenuHandler : MenuCanvas
             BytewarsLogger.Log("Found friend code with self entry");
             
             CurrentView = FindFriendsView.LoadFailed;
-            loadingFailedPanel.GetComponentInChildren<TMP_Text>().text = "Cannot add self as friend.";
+            loadingFailedPanel.GetComponentInChildren<TMP_Text>().text = FriendsHelper.FriendRequestSelfMessage;
             return;
         }
 
-        SendFriendInvitation(userData.userId);
+        SendFriendInvitation(userData.userId, usingFriendCode: true);
         CreateFriendEntry(userData.userId, userData.displayName);
     }
     
-    private void OnSendRequestComplete(IResult result)
+    private void OnSendRequestComplete(IResult result, bool usingFriendCode = false)
     {
-        if (result.IsError || userResult == null)
+        if (result.IsError)
         {
-            // TODO: Update this error code when SDK has the correct error code for this case.
-            const ErrorCode FriendRequestAlreadySent = (ErrorCode)11973;
-            const ErrorCode FriendRequestAwaitingResponse = (ErrorCode)11974;
-
-            Dictionary<ErrorCode, string> errorMessages = new()
+            if (usingFriendCode)
             {
-                { FriendRequestAlreadySent, "You have already sent a friend request to this user." },
-                { FriendRequestAwaitingResponse, "This user has already sent you a friend request." },
-                { ErrorCode.FriendRequestConflictFriendship, "You are already friends with this user." },
-                { ErrorCode.PlayerBlocked, "You have blocked this user or this user has blocked you." }
-            };
+                BytewarsLogger.LogWarning($"Unable to send friend request using friend code: {result.Error.Message}");
+                return;
+            }
 
-            string errorMessage = "Failed to send friend request. Please try again later.";
-            if (errorMessages.TryGetValue(result.Error.Code, out string message))
+            string errorMessage = FriendsHelper.DefaultSendFriendRequestErrorMessage;
+            if (FriendsHelper.SendFriendRequestErrorMessages.TryGetValue(result.Error.Code, out string message))
             {
                 errorMessage = message;
             }
 
-            MenuManager.Instance.PromptMenu.ShowPromptMenu("Friend Request Failed",
-                errorMessage, "OK", null);
+            MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptErrorTitle, errorMessage, "OK", null);
             return;
         }
 
-        MenuManager.Instance.PromptMenu.ShowPromptMenu("Friend Request Sent", 
-            "Friend request has been sent successfully.", "OK", null);
+        string promptDetailsMessage = usingFriendCode 
+            ? FriendsHelper.FriendRequestSentFriendCodeMessage 
+            : FriendsHelper.FriendRequestSentDetailsMessage;
+
+        MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptMessageTitle, 
+            promptDetailsMessage, "OK", null);
         
         if (!userResult.TryGetComponent(out FindFriendsEntryHandler entryHandler))
         {
@@ -274,7 +272,7 @@ public class FindFriendsMenuHandler : MenuCanvas
         TMP_Text buttonText = friendCodeCopyButton.GetComponentInChildren<TMP_Text>();
         
         string originalText = buttonText.text;
-        buttonText.SetText(FriendCodeCopiedMessage);
+        buttonText.SetText(FriendsHelper.FriendCodeCopiedMessage);
         friendCodeCopyButton.interactable = false;
         
         await Task.Delay(TimeSpan.FromSeconds(2));
@@ -322,7 +320,7 @@ public class FindFriendsMenuHandler : MenuCanvas
     {
         if (string.IsNullOrEmpty(friendCodeString))
         {
-            friendCode.SetText(FriendCodePreloadMessage);
+            friendCode.SetText(FriendsHelper.FriendCodePreloadMessage);
             return;
         }
         

@@ -83,12 +83,32 @@ public class FriendDetailsMenuHandler : MenuCanvas
 
     private void Unfriend()
     {
-        managingFriendsWrapper.Unfriend(UserId, OnUnfriendCompleted);
+        MenuManager.Instance.PromptMenu.ShowPromptMenu(
+            FriendsHelper.PromptConfirmTitle,
+            FriendsHelper.UnfriendConfirmationMessage, 
+            "Yes", 
+            confirmAction: () =>
+            {
+                MenuManager.Instance.PromptMenu.ShowLoadingPrompt(FriendsHelper.UnfriendingMessage);
+
+                managingFriendsWrapper.Unfriend(UserId, OnUnfriendCompleted);
+            }, 
+            "No", null);
     }
 
     private void BlockPlayer()
     {
-        managingFriendsWrapper.BlockPlayer(UserId, OnBlockPlayerComplete);
+        MenuManager.Instance.PromptMenu.ShowPromptMenu(
+            FriendsHelper.PromptConfirmTitle,
+            FriendsHelper.BlockPlayerConfirmationMessage, 
+            "Yes", 
+            confirmAction: () =>
+            {
+                MenuManager.Instance.PromptMenu.ShowLoadingPrompt(FriendsHelper.BlockingPlayerMessage);
+
+                managingFriendsWrapper.BlockPlayer(UserId, OnBlockPlayerComplete);
+            }, 
+            "No", null);
     }
 
     #endregion Main Functions
@@ -99,10 +119,15 @@ public class FriendDetailsMenuHandler : MenuCanvas
     {
         if (result.IsError)
         {
+            MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptErrorTitle,
+                result.Error.Message, "OK", null);
             return;
         }
 
         BytewarsLogger.Log($"Successfully unfriend a user with an ID {UserId}");
+
+        MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptMessageTitle,
+            FriendsHelper.UnfriendCompletedMessage, "OK", null);
 
         MenuManager.Instance.OnBackPressed();
     }
@@ -111,10 +136,15 @@ public class FriendDetailsMenuHandler : MenuCanvas
     {
         if (result.IsError)
         {
+            MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptErrorTitle,
+                result.Error.Message, "OK", null);
             return;
         }
         
         BytewarsLogger.Log($"Successfully blocked user with user Id: {UserId}");
+
+        MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptMessageTitle,
+            FriendsHelper.BlockPlayerCompletedMessage, "OK", null);
 
         MenuManager.Instance.OnBackPressed();
     }

@@ -101,7 +101,9 @@ public class SentFriendRequestsMenuHandler : MenuCanvas
 
     private void CancelFriendRequest(string userId)
     {
-        friendsEssentialsWrapper.CancelFriendRequests(userId, _ => OnCancelFriendRequestCompleted(userId));
+        MenuManager.Instance.PromptMenu.ShowLoadingPrompt(FriendsHelper.CancellingFriendRequestMessage);
+
+        friendsEssentialsWrapper.CancelFriendRequests(userId, result => OnCancelFriendRequestCompleted(userId, result));
     }
 
     #endregion Main Functions
@@ -161,19 +163,17 @@ public class SentFriendRequestsMenuHandler : MenuCanvas
         friendImage.sprite = Sprite.Create(result.Value, imageRect, Vector2.zero);
     }
 
-    private void OnCancelFriendRequestCompleted(string userId)
+    private void OnCancelFriendRequestCompleted(string userId, IResult result)
     {
-        Destroy(friendRequests[userId]);
-        
-        if (friendRequests.ContainsKey(userId))
+        if (result.IsError)
         {
-            friendRequests.Remove(userId);
+            MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptErrorTitle,
+                result.Error.Message, "OK", null);
+            return;
         }
-        
-        if (friendRequests.Count <= 0)
-        {
-            CurrentView = SentFriendRequestsView.Default;
-        }
+
+        MenuManager.Instance.PromptMenu.ShowPromptMenu("Message", FriendsHelper.FriendRequestCancelledMessage, "OK", null);
+        LoadOutgoingFriendRequests();
     }
     
     private void OnFriendRequestUpdated(string userId)

@@ -25,6 +25,7 @@ public class PromptMenuCanvas : MenuCanvas
     [SerializeField] private Button cancelButton;
     [SerializeField] private Button loadingButton;
 
+    private bool shouldBlur = false;
     private float backgroundAlpha = 0.9f;
     private MenuCanvas currentActiveMenu;
 
@@ -70,12 +71,17 @@ public class PromptMenuCanvas : MenuCanvas
 
         SetConfirmButton(confirmText, confirmAction);
 
+        if (IsAnimating()) 
+        {
+            return;
+        }
+
         gameObject.SetActive(true);
         currentActiveMenu = GetCurrentActiveMenu();
 
         BlurActiveMenu();
         BlockActiveMenuInput();
-
+        
         StartFadeInAnimation();
     }
 
@@ -89,12 +95,17 @@ public class PromptMenuCanvas : MenuCanvas
         SetConfirmButton(confirmText, confirmAction);
         SetCancelButton(cancelText, cancelAction);
 
+        if (IsAnimating()) 
+        {
+            return;
+        }
+
         gameObject.SetActive(true);
         currentActiveMenu = GetCurrentActiveMenu();
         
         BlurActiveMenu();
         BlockActiveMenuInput();
-
+        
         StartFadeInAnimation();
     }
 
@@ -107,6 +118,11 @@ public class PromptMenuCanvas : MenuCanvas
 
         SetLoadingButton(showButton, confirmText, confirmAction);
 
+        if (IsAnimating()) 
+        {
+            return;
+        }
+
         gameObject.SetActive(true);
         currentActiveMenu = GetCurrentActiveMenu();
 
@@ -118,6 +134,11 @@ public class PromptMenuCanvas : MenuCanvas
 
     public void HidePromptMenu()
     {
+        if (IsAnimating()) 
+        {
+            return;
+        }
+
         UnblockActiveMenuInput();
         HideComponents();
         UnblurActiveMenu();
@@ -213,15 +234,35 @@ public class PromptMenuCanvas : MenuCanvas
         {
             return;
         }
+
+        if (canvas.worldCamera == null)
+        {
+            canvas.worldCamera = GameManager.Instance.MainCamera;
+        }
         
         canvas.renderMode = RenderMode.ScreenSpaceCamera;
-        canvas.worldCamera = GameManager.Instance.MainCamera;
         canvas.planeDistance = PlaneDistanceWhenBlurred;
+        shouldBlur = true;
     }
 
     private async void UnblurActiveMenu()
     {
         if (currentActiveMenu == null)
+        {
+            return;
+        }
+
+        MenuCanvas previousMenu = currentActiveMenu;
+        shouldBlur = false;
+        await Task.Delay(TimeSpan.FromSeconds(UnblurDelay));
+
+        bool differentMenu = currentActiveMenu != previousMenu;
+        if (differentMenu && previousMenu.transform.TryGetComponent(out Canvas previousCanvas))
+        {
+            previousCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        }
+
+        if (shouldBlur)
         {
             return;
         }
@@ -235,8 +276,6 @@ public class PromptMenuCanvas : MenuCanvas
         {
             return;
         }
-
-        await Task.Delay(TimeSpan.FromSeconds(UnblurDelay));
 
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
     }
@@ -293,6 +332,8 @@ public class PromptMenuCanvas : MenuCanvas
             await Task.Delay(TimeSpan.FromSeconds(FadeSpeed));
         }
 
+        // Snap to backgroundAlpha to prevent flickering.
+        background.color = new Color(background.color.r, background.color.g, background.color.b, backgroundAlpha);
         onComplete?.Invoke();
     }
 
@@ -306,7 +347,19 @@ public class PromptMenuCanvas : MenuCanvas
             await Task.Delay(TimeSpan.FromSeconds(FadeSpeed));
         }
 
+        // Snap to 0 alpha to prevent flickering.
+        background.color = new Color(background.color.r, background.color.g, background.color.b, 0f);
         onComplete?.Invoke();
+    }
+
+    private bool IsAnimating()
+    {
+        if (background == null)
+        {
+            return false;
+        }
+
+        return background.color.a != 0f && background.color.a != backgroundAlpha;
     }
 
     #endregion Fade Animation Methods

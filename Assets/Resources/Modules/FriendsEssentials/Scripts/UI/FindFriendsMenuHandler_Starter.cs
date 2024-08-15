@@ -3,7 +3,6 @@
 // and restrictions contact your company contract manager.
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -27,9 +26,6 @@ public class FindFriendsMenuHandler_Starter : MenuCanvas
     [SerializeField] private RectTransform resultContentPanel;
 
     [Header("Menu Components"), SerializeField] private Button backButton;
-
-    private const string FriendCodeCopiedMessage = "Copied!";
-    private const string FriendCodePreloadMessage = "...";
 
     private GameObject userResult;
 
@@ -119,7 +115,7 @@ public class FindFriendsMenuHandler_Starter : MenuCanvas
         TMP_Text buttonText = friendCodeCopyButton.GetComponentInChildren<TMP_Text>();
 
         string originalText = buttonText.text;
-        buttonText.SetText(FriendCodeCopiedMessage);
+        buttonText.SetText(FriendsHelper.FriendCodeCopiedMessage);
         friendCodeCopyButton.interactable = false;
 
         await Task.Delay(TimeSpan.FromSeconds(2));

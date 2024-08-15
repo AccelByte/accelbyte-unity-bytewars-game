@@ -93,7 +93,16 @@ public class BlockedPlayersMenuHandler : MenuCanvas
 
     private void UnblockPlayer(string userId)
     {
-        managingFriendsWrapper.UnblockPlayer(userId, result => OnUnblockPlayerCompleted(userId, result));
+        MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptConfirmTitle,
+            FriendsHelper.UnblockPlayerConfirmationMessage, 
+            "Yes", 
+            confirmAction: () => 
+            {
+                MenuManager.Instance.PromptMenu.ShowLoadingPrompt(FriendsHelper.UnblockingPlayerMessage);
+
+                managingFriendsWrapper.UnblockPlayer(userId, result => OnUnblockPlayerCompleted(userId, result));
+            },
+            "No", null);
     }
 
     private void RetrieveUserAvatar(string userId)
@@ -109,20 +118,15 @@ public class BlockedPlayersMenuHandler : MenuCanvas
     {
         if (result.IsError)
         {
+            MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptErrorTitle,
+                result.Error.Message, "OK", null);
             return;
         }
-        
-        if (!blockedPlayers.Remove(userId, out GameObject playerEntry))
-        {
-            return;
-        }
-        
-        Destroy(playerEntry);
-        
-        if (blockedPlayers.Count <= 0)
-        {
-            CurrentView = BlockedFriendsView.Default;
-        }
+
+        MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptMessageTitle,
+            FriendsHelper.UnblockPlayerCompletedMessage, "OK", null);
+
+        LoadBlockedPlayers();
     }
     
     private void OnGetBulkUserInfoCompleted(Result<ListBulkUserInfoResponse> result)
