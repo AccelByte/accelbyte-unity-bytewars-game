@@ -42,7 +42,12 @@ public class PresenceStatusHandler : MonoBehaviour
     private void Start()
     {
         presenceEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<PresenceEssentialsWrapper>();
-        
+        if (presenceEssentialsWrapper == null)
+        {
+            BytewarsLogger.LogWarning("PresenceEssentialsWrapper is null, please check if the module is enabled in the Asset Config.");
+            return;
+        }
+
         SetupPresence();
     }
     
@@ -63,7 +68,6 @@ public class PresenceStatusHandler : MonoBehaviour
         if (string.IsNullOrEmpty(UserId))
         {
             BytewarsLogger.LogWarning("UserId is empty");
-
             return;
         }
         
