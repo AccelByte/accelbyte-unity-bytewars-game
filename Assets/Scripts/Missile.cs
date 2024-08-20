@@ -89,10 +89,11 @@ public class Missile : GameEntityAbs
     {
         this.velocity = velocity;
         this.owningPlayerState = owningPlayerState;
+        
         missileColor = color;
+        missileState = State.Alive;
 
         isOnServer = NetworkManager.Singleton.IsListening && NetworkManager.Singleton.IsServer;
-        missileState = State.ClearShip;
 
         transform.SetPositionAndRotation(position, rotation);
         InitColor(color);
@@ -233,34 +234,32 @@ public class Missile : GameEntityAbs
         }
 
         char prefix = other.gameObject.name[0];
-        bool willBeDestroyed = false;
-        Transform t = transform;
+        bool isPlayer = prefix.Equals(InGameFactory.PlayerInstancePrefix);
+        bool isPlanet = prefix.Equals(InGameFactory.PlanetInstancePrefix);
 
-        if (prefix.Equals(InGameFactory.PlayerInstancePrefix))
+        if (missileState == State.Alive) 
         {
-            if (missileState == State.ClearShip)
+            int planetId = Planet.InvalidPlanetId;
+
+            if (isPlayer) 
             {
-                missileState = State.Alive;
-                return;
+                Player player = other.GetComponent<Player>();
+                GameManager.Instance.OnObjectHit(player, this);
+            }
+            else if (isPlanet) 
+            {
+                Planet planet = other.GetComponent<Planet>();
+                planet.OnHitByMissile();
+                planetId = planet.GetId();
             }
 
-            willBeDestroyed = true;
-            Player player = other.GetComponent<Player>();
-            GameManager.Instance.OnObjectHit(player, this);
-            GameManager.Instance.MissileHitClientRpc(owningPlayerState.clientNetworkId, 
-                id, -1, t.position, t.rotation);
-        }
-        else if (prefix.Equals(InGameFactory.PlanetInstancePrefix))
-        {
-            Planet planet = other.GetComponent<Planet>();
-            planet.OnHitByMissile();
-            willBeDestroyed = true;
-            GameManager.Instance.MissileHitClientRpc(owningPlayerState.clientNetworkId, 
-                id, planet.GetId(), t.position, t.rotation);
-        }
+            GameManager.Instance.MissileHitClientRpc(
+                owningPlayerState.clientNetworkId,
+                id,
+                planetId,
+                transform.position,
+                transform.rotation);
 
-        if (willBeDestroyed)
-        {
             missileState = State.FlaggedForDestruction;
         }
     }

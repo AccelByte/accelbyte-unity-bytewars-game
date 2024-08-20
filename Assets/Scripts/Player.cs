@@ -18,6 +18,7 @@ public class Player : GameEntityAbs
     [SerializeField] private ShipDestroyedEffect shipDestroyedEffectPrefab;
     [SerializeField] private Missile missilePrefab;
     [SerializeField] private MissileTrail missileTrailPrefab;
+    [SerializeField] private Transform missileSpawnPos;
     [SerializeField] private PlayerInput playerInput;
 
     [Header("Player Settings")]
@@ -176,7 +177,7 @@ public class Player : GameEntityAbs
             return null;
         }
 
-        Vector3 missileSpawnPosition = transform.position + transform.up * 0.25f;
+        Vector3 missileSpawnPosition = missileSpawnPos.transform.position;
         Missile missile = GameManager.Instance.Pool.Get(missilePrefab);
         Quaternion rotation = transform.rotation;
         Vector3 velocity = transform.up.normalized * (minMissileSpeed + (maxMissileSpeed - minMissileSpeed) * FirePowerLevel);

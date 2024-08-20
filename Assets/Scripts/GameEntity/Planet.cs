@@ -7,6 +7,8 @@ using UnityEngine;
 [RequireComponent(typeof(MeshRenderer))]
 public class Planet : GameEntityAbs
 {
+    public static readonly int InvalidPlanetId = -1;
+
     [SerializeField] private Renderer meshRenderer;
     [SerializeField] private float mass;
     [SerializeField] private float radius;
