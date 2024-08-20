@@ -124,17 +124,8 @@ public class GameOverMenuCanvas : MenuCanvas
 
     public void Countdown(int countdownSecond)
     {
-        if(!countdownContainer.gameObject.activeSelf) 
-        {
-            countdownContainer.gameObject.SetActive(true);
-        }
-            
         countdownTxt.text = $"Quitting in: {countdownSecond}";
-
-        if (countdownSecond <= 0)
-        {
-            countdownContainer.gameObject.SetActive(false);
-        }
+        countdownContainer.gameObject.SetActive(countdownSecond > 0);
     }
 
     #region MenuCanvas
