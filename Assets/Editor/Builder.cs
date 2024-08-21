@@ -17,8 +17,19 @@ public class Builder
         "Assets/Scenes/GalaxyWorld.unity"
     };
     
-    [MenuItem("Build/Build Windows64 Client")]
-    public static void BuildWindowsClient()
+    [MenuItem("Build/Build Windows64 Client/Development Build")]
+    public static void BuildWindowsClientDevelopment()
+    {
+        BuildWindowsClient(true);
+    }
+
+    [MenuItem("Build/Build Windows64 Client/Release Build")]
+    public static void BuildWindowsClientRelease()
+    {
+        BuildWindowsClient(false);
+    }
+
+    private static void BuildWindowsClient(bool development)
     {
         string[] cmdArgs = System.Environment.GetCommandLineArgs();
         string locationPathName = "../Build/Client/ByteWars.exe";
@@ -38,7 +49,7 @@ public class Builder
             scenes = scenes,
             locationPathName = locationPathName,
             target = BuildTarget.StandaloneWindows64,
-            options = BuildOptions.None
+            options = development ? BuildOptions.Development : BuildOptions.None
         };
         
         BuildReport report = BuildPipeline.BuildPlayer(options);
@@ -51,9 +62,20 @@ public class Builder
             Debug.LogError("[Builder.BuildWindowsClient] Build client failed");
         }
     }
-    
-    [MenuItem("Build/Build Server")]
-    public static void BuildLinuxServer()
+
+    [MenuItem("Build/Build Server/Development Build")]
+    public static void BuildLinuxServerDevelopment()
+    {
+        BuildLinuxServer(true);
+    }
+
+    [MenuItem("Build/Build Server/Release Build")]
+    public static void BuildLinuxServerRelease()
+    {
+        BuildLinuxServer(false);
+    }
+
+    private static void BuildLinuxServer(bool development)
     {
         string[] cmdArgs = System.Environment.GetCommandLineArgs();
         string locationPathName = "../Build/Server/ByteWarsServer.x86_64";
@@ -75,9 +97,10 @@ public class Builder
             locationPathName = locationPathName,
             target = BuildTarget.StandaloneLinux64,
             subtarget = (int)StandaloneBuildSubtarget.Server,
-            options = BuildOptions.None
+            options = development ? BuildOptions.Development : BuildOptions.None
         };
         BuildReport report = BuildPipeline.BuildPlayer(options);
+        
         if (report.summary.result == BuildResult.Succeeded)
         {
             Debug.Log($"[Builder.BuildLinuxServer] Build server successful - Build written to: {options.locationPathName}");
