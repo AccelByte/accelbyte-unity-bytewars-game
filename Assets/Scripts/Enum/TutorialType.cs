@@ -26,4 +26,5 @@ public enum TutorialType
     MatchmakingSession = 103,
     MatchSession = 104,
     MatchSessionWithP2P = 19,
+    Analytics = 200,
 }

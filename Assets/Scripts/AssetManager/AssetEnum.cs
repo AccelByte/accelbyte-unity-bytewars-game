@@ -5,6 +5,7 @@
 //Auto-generated from AssetNameEnumGenerator
 public enum AssetEnum
 {
+	AnalyticsAssetConfig,
 	AuthEssentialsAssetConfig,
 	BlockedPlayerEntryComponent,
 	BlockedPlayersMenuCanvas,

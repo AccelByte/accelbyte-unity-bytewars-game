@@ -29,6 +29,7 @@ public class Missile : GameEntityAbs
     [SerializeField] private float scoreIncrement = ScoreIncrement;
     [SerializeField] private float maxTimeAlive = 20.0f;
     [SerializeField] private float skimDistanceThreshold = 1.0f;
+    [SerializeField] private float nearHitPlayerDistanceThreshold = 1.0f;
 
     private int id;
     private bool isOnServer;
@@ -36,6 +37,7 @@ public class Missile : GameEntityAbs
     private float timeAlive = 0.0f;
     private float score = 0.0f;
     private float syncMissileTimer = 0;
+    private IList<Player> nearHitPlayers = new List<Player>();
 
     private AudioSource travelAudioSource;
     private AudioSource fireAudioSource;
@@ -168,24 +170,8 @@ public class Missile : GameEntityAbs
         }
         else if (timeAlive > 1.0f)
         {
-            if (GetIsSkimmingObject())
-            {
-                timeSkimmingPlanetReward += Time.deltaTime;
-            }
-            else
-            {
-                timeSkimmingPlanetReward = 0.0f;
-            }
-
-            if (timeSkimmingPlanetReward > skimDeltaForIncrementSeconds)
-            {
-                score += scoreIncrement;
-#if !UNITY_SERVER
-                ShowScorePopupText(transform.position, missileColor, scoreIncrement);
-#endif
-                timeSkimmingPlanetReward = 0.0f;
-                scoreIncrement *= additionalSkimScoreMultiplier;
-            }
+            CheckSkimmingObjectScore();
+            CheckNearHitPlayer();
 
             if (timeAlive > maxTimeAlive)
             {
@@ -344,6 +330,58 @@ public class Missile : GameEntityAbs
         return false;
     }
 
+    private void CheckSkimmingObjectScore()
+    {
+        float newTimeSkimmingPlanetReward = timeSkimmingPlanetReward + Time.deltaTime;
+        timeSkimmingPlanetReward = GetIsSkimmingObject() ? newTimeSkimmingPlanetReward : 0.0f;
+
+        if (timeSkimmingPlanetReward > skimDeltaForIncrementSeconds)
+        {
+            score += scoreIncrement;
+#if !UNITY_SERVER
+            ShowScorePopupText(transform.position, missileColor, scoreIncrement);
+#endif
+            timeSkimmingPlanetReward = 0.0f;
+            scoreIncrement *= additionalSkimScoreMultiplier;
+        }
+    }
+
+    private void CheckNearHitPlayer()
+    {
+        List<GameEntityAbs> playerEntities = 
+            GameManager.Instance.ActiveGEs.Where(
+                p => p != null && 
+                p.gameObject != gameObject && 
+                p.GetComponent<Player>() != null).ToList();
+
+        // Find near hit player.
+        Player nearHitPlayer = null;
+        foreach (GameEntityAbs playerEntity in playerEntities) 
+        {
+            float distance = Vector3.Distance(playerEntity.transform.position, gameObject.transform.position);
+            float combinedRadius = GetRadius() + playerEntity.GetRadius();
+            if (distance - combinedRadius < nearHitPlayerDistanceThreshold)
+            {
+                nearHitPlayer = playerEntity.GetComponent<Player>();
+                break;
+            }
+        }
+
+        // Abort if no near hit player
+        if (nearHitPlayer == null)
+        {
+            return;
+        }
+
+        // Validate near hit player. The same player is not a valid new near hit player.
+        if (!nearHitPlayers.Contains(nearHitPlayer)) 
+        {
+            BytewarsLogger.Log($"Near hit player: {nearHitPlayer.PlayerState.playerId}. Missile owner: {GetOwningPlayerState().playerId}");
+            nearHitPlayers.Add(nearHitPlayer);
+            GameManager.Instance.OnNearHitPlayer(nearHitPlayer, this);
+        }
+    }
+
     private bool IsOutOfBound()
     {
         Vector2 center = new(0, 0);
@@ -398,6 +436,7 @@ public class Missile : GameEntityAbs
         scoreIncrement = ScoreIncrement;
         timeAlive = 0;
         gameObject.SetActive(false);
+        nearHitPlayers.Clear();
 
 #if !UNITY_SERVER
         if (travelAudioSource)

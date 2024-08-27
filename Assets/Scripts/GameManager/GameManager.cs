@@ -31,7 +31,8 @@ public class GameManager : NetworkBehaviour
     public static event GameOverDelegate OnGameOver = delegate {};
     public static event Action<string> OnDisconnectedInMainMenu;
     public static event Action<InGameState> OnGameStateChanged;
-    
+    public static event Action<PlayerState /*deathPlayer*/, PlayerState /*killer*/> OnPlayerDie = delegate { };
+
     public event Action OnClientLeaveSession;
     public event Action OnDeregisterServer;
     public event Action OnRegisterServer;
@@ -583,6 +584,25 @@ public class GameManager : NetworkBehaviour
     {
         CollisionHelper.OnObjectHit(player, missile, Players, _serverHelper,
             _hud, this, _gameMode, availablePositions);
+
+        // Broadcast on-player die event.
+        OnPlayerDie?.Invoke(player.PlayerState, missile.GetOwningPlayerState());
+        OnPlayerDieClientRpc(player.PlayerState, missile.GetOwningPlayerState());
+        player.PlayerState.numKilledAttemptInSingleLifetime = 0;
+    }
+
+    public void OnNearHitPlayer(Player nearHitPlayer, Missile missile) 
+    {
+        nearHitPlayer.PlayerState.numKilledAttemptInSingleLifetime++;
+    }
+
+    [ClientRpc]
+    private void OnPlayerDieClientRpc(PlayerState deathPlayer, PlayerState killer)
+    {
+        if (!IsHost)
+        {
+            OnPlayerDie?.Invoke(deathPlayer, killer);
+        }
     }
 
     public void CheckForGameOverCondition(bool isGameOver)
