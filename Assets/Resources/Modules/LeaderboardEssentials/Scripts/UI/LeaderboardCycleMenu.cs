@@ -64,7 +64,11 @@ public class LeaderboardCycleMenu : MenuCanvas
     {
         leaderboardListPanel.DestroyAllChildren(allTimeButton.transform);
         CurrentView = LeaderboardCycleView.Default;
-        onLeaderboardCycleMenuActivated.Invoke(this, leaderboardListPanel, leaderboardItemButtonPrefab);
+        
+        if (ApiClientHelper.IsPlayerLoggedIn)
+        {
+            onLeaderboardCycleMenuActivated.Invoke(this, leaderboardListPanel, leaderboardItemButtonPrefab);
+        }
     }
 
     public static void ChangeToLeaderboardMenu(LeaderboardCycleType cycleType, string cycleId)

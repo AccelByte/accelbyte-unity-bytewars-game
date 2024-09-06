@@ -16,7 +16,7 @@ MonoBehaviour:
   disableUI: 1
   defaultMenuUIPrefab: {fileID: 0}
   defaultAdditionalMenuUIPrefabs: []
-  defaultModuleScript: {fileID: 11500000, guid: 1f28b143ecc7ef9469723dda4317bb69,
+  defaultModuleScript: {fileID: 11500000, guid: 0df50956eceaf674dac8dc130ca3c7d1,
     type: 3}
   type: 200
   isActive: 1
@@ -24,7 +24,7 @@ MonoBehaviour:
   additionalPrefab: 0
   defaultHelperScripts: []
   starterHelperScripts: []
-  starterScript: {fileID: 11500000, guid: 1f28b143ecc7ef9469723dda4317bb69, type: 3}
+  starterScript: {fileID: 11500000, guid: 0df50956eceaf674dac8dc130ca3c7d1, type: 3}
   starterMenuUIPrefab: {fileID: 0}
   starterAdditionalMenuUIPrefabs: []
   isStarterActive: 0

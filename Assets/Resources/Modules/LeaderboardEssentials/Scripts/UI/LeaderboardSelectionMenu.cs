@@ -60,7 +60,10 @@ public class LeaderboardSelectionMenu : MenuCanvas
             return;
         }
 
-        DisplayLeaderboardList();
+        if (ApiClientHelper.IsPlayerLoggedIn)
+        {
+            DisplayLeaderboardList();
+        }
     }
 
     private void ChangeToLeaderboardCycleMenu(string newLeaderboardCode)
