@@ -8,6 +8,7 @@ using AccelByte.Core;
 using AccelByte.Models;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class BrowseMatchMenuCanvas : MenuCanvas
@@ -257,7 +258,16 @@ public class BrowseMatchMenuCanvas : MenuCanvas
             viewItem.SetData(model, JoinMatch);
             instantiatedView.Add(viewItem);
         }
+        
         matchItemContainer.sizeDelta = new Vector2(0, (loadedModels.Count)* ViewItemHeight);
+        
+        if (instantiatedView.Count > 0)
+        {
+            GameObject joinButton = instantiatedView[0].GetComponentsInChildren<Button>()[0].gameObject;
+            EventSystem.current.SetSelectedGameObject(joinButton);
+            EventSystem.current.sendNavigationEvents = true;
+        }
+
     }
 
     private void ResetList()
