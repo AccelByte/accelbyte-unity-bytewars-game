@@ -40,7 +40,7 @@ public class CollisionHelper
              }
              else
              {
-                 if (NetworkManager.Singleton.IsServer)
+                 if (NetworkManager.Singleton.IsServer || NetworkManager.Singleton.IsHost)
                  {
                      game.ResetPlayerClientRpc(player.PlayerState.clientNetworkId);
                      player.Reset();

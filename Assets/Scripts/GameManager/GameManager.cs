@@ -613,12 +613,12 @@ public class GameManager : NetworkBehaviour
         {
             EndGame();
         }
-        else if (NetworkManager.Singleton.IsServer && isGameOver)
+        else if ((NetworkManager.Singleton.IsServer || IsHost) && isGameOver)
         {
             UpdatePlayerStatesClientRpc(
                 _serverHelper.ConnectedTeamStates.Values.ToArray(),
                 _serverHelper.ConnectedPlayerStates.Values.ToArray());
-
+            //update to client
             EndGame();
         }
     }
@@ -744,7 +744,6 @@ public class GameManager : NetworkBehaviour
 
                     _hud.gameObject.SetActive(false);
                     _menuManager.ShowInGameMenu(AssetEnum.GameOverMenuCanvas);
-                    InGameState = InGameState.None;
                 }
                 break;
         }
@@ -763,7 +762,7 @@ public class GameManager : NetworkBehaviour
             _inGameCamera.enabled = state == InGameState.Playing;
         }
 
-        if (IsServer)
+        if (IsServer || IsHost)
         {
             UpdateInGameStateClientRpc(InGameState, remainingGameDuration);
         }
@@ -776,10 +775,7 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void UpdateInGameStateClientRpc(InGameState inGameState, int remainingGameTime)
     {
-        if (IsHost)
-        {
-            return;
-        }
+        BytewarsLogger.Log($"change state to {inGameState}");
         
         if (_hud)
         {
@@ -975,12 +971,7 @@ public class GameManager : NetworkBehaviour
     
     [ClientRpc]
     public void UpdatePlayerStatesClientRpc(TeamState[] teamStates, PlayerState[] playerStates)
-    {
-        if (IsHost)
-        {
-            return;
-        }
-        
+    {        
         _serverHelper.UpdatePlayerStates(teamStates, playerStates);
         //TODO update game clients UI
     }
