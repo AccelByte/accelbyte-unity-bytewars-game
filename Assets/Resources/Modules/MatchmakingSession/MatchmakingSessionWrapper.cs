@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
+using Newtonsoft.Json;
 
 public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
 {
@@ -155,6 +156,15 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
         else
         {
             BytewarsLogger.LogWarning($"Error: {result.Error.Message}");
+            if (result.Error.Code == ErrorCode.MatchmakingV2CreateMatchTicketConflict)
+            {
+                Dictionary<string, object> messageVariables = JsonConvert.DeserializeObject<Dictionary<string, object>>(result.Error.messageVariables.ToJsonString());
+                if (messageVariables.TryGetValue("ticketID", out object ticketId))
+                {
+                    DeleteExistingMatchTickets(ticketId.ToString());
+                }
+            }
+            OnMatchmakingError?.Invoke(result.Error.Message);
         }
     }
 
@@ -195,7 +205,8 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
         SessionV2StatusFilter filter = SessionV2StatusFilter.JOINED;
         SessionV2AttributeOrderBy orderBy = SessionV2AttributeOrderBy.createdAt;
         
-        session.GetUserGameSessions(filter, orderBy, true,  result => {
+        session.GetUserGameSessions(filter, orderBy, true,  result => 
+        {
             if (!result.IsError)
             {
                 playerSessions.AddRange(result.Value.data);
@@ -214,6 +225,21 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
         {
             await Task.Yield();
         }
+    }
+    
+    private void DeleteExistingMatchTickets(string matchTicketId)
+    {
+        matchmakingV2.DeleteMatchmakingTicket(matchTicketId, result => 
+        {
+            if (!result.IsError)
+            {
+                BytewarsLogger.Log($"Successfully delete match ticket: {matchTicketId}");
+            }
+            else
+            {
+                BytewarsLogger.LogWarning($"Cannot delete match ticket : {result.Error.Message}");
+            }
+        });
     }
 
     #endregion
