@@ -17,6 +17,9 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     private bool isMatchTicketExpired = false;
     private InGameMode selectedInGameMode = InGameMode.None;
     private GameSessionServerType gameSessionServerType = GameSessionServerType.DedicatedServer;
+    private bool isMatchmakingFound = false;
+    private bool isJoined = false;
+    private bool isInvited = false;
     protected internal event Action OnMatchmakingWithDSStarted;
     protected internal event Action OnMatchTicketDSCreated;
     protected internal event Action OnMatchmakingWithDSTicketExpired;
@@ -28,6 +31,9 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     protected internal event Action<string /*Matchmaking Error Message*/> OnMatchmakingWithDSError;
     protected internal event Action<bool> OnDSAvailable;
     protected internal event Action<string /*DS Error Message*/> OnDSError;
+    protected internal event Action OnInvitedToSession;
+    protected internal event Action OnUserJoinedGameSession;
+    protected internal event Action OnSessionMemberUpdate;
 
     private void Awake()
     {
@@ -119,6 +125,8 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         BindMatchFoundNotification();
         BindMatchmakingExpiredNotification();
         BindOnDSUpdateNotification();
+        BindOnInviteToGameSessionNotification();
+        BindOnUserJoinedSessionNotification();
 
         OnMatchStarted += OnMatchStartedCallback;
         OnMatchFound += OnMatchFoundCallback;
@@ -126,6 +134,8 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         OnMatchTicketCreated += OnMatchTicketCreatedCallback;
         OnMatchTicketDeleted += OnMatchTicketDeletedCallback;
         OnDSStatusUpdate += OnDSStatusUpdateCallback;
+        OnInviteToGameSession += OnInviteToGameSessionCallback;
+        OnJoinedGameSession += OnJoinedGameSessionCallback;
     }
 
     /// <summary>
@@ -137,6 +147,8 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         UnBindMatchFoundNotification();
         UnBindMatchmakingExpiredNotification();
         UnBindOnDSUpdateNotification();
+        UnBindOnInviteToGameSessionNotification();
+        UnBindOnUserJoinedSessionNotification();
 
         OnMatchStarted -= OnMatchStartedCallback;
         OnMatchFound -= OnMatchFoundCallback;
@@ -144,6 +156,8 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         OnMatchTicketCreated -= OnMatchTicketCreatedCallback;
         OnMatchTicketDeleted -= OnMatchTicketDeletedCallback;
         OnDSStatusUpdate -= OnDSStatusUpdateCallback;
+        OnInviteToGameSession -= OnInviteToGameSessionCallback;
+        OnJoinedGameSession -= OnJoinedGameSessionCallback;
     }
 
     private void OnMatchStartedCallback(Result<MatchmakingV2MatchmakingStartedNotification> result)
@@ -158,7 +172,6 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
             BytewarsLogger.LogWarning($"Matchmaking started");
             OnMatchmakingWithDSError?.Invoke(result.Error.Message);
         }
-
     }
 
     private void OnMatchExpiredCallback(Result<MatchmakingV2TicketExpiredNotification> result)
@@ -180,18 +193,31 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 
     private async void OnMatchFoundCallback(Result<MatchmakingV2MatchFoundNotification> result)
     {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"Match Found with matchpool : {result.Value.matchPool}");
-            cachedSessionId = result.Value.id;
-            OnMatchmakingWithDSMatchFound?.Invoke();
-            await Delay();
-            StartJoinToGameSession(result.Value);
-        }
-        else
+        if (result.IsError)
         {
             BytewarsLogger.LogWarning($"Unable to get OnMatchFound Notification from lobby");
             OnMatchmakingWithDSError?.Invoke(result.Error.Message);
+            return;
+        }
+
+        BytewarsLogger.Log($"Match Found with matchpool : {result.Value.matchPool}");
+        isMatchmakingFound = true;
+        cachedSessionId = result.Value.id;
+        OnMatchmakingWithDSMatchFound?.Invoke();
+
+        await Task.Delay(1000);
+
+        if (isInvited && !isJoined)
+        {
+            BytewarsLogger.Log("OnInvitedToSession");
+            OnInvitedToSession?.Invoke();
+        }
+        else if (isJoined && !isInvited) 
+        {
+            BytewarsLogger.Log("Auto-Accept Session");
+            OnGetSessionDetailsCompleteEvent += OnJoiningSessionCompletedAsync;
+            OnMatchmakingWithDSJoinSessionStarted?.Invoke();
+            GetGameSessionDetailsById(cachedSessionId);
         }
     }
 
@@ -207,12 +233,47 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         OnMatchTicketDSCreated?.Invoke();
     }
 
-    private async void StartJoinToGameSession(MatchmakingV2MatchFoundNotification result)
+    private void OnJoinedGameSessionCallback(Result<SessionV2GameJoinedNotification> result)
     {
-        OnJoinSessionCompleteEvent += OnJoiningSessionCompleted;
+        if (result.IsError)
+        {
+            BytewarsLogger.LogWarning($"Error: {result.Error.Message}");
+            return;
+        }
+
+        isJoined = true;
+
+        if (isMatchmakingFound && !isInvited)
+        {
+            OnGetSessionDetailsCompleteEvent += OnJoiningSessionCompletedAsync;
+            OnMatchmakingWithDSJoinSessionStarted?.Invoke();
+            GetGameSessionDetailsById(cachedSessionId);
+        }
+    }
+
+    private void OnInviteToGameSessionCallback(Result<SessionV2GameInvitationNotification> result)
+    {
+        if (result.IsError)
+        {
+            BytewarsLogger.LogWarning($"Error: {result.Error.Message}");
+            return;
+        }
+
+        isInvited = true;
+        BytewarsLogger.Log($"User is invited to game session");
+
+        if (isMatchmakingFound && !isJoined)
+        {
+            OnInvitedToSession?.Invoke();
+        }
+    }
+
+    private async void StartJoinToGameSession(string sessionId)
+    {
+        OnJoinSessionCompleteEvent += OnJoiningSessionCompletedAsync;
         OnMatchmakingWithDSJoinSessionStarted?.Invoke();
-        await Delay();
-        JoinSession(result.id);
+        await Task.Delay(1000);
+        JoinSession(sessionId);
     }
 
     public void OnClientLeave()
@@ -225,6 +286,18 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     public void LeaveCurrentSession()
     {
         LeaveSession(cachedSessionId);
+        Reset(true);
+    }
+
+    public void RejectSessionInvitation()
+    {
+        RejectSession(cachedSessionId);
+        Reset();
+    }
+
+    public void AcceptSessionInvitation()
+    {
+        StartJoinToGameSession(cachedSessionId);
     }
 
     private void OnLeaveSessionComplete(Result<SessionV2GameSession> result)
@@ -236,42 +309,46 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         }
     }
 
-    private void OnJoiningSessionCompleted(Result<SessionV2GameSession> result)
+    private async void OnJoiningSessionCompletedAsync(Result<SessionV2GameSession> result)
     {
-        if (!result.IsError)
-        {
-            OnJoinSessionCompleteEvent -= OnJoiningSessionCompleted;
-            BytewarsLogger.Log($"Joined to session : {cachedSessionId} - Waiting DS Status");
-            OnMatchmakingWithDSJoinSessionCompleted?.Invoke();
-            BytewarsLogger.Log($"DS Status : {result.Value.dsInformation.StatusV2}");
-
-            if (result.Value.dsInformation.StatusV2 == SessionV2DsStatus.AVAILABLE)
-            {
-                TravelToDS(result.Value, selectedInGameMode);
-                UnbindMatchmakingEvent();
-            }
-        }
-        else
+        if (result.IsError)
         {
             BytewarsLogger.Log($"Error : {result.Error.Message}");
             OnMatchmakingWithDSError?.Invoke(result.Error.Message);
+            return;
+        }
+
+        OnJoinSessionCompleteEvent -= OnJoiningSessionCompletedAsync;
+        OnGetSessionDetailsCompleteEvent -= OnJoiningSessionCompletedAsync;
+        BytewarsLogger.Log($"Joined to session : {cachedSessionId} - Waiting DS Status");
+        OnMatchmakingWithDSJoinSessionCompleted?.Invoke();
+        BytewarsLogger.Log($"DS Status : {result.Value.dsInformation.StatusV2}");
+
+        if (result.Value.dsInformation.StatusV2 == SessionV2DsStatus.AVAILABLE)
+        {
+            OnDSAvailable?.Invoke(true);
+            Reset(false);
+            await Task.Delay(1000); // Add a delay to ensure the server-found information appears.
+            TravelToDS(result.Value, selectedInGameMode);
+            UnbindMatchmakingEvent();
         }
     }
 
     #region MatchmakingDSEventHandler
     
-    private void Reset()
+    private void Reset(bool resetCache = true)
     {
-        matchTicket = string.Empty;
-        cachedSessionId = string.Empty;
-        selectedInGameMode = InGameMode.None;
-    }
+        if (resetCache)
+        {
+            matchTicket = string.Empty;
+            cachedSessionId = string.Empty;
+            selectedInGameMode = InGameMode.None;
+        }
 
-    private async Task Delay(int milliseconds=1000)
-    {
-        await Task.Delay(milliseconds);
+        isInvited = false;
+        isJoined = false;
+        isMatchmakingFound = false;
     }
-
 
     #endregion EventHandler
 
@@ -289,8 +366,8 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
             switch (dsInfo.status)
             {
                 case SessionV2DsStatus.AVAILABLE:
-                    await Delay();
                     OnDSAvailable?.Invoke(true);
+                    await Task.Delay(1000); // Add a delay to ensure the server-found information appears.
                     TravelToDS(session, selectedInGameMode);
                     UnbindMatchmakingEvent();
                     break;
@@ -310,6 +387,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
             BytewarsLogger.LogWarning($"Error: {result.Error.Message}");
             OnDSError?.Invoke($"Error: {result.Error.Message}");
         }
+        Reset(false);
     }
     #endregion
 }

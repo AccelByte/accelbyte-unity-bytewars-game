@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -78,9 +79,16 @@ public abstract class MenuCanvas : MonoBehaviour
         MenuManager.Instance.ShowLoading(loadingMessage, null, null);
     }
 
-    protected void ShowLoading(string loadingMessage,
-        string timeoutReachedMessage, int timeoutInSecond,
-        UnityAction cancelCallback = null, bool showButton = true)
+    protected void ShowLoading(
+        string loadingMessage,
+        string timeoutReachedMessage, 
+        int timeoutInSecond,
+        UnityAction cancelCallback = null, 
+        bool showButton = true, 
+        UnityAction okCallback = null, 
+        bool disableOkButton = true, 
+        string okButtonText = "Ok",
+        string cancelButtonText = "Cancel")
     {
         MenuManager.Instance.HideInfo();
         MenuManager.Instance.ShowLoading(loadingMessage,
@@ -90,7 +98,14 @@ public abstract class MenuCanvas : MonoBehaviour
                 TimeoutReachedError = timeoutReachedMessage,
                 TimeoutSec = timeoutInSecond
             },
-            cancelCallback, showButton);
+            cancelCallback, showButton,
+            okCallback, disableOkButton,
+            okButtonText, cancelButtonText);
+    }
+
+    protected void ShowAdditionalInfo(string loadingMessage, bool hideButton = false)
+    {
+        MenuManager.Instance.ShowAdditionalInfo(loadingMessage, hideButton);
     }
 
     protected void ShowError(string errorMessage)

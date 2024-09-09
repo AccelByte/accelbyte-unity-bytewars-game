@@ -504,7 +504,15 @@ public class MenuManager : MonoBehaviour
 
     #region Loading Menu Methods
 
-    public void ShowLoading(string info, LoadingTimeoutInfo loadingTimeoutInfo = null, UnityAction cancelCallback = null, bool showButton = true)
+    public void ShowLoading(
+        string info, 
+        LoadingTimeoutInfo loadingTimeoutInfo = null, 
+        UnityAction cancelCallback = null, 
+        bool showButton = true,
+        UnityAction okCallback = null, 
+        bool disableOkButton = true, 
+        string okButtonText = "Ok",
+        string cancelButtonText = "Cancel")
     {
         LoadingMenuCanvas loadingMenuCanvas = _menusDictionary[AssetEnum.LoadingMenuCanvas] as LoadingMenuCanvas;
         if (loadingMenuCanvas == null)
@@ -523,11 +531,32 @@ public class MenuManager : MonoBehaviour
         
         _currentMainMenu.gameObject.SetActive(false);
         loadingMenuCanvas.gameObject.SetActive(true);
-        loadingMenuCanvas.Show(info, showButton, loadingTimeoutInfo, cancelCallback);
+        loadingMenuCanvas.Show(
+            info,
+            showButton,
+            loadingTimeoutInfo, 
+            cancelCallback, 
+            okCallback, 
+            disableOkButton, 
+            okButtonText,
+            cancelButtonText);
+    }
+
+    public void ShowAdditionalInfo(string info, bool hideButton)
+    {
+        LoadingMenuCanvas loadingMenuCanvas = _menusDictionary[AssetEnum.LoadingMenuCanvas] as LoadingMenuCanvas;
+        loadingMenuCanvas.ShowAdditionalInfo(info, hideButton);
+    }
+
+    public void HideAdditionalInfo()
+    {
+        LoadingMenuCanvas loadingMenuCanvas = _menusDictionary[AssetEnum.LoadingMenuCanvas] as LoadingMenuCanvas;
+        loadingMenuCanvas.HideAdditionalInfo();
     }
 
     public void HideLoading(bool showActiveMenuImmediately = true)
     {
+        HideAdditionalInfo();
         _menusDictionary[AssetEnum.LoadingMenuCanvas].gameObject.SetActive(false);
 
         if (IsMainMenuScene())

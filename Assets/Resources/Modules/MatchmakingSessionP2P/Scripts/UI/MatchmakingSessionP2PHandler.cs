@@ -4,6 +4,8 @@
 
 using System;
 using System.Threading.Tasks;
+using AccelByte.Core;
+using AccelByte.Models;
 using UnityEngine;
 
 public class MatchmakingSessionP2PHandler : MenuCanvas
@@ -77,7 +79,7 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
         
         matchmakingP2PWrapper.BindMatchmakingEvent();
         matchmakingP2PWrapper.OnMatchTicketP2PCreated += OnMatchTicketP2PCreated;
-        matchmakingP2PWrapper.OnMatchmakingWithP2PMatchFound += OnMatchmakingWithP2PMatchFound;
+        matchmakingP2PWrapper.OnMatchmakingWithP2PMatchFound += OnMatchFound;
         matchmakingP2PWrapper.OnMatchmakingWithP2PTicketExpired += OnMatchmakingWithP2PTicketExpired;
         matchmakingP2PWrapper.OnMatchmakingWithP2PJoinSessionStarted += OnMatchmakingWithP2PJoinSessionStarted;
         matchmakingP2PWrapper.OnMatchmakingWithP2PJoinSessionCompleted += OnMatchmakingWithP2PJoinSessionCompleted;
@@ -85,6 +87,15 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
         matchmakingP2PWrapper.OnMatchmakingWithP2PError += ErrorPanelAsync;
         matchmakingP2PWrapper.OnMatchmakingError += ErrorPanelAsync;
         matchmakingP2PWrapper.OnIntentionallyLeaveSession += Reset;
+        matchmakingP2PWrapper.OnInvitedToSession += OnInvitedToGameSession;
+        matchmakingP2PWrapper.OnRejectGameSessionCompleteEvent += OnSessionRejectedAsync;
+    }
+
+    private void OnInvitedToGameSession()
+    {
+        ShowLoading("Match Is Ready", "Cancelling match is timed out", 
+            cancelMatchmakingTimeoutSec, RejectMatch,
+            okCallback:AcceptMatch, okButtonText: "Accept", cancelButtonText: "Reject" );
     }
 
     private void UnbindMatchmakingEvents()
@@ -96,7 +107,7 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
         
         matchmakingP2PWrapper.UnbindMatchmakingEvent();
         matchmakingP2PWrapper.OnMatchTicketP2PCreated -= OnMatchTicketP2PCreated;
-        matchmakingP2PWrapper.OnMatchmakingWithP2PMatchFound -= OnMatchmakingWithP2PMatchFound;
+        matchmakingP2PWrapper.OnMatchmakingWithP2PMatchFound += OnMatchFound;
         matchmakingP2PWrapper.OnMatchmakingWithP2PTicketExpired -= OnMatchmakingWithP2PTicketExpired;
         matchmakingP2PWrapper.OnMatchmakingWithP2PJoinSessionStarted -= OnMatchmakingWithP2PJoinSessionStarted;
         matchmakingP2PWrapper.OnMatchmakingWithP2PJoinSessionCompleted -= OnMatchmakingWithP2PJoinSessionCompleted;
@@ -104,6 +115,8 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
         matchmakingP2PWrapper.OnMatchmakingWithP2PError -= ErrorPanelAsync;
         matchmakingP2PWrapper.OnMatchmakingError -= ErrorPanelAsync;
         matchmakingP2PWrapper.OnIntentionallyLeaveSession -= Reset;
+        matchmakingP2PWrapper.OnInvitedToSession -= OnInvitedToGameSession;
+        matchmakingP2PWrapper.OnRejectGameSessionCompleteEvent -= OnSessionRejectedAsync;
     }
 
     private void CancelP2PMatchmaking()
@@ -111,6 +124,19 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
         matchmakingP2PWrapper.CancelP2PMatchmaking();
         ShowLoading("Cancelling Match", "Cancelling match is timed out", cancelMatchmakingTimeoutSec);
     }
+
+    private void RejectMatch()
+    {
+        matchmakingP2PWrapper.RejectSessionInvitation();
+        ShowLoading("Rejecting Match", "Rejecting Match is timed out", cancelMatchmakingTimeoutSec);
+    }
+
+    private void AcceptMatch()
+    {
+        matchmakingP2PWrapper.AcceptSessionInvitation();
+        ShowLoading("Joining Match", "Rejecting Match is timed out", cancelMatchmakingTimeoutSec);
+    }
+
 
     private void OnMatchTicketP2PCreated()
     {
@@ -129,13 +155,31 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
         }
     }
 
+    private void OnMatchFound()
+    {
+        ShowAdditionalInfo("Match Found", hideButton: true);
+    }
 
     private async void OnMatchmakingWithP2PCanceledAsync()
     {
-        await Delay();
+        await Task.Delay(1000);
         ShowInfo("Matchmaking is Canceled");
         Reset();
     }
+
+    private async void OnSessionRejectedAsync(bool successed)
+    {
+        if (!successed)
+        {
+            CancelP2PMatchmaking();
+        }
+
+        ShowAdditionalInfo("Match Rejected");
+        await Task.Delay(1000);
+        ShowInfo("Match is rejected");
+        Reset();
+    }
+
 
     private void OnMatchmakingWithP2PJoinSessionCompleted(bool isLeader)
     {
@@ -167,7 +211,7 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
 
     private async void ErrorPanelAsync(string message)
     {
-        await Delay();
+        await Task.Delay(1000);
         ShowError(message);
         Reset();
     }
@@ -180,14 +224,9 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
 
     private async void OnMatchmakingWithDSCanceled()
     {
-        await Delay();
+        await Task.Delay(1000);
         ShowInfo("Matchmaking is Canceled");
         Reset();
-    }
-
-    private async Task Delay()
-    {
-        await Task.Delay(1500);
     }
 
     private void HideLoading(bool obj)

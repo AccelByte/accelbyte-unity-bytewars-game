@@ -86,6 +86,8 @@ public class MatchmakingSessionDSHandler : MenuCanvas
         matchmakingSessionDSWrapper.OnDSError += ErrorPanel;
         matchmakingSessionDSWrapper.OnIntentionallyLeaveSession += Reset;
         matchmakingSessionDSWrapper.OnDSAvailable += Travelling;
+        matchmakingSessionDSWrapper.OnInvitedToSession += OnInvitedToGameSession;
+        matchmakingSessionDSWrapper.OnRejectGameSessionCompleteEvent += OnSessionRejectedAsync;
     }
 
     private void OnMatchTicketDSCreated()
@@ -124,6 +126,28 @@ public class MatchmakingSessionDSHandler : MenuCanvas
         matchmakingSessionDSWrapper.OnDSError -= ErrorPanel;
         matchmakingSessionDSWrapper.OnIntentionallyLeaveSession -= Reset;
         matchmakingSessionDSWrapper.OnDSAvailable -= Travelling;
+        matchmakingSessionDSWrapper.OnInvitedToSession -= OnInvitedToGameSession;
+        matchmakingSessionDSWrapper.OnRejectGameSessionCompleteEvent -= OnSessionRejectedAsync;
+    }
+
+    private async void OnSessionRejectedAsync(bool successed)
+    {
+        if (!successed)
+        {
+            CancelDSMatchmaking();
+        }
+
+        ShowAdditionalInfo("Match Rejected");
+        await Task.Delay(1000);
+        ShowInfo("Match is rejected");
+        Reset();
+    }
+
+    private void OnInvitedToGameSession()
+    {
+        ShowLoading("Match Is Ready", "Cancelling match is timed out", 
+            cancelMatchmakingTimeoutSec, RejectMatch,
+            okCallback:AcceptMatch, okButtonText: "Accept", cancelButtonText: "Reject" );
     }
 
     private void OnMatchmakingWithDSJoinSessionStarted()
@@ -133,12 +157,12 @@ public class MatchmakingSessionDSHandler : MenuCanvas
 
     private void OnMatchmakingWithDSJoinSessionCompleted()
     {
-        ShowLoading("Waiting for DS", "Waiting for DS timed out", joinSessionTimeoutSec, OnDSTimeOut, false);
+        ShowLoading("Requesting Server", "Requesting Server timed out", joinSessionTimeoutSec, OnDSTimeOut, false);
     }
 
     private void Travelling(bool isAvailable)
     {
-        ShowLoading("Travelling", "Match Found timed out", joinSessionTimeoutSec);
+        ShowAdditionalInfo("Server Found");
         Reset();
     }
 
@@ -150,19 +174,19 @@ public class MatchmakingSessionDSHandler : MenuCanvas
 
     private void OnMatchmakingWithDSMatchFound()
     {
-        ShowLoading("Match Found", "Match Found timed out", joinSessionTimeoutSec);
+        ShowAdditionalInfo("Match Found", hideButton: true);
     }
 
     private async void ErrorPanel(string message)
     {
-        await Delay();
+        await Task.Delay(1000);
         ShowError(message);
         Reset();
     }
 
     private async void OnMatchmakingWithDSCanceled()
     {
-        await Delay();
+        await Task.Delay(1000);
         ShowInfo("Matchmaking is Canceled");
         Reset();
     }
@@ -179,23 +203,22 @@ public class MatchmakingSessionDSHandler : MenuCanvas
         Reset();
     }
 
-    private async Task Delay(int milliseconds=1000)
-    {
-        await Task.Delay(milliseconds);
-    }
-
     private void CancelDSMatchmaking()
     {
         matchmakingSessionDSWrapper.CancelDSMatchmaking();
         ShowLoading("Cancelling Match", "Cancelling match is timed out", cancelMatchmakingTimeoutSec);
     }
 
-    private void ClientLeaveGameSession()
+    private void RejectMatch()
     {
-        UnbindMatchmakingEvents();
+        matchmakingSessionDSWrapper.RejectSessionInvitation();
+        ShowLoading("Rejecting Match", "Rejecting Match is timed out", cancelMatchmakingTimeoutSec);
+    }
 
-        HideLoading();
-        matchmakingSessionDSWrapper.OnClientLeave();
+    private void AcceptMatch()
+    {
+        matchmakingSessionDSWrapper.AcceptSessionInvitation();
+        ShowLoading("Joining Match", "Rejecting Match is timed out", cancelMatchmakingTimeoutSec);
     }
 
     #region MenuCanvas

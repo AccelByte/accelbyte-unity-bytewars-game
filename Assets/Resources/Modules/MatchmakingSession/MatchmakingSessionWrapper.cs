@@ -24,6 +24,8 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
     public event ResultCallback<MatchmakingV2MatchFoundNotification> OnMatchFound;
     public event ResultCallback<SessionV2DsStatusUpdatedNotification> OnDSStatusUpdate;
     public event ResultCallback<MatchmakingV2TicketExpiredNotification> OnMatchExpired;
+    public event ResultCallback<SessionV2GameInvitationNotification> OnInviteToGameSession;
+    public event ResultCallback<SessionV2GameJoinedNotification> OnJoinedGameSession;
     public event Action<string /*match ticket id*/> OnMatchTicketCreated;
     public event Action<string> OnMatchmakingError;
     public event Action OnMatchTicketDeleted;
@@ -118,6 +120,26 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
         lobby.SessionV2DsStatusChanged -= OnDSStatusUpdated;
     }
 
+    protected void BindOnInviteToGameSessionNotification()
+    {
+        lobby.SessionV2InvitedUserToGameSession += OnInviteUserToGameSession;
+    }
+
+    protected void UnBindOnInviteToGameSessionNotification()
+    {
+        lobby.SessionV2InvitedUserToGameSession -= OnInviteUserToGameSession;
+    }
+
+    protected void BindOnUserJoinedSessionNotification()
+    {
+        lobby.SessionV2UserJoinedGameSession += OnUserJoinedGameSession;
+    }
+
+    protected void UnBindOnUserJoinedSessionNotification()
+    {
+        lobby.SessionV2UserJoinedGameSession -= OnUserJoinedGameSession;
+    }
+
     #endregion
 
     #region Lobby Service EventHandler
@@ -140,6 +162,16 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
     private void OnDSStatusUpdated(Result<SessionV2DsStatusUpdatedNotification> result)
     {
         OnDSStatusUpdate?.Invoke(result);
+    }
+
+    private void OnInviteUserToGameSession(Result<SessionV2GameInvitationNotification> result)
+    {
+        OnInviteToGameSession?.Invoke(result);
+    }
+
+    private void OnUserJoinedGameSession(Result<SessionV2GameJoinedNotification> result)
+    {
+        OnJoinedGameSession?.Invoke(result);
     }
 
     #endregion

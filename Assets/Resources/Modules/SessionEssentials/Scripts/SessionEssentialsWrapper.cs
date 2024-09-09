@@ -39,6 +39,11 @@ public class SessionEssentialsWrapper : MonoBehaviour
     /// </summary>
     public event Action<Result<PaginatedResponse<SessionV2GameSession>>> OnQueryGameSessionCompleteEvent;
 
+    /// <summary>
+    /// This event will be raised after QueryGameSession is complete
+    /// </summary>
+    public event Action<bool> OnRejectGameSessionCompleteEvent;
+
     protected void Awake()
     {
         session = AccelByteSDK.GetClientRegistry().GetApi().GetSession();
@@ -89,6 +94,15 @@ public class SessionEssentialsWrapper : MonoBehaviour
     protected void QueryGameSession(Dictionary<string, object> request)
     {
         session.QueryGameSession(request, OnQueryGameSessionCompleted);
+    }
+
+    /// <summary>
+    /// This method will invoke OnJoinSessionCompleteEvent and return Result<SessionV2GameSession>.
+    /// </summary>
+    /// <param name="sessionId"></param>
+    protected internal void RejectSession(string sessionId)
+    {
+        session.RejectGameSessionInvitation(sessionId, OnRejectGameSessionCompleted);
     }
 
     #region Session Callback
@@ -182,6 +196,21 @@ public class SessionEssentialsWrapper : MonoBehaviour
         OnQueryGameSessionCompleteEvent?.Invoke(result);
 
     }
+
+    private void OnRejectGameSessionCompleted(Result result)
+    {
+        if (!result.IsError)
+        {
+            BytewarsLogger.Log($"Successfully rejected the game session");
+        }
+        else
+        {
+            BytewarsLogger.LogWarning($"Error : {result.Error.Message}");
+        }
+
+        OnRejectGameSessionCompleteEvent?.Invoke(result.IsError);
+    }
+
 
     #endregion
 }
