@@ -1,16 +1,12 @@
-// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using AccelByte.Core;
 using AccelByte.Models;
-using UnityEngine;
 
 public class MatchSessionWrapper : GameSessionUtilityWrapper
 {
@@ -64,8 +60,15 @@ public class MatchSessionWrapper : GameSessionUtilityWrapper
             request.serverName = ConnectionHandler.LocalServerName;
         }
 
+        // Add preferred regions.
+        string[] preferredRegions = RegionPreferencesHelper.GetEnabledRegions().Select(x => x.RegionCode).ToArray();
+        if (preferredRegions.Length > 0)
+        {
+            request.requestedRegions = preferredRegions;
+        }
+
         // Playing with Party additional code
-        if (!String.IsNullOrWhiteSpace(PartyHelper.CurrentPartyId))
+        if (!string.IsNullOrEmpty(PartyHelper.CurrentPartyId))
         {
             string[] memberIds = PartyHelper.PartyMembersData.Select(data => data.UserId).ToArray();
             

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -82,7 +82,11 @@ public enum AssetEnum
 	MessageNotificationEntryPanel,
 	MultiplayerDSEssentialsAssetConfig,
 	MultiplayerMenuCanvas,
+	MultiplayerSettingsAssetConfig,
+	MultiplayerSettingsMenu,
 	NotificationEntryPanel,
+	OnlineSettingsAssetConfig,
+	OnlineSettingsMenu,
 	OptionsMenuCanvas,
 	OptionsSliderPanel,
 	PartyEssentialsAssetConfig,
@@ -104,6 +108,9 @@ public enum AssetEnum
 	PushNotificationPanel,
 	QuickPlayGameMenu,
 	RankingEntryPanel,
+	RegionPreferenceEntry,
+	RegionPreferencesAssetConfig,
+	RegionPreferencesMenu,
 	RoleGroupPanel,
 	SentFriendRequestsEntryComponent,
 	SentFriendRequestsMenuCanvas,

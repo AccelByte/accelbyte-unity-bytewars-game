@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AccelByte.Core;
 using AccelByte.Models;
 using UnityEngine;
@@ -114,6 +115,13 @@ public class BrowseMatchMenuCanvas : MenuCanvas
 
     private void OnBrowseMatchSessionFinished(BrowseMatchResult result)
     {
+        // Filter game session results.
+        result = new BrowseMatchResult
+        (
+            RegionPreferencesHelper.FilterEnabledRegionGameSession(result.Result.ToList()).ToArray(),
+            result.ErrorMessage
+        );
+
         if (string.IsNullOrEmpty(result.ErrorMessage))
         {
             HideLoadingBackToMainPanel();

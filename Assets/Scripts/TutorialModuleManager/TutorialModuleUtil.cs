@@ -35,7 +35,7 @@ public static class TutorialModuleUtil
         return prefix + offset.ToString("hh\\:mm");
     }
 
-    private static string GetLaunchParamValue(string param)
+    public static string GetLaunchParamValue(string param)
     {
         string[] cmdArgs = Environment.GetCommandLineArgs();
 #if UNITY_EDITOR
@@ -78,7 +78,7 @@ public static class TutorialModuleUtil
         // Read from the config file.
         else if (ConfigurationReader.Config != null)
         {
-            bool configValue = ConfigurationReader.Config.overrideDSVersion;
+            bool configValue = ConfigurationReader.Config.multiplayerDSConfiguration.overrideDSVersion;
             overrideDedicatedServerVersion = configValue;
             BytewarsLogger.Log($"Config file sets the override DS version config to {configValue.ToString().ToUpper()}");
         }

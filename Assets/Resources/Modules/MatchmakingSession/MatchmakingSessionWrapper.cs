@@ -4,11 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
 using Newtonsoft.Json;
+using UnityEngine;
 
 public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
 {
@@ -59,12 +61,28 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
             return;
         }
 
-        var optionalParams = CreateTicketRequestParams(isLocal);
+        MatchmakingV2CreateTicketRequestOptionalParams optionalParams = new MatchmakingV2CreateTicketRequestOptionalParams();
+        optionalParams.attributes = new Dictionary<string, object>();
+
+        // Add local server name.
+        if (isLocal)
+        {
+            optionalParams.attributes.Add("server_name", ConnectionHandler.LocalServerName);
+        }
+
+        // Add client version
+        optionalParams.attributes.Add("client_version", TutorialModuleUtil.IsOverrideDedicatedServerVersion() ? Application.version : string.Empty);
+
+        // Add preferred regions.
+        Dictionary<string, int> preferredRegions = RegionPreferencesHelper.GetEnabledRegions().ToDictionary(x => x.RegionCode, y => (int)y.Latency);
+        if (preferredRegions.Count > 0)
+        {
+            optionalParams.latencies = preferredRegions;
+        }
 
         // Play with Party additional code
-        if (!String.IsNullOrWhiteSpace(PartyHelper.CurrentPartyId))
+        if (!string.IsNullOrEmpty(PartyHelper.CurrentPartyId))
         {
-            optionalParams ??= new MatchmakingV2CreateTicketRequestOptionalParams();
             optionalParams.sessionId = PartyHelper.CurrentPartyId;
         }
 
@@ -216,22 +234,6 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
     #endregion
 
     #region Utils
-
-    private MatchmakingV2CreateTicketRequestOptionalParams CreateTicketRequestParams(bool isLocalServer)
-    {
-        if (!isLocalServer) return null;
-        var localServerName = ConnectionHandler.LocalServerName;
-        var optionalParams = new MatchmakingV2CreateTicketRequestOptionalParams
-        {
-            attributes = new Dictionary<string, object>()
-            {
-                { "server_name", localServerName },
-            }
-        };
-
-        return optionalParams;
-    }
-
     private void CheckActiveGameSessionClient()
     {
         SessionV2StatusFilter filter = SessionV2StatusFilter.JOINED;

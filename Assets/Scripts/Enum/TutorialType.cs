@@ -27,4 +27,7 @@ public enum TutorialType
     MatchSession = 104,
     MatchSessionWithP2P = 19,
     Analytics = 200,
+    OnlineSettings = 201,
+    MultiplayerSettings = 202,
+    RegionPreferences = 203
 }
