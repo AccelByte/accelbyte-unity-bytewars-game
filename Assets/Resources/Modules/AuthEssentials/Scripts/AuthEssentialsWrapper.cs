@@ -47,23 +47,11 @@ public class AuthEssentialsWrapper : MonoBehaviour
 
     #region AB Service Functions
 
-    public void Login(LoginType loginMethod, ResultCallback<TokenData, OAuthError> resultCallback)
+    public void LoginWithDeviceId(ResultCallback<TokenData, OAuthError> resultCallback)
     {
-        switch (loginMethod)
-        {
-            case LoginType.DeviceId:
-                platformType = PlatformType.Device;
-                platformToken = SystemInfo.deviceUniqueIdentifier;
-                break;
-            case LoginType.Steam:
-                break;
-            default:
-                break;
-        }
+        user.LoginWithDeviceId(result => OnLoginCompleted(result, resultCallback));
 
-        BytewarsLogger.Log($"[AuthEssentials] Trying to login with device id: {SystemInfo.deviceUniqueIdentifier}");
-
-        user.LoginWithOtherPlatform(platformType, platformToken, result => OnLoginCompleted(result, resultCallback));
+        BytewarsLogger.Log($"[AuthEssentials] Trying to login with Device ID: {(UserData != null ? UserData.DeviceId : "null")}");
     }
 
     public void LoginWithUsername(string username, string password, ResultCallback<TokenData, OAuthError> resultCallback)

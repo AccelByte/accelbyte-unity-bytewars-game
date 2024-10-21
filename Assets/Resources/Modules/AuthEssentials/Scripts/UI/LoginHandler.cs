@@ -98,7 +98,7 @@ public class LoginHandler : MenuCanvas
         CurrentView = LoginView.LoginLoading;
         lastLoginMethod = loginMethod;
         OnRetryLoginClicked = OnRetryLoginButtonClicked;
-        authWrapper.Login(loginMethod, OnLoginCompleted);
+        authWrapper.LoginWithDeviceId(OnLoginCompleted);
     }
 
     public void OnLoginCompleted(Result<TokenData, OAuthError> result)
