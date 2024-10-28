@@ -113,7 +113,9 @@ public class RegionPreferencesWrapper : MonoBehaviour
     {
         if (GetEnabledRegions().Count > 0) 
         {
-            gameSessions.RemoveAll(x => x.dsInformation == null || !GetEnabledRegions().Select(x => x.RegionCode).Contains(x.dsInformation.server.region));
+            gameSessions.Where(x => 
+                x.configuration.type != SessionConfigurationTemplateType.P2P).ToList().
+                RemoveAll(x => x.dsInformation == null || !GetEnabledRegions().Select(x => x.RegionCode).Contains(x.dsInformation.server.region));
         }
         return gameSessions;
     }
