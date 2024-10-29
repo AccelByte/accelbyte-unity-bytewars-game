@@ -1070,7 +1070,7 @@ public class GameManager : NetworkBehaviour
         hud.UpdatePreGameCountdown(timerSecond);
         bool areEnoughPlayersConnected = 
             !IsLocalGame() && 
-            serverHelper.GetActiveTeamsCount() >= GameData.GameModeSo.minimumTeamCountToPlay;
+            serverHelper.GetActiveTeamsCount() > GameData.GameModeSo.minimumTeamCountToPlay;
         
         if (timerSecond == 0)
         {

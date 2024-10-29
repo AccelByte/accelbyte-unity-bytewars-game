@@ -42,7 +42,7 @@ MonoBehaviour:
   gameMode: 3
   playerPerTeamCount: 1
   teamCount: 4
-  minimumTeamCountToPlay: 2
+  minimumTeamCountToPlay: 1
   maxInFlightMissilesPerPlayer: 1
   lobbyCountdownSecond: 30
   beforeGameCountdownSecond: 5
