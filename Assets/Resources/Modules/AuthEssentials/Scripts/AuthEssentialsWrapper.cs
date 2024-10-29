@@ -49,9 +49,8 @@ public class AuthEssentialsWrapper : MonoBehaviour
 
     public void LoginWithDeviceId(ResultCallback<TokenData, OAuthError> resultCallback)
     {
+        BytewarsLogger.Log($"Trying to login with Device ID");
         user.LoginWithDeviceId(result => OnLoginCompleted(result, resultCallback));
-
-        BytewarsLogger.Log($"[AuthEssentials] Trying to login with Device ID: {(UserData != null ? UserData.DeviceId : "null")}");
     }
 
     public void LoginWithUsername(string username, string password, ResultCallback<TokenData, OAuthError> resultCallback)
@@ -184,7 +183,7 @@ public class AuthEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            BytewarsLogger.Log("Login user successful.");
+            BytewarsLogger.Log($"The user successfully logged in with Device ID: {result.Value.platform_user_id}");
 
             GameData.CachedPlayerState.playerId = result.Value.user_id;
             UserData = result.Value;
@@ -194,7 +193,7 @@ public class AuthEssentialsWrapper : MonoBehaviour
         }
         else
         {
-            BytewarsLogger.Log($"Login user failed. Message: {result.Error.error}");
+            BytewarsLogger.Log($"The user failed to log in with Device ID. Error Message: {result.Error.error}");
         }
 
         customCallback?.Invoke(result);
