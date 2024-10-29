@@ -91,9 +91,19 @@ public class LeaderboardMenu : MenuCanvas
     {
         if (result.IsError)
         {
-            BytewarsLogger.LogWarning($"Failed to display leaderboard rankings. Error: {result.Error.Message}");
-            CurrentView = LeaderboardMenuView.Failed;
-            return;
+            // This block prevents leaderboard display issues caused by users without rankings
+            if (result.Error.Code == ErrorCode.LeaderboardRankingUnableToRetrieve)
+            {
+                BytewarsLogger.LogWarning($"Failed to Get User Ranking. Error: {result.Error.Message}");
+                CurrentView = LeaderboardMenuView.Default;
+                return;
+            }
+            else
+            {
+                BytewarsLogger.LogWarning($"Failed to display leaderboard rankings. Error: {result.Error.Message}");
+                CurrentView = LeaderboardMenuView.Failed;
+                return;
+            } 
         }
 
         if (currentCycleType == LeaderboardCycleMenu.LeaderboardCycleType.AllTime)
