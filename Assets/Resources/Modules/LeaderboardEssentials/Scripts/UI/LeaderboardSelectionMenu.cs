@@ -14,8 +14,9 @@ using UnityEngine.UI;
 public class LeaderboardSelectionMenu : MenuCanvas
 {
     [SerializeField] private Transform leaderboardListPanel;
+    [SerializeField] private Transform noEntryPanel;
     [SerializeField] private Transform loadingPanel;
-    [SerializeField] private Transform loadingFailed;
+    [SerializeField] private Transform failedPanel;
 
     [SerializeField] private Button backButton;
     [SerializeField] private GameObject leaderboardItemButtonPrefab;
@@ -23,6 +24,7 @@ public class LeaderboardSelectionMenu : MenuCanvas
     private enum LeaderboardSelectionView
     {
         Default,
+        Empty,
         Loading,
         Failed
     }
@@ -35,8 +37,9 @@ public class LeaderboardSelectionMenu : MenuCanvas
         set
         {
             leaderboardListPanel.gameObject.SetActive(value == LeaderboardSelectionView.Default);
+            noEntryPanel.gameObject.SetActive(value == LeaderboardSelectionView.Empty);
             loadingPanel.gameObject.SetActive(value == LeaderboardSelectionView.Loading);
-            loadingFailed.gameObject.SetActive(value == LeaderboardSelectionView.Failed);
+            failedPanel.gameObject.SetActive(value == LeaderboardSelectionView.Failed);
             currentView = value;
         }
     }
@@ -89,9 +92,9 @@ public class LeaderboardSelectionMenu : MenuCanvas
         LeaderboardDataV3[] leadeboardList = result.Value.Data.Where(data => data.Name.Contains("Unity")).ToArray();
 
         // No relevant leaderboard was found.
-        if (leadeboardList.Length < 0)
+        if (leadeboardList.Length <= 0)
         {
-            CurrentView = LeaderboardSelectionView.Failed;
+            CurrentView = LeaderboardSelectionView.Empty;
             return;
         }
 
