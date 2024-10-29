@@ -32,6 +32,12 @@ public class Builder
     private static void BuildWindowsClient(bool development)
     {
         string[] cmdArgs = System.Environment.GetCommandLineArgs();
+        
+        if (development)
+        {
+            GenerateSDKConfig();
+        }
+
         string locationPathName = "../Build/Client/ByteWars.exe";
         foreach (string arg in cmdArgs)
         {
