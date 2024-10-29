@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using AccelByte.Api;
 using AccelByte.Core;
@@ -34,7 +35,7 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
 
         steamHelper = new SteamHelper();
 
-        SetLoginWithSteamButtonClickCallback();
+        StartCoroutine(WaitingLoginHandler(SetLoginWithSteamButtonClickCallback));
     }
 
     private void OnApplicationQuit()
@@ -43,6 +44,22 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
         {
             lobby.Disconnect();
         }
+    }
+
+    private IEnumerator WaitingLoginHandler(Action action)
+    {
+        while (!MenuManager.Instance.IsInitiated)
+        {
+            yield return null;
+        }
+
+        while(MenuManager.Instance.GetCurrentMenu().GetAssetEnum() != AssetEnum.LoginMenuCanvas)
+        {
+            yield return null;
+        }
+
+        BytewarsLogger.Log($"{AssetEnum.LoginMenuCanvas} found");
+        action?.Invoke();
     }
 
     private void SetLoginWithSteamButtonClickCallback()
