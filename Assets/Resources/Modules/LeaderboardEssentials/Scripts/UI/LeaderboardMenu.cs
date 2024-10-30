@@ -46,7 +46,7 @@ public class LeaderboardMenu : MenuCanvas
         }
     }
 
-    private TokenData currentUserData;
+    private PlayerState currentUserData;
 
     private LeaderboardEssentialsWrapper leaderboardWrapper;
     private AuthEssentialsWrapper authWrapper;
@@ -82,7 +82,7 @@ public class LeaderboardMenu : MenuCanvas
 
     private void InitializeLeaderboardRequiredValues()
     {
-        currentUserData = authWrapper.UserData;
+        currentUserData = GameData.CachedPlayerState;
         currentLeaderboardCode = LeaderboardSelectionMenu.chosenLeaderboardCode;
         currentCycleType = LeaderboardCycleMenu.chosenCycleType;
     }
@@ -112,9 +112,9 @@ public class LeaderboardMenu : MenuCanvas
             if (allTimeUserRank != null)
             {
                 userRankingPanel.SetRankingDetails(
-                    currentUserData.user_id,
+                    currentUserData.playerId,
                     allTimeUserRank.rank,
-                    currentUserData.display_name,
+                    currentUserData.playerName,
                     allTimeUserRank.point);
             }
         }
@@ -124,9 +124,9 @@ public class LeaderboardMenu : MenuCanvas
             if (cycleUserRank != null)
             {
                 userRankingPanel.SetRankingDetails(
-                    currentUserData.user_id,
+                    currentUserData.playerId,
                     cycleUserRank.Rank,
-                    currentUserData.display_name,
+                    currentUserData.playerName,
                     cycleUserRank.Point);
             }
         }
@@ -152,7 +152,7 @@ public class LeaderboardMenu : MenuCanvas
             rankOrder += 1;
             InstantiateRankingEntry(userId, rankOrder, userDisplayNames[userId], userRankInfos[userId]);
 
-            if (userId.Equals(currentUserData.user_id))
+            if (userId.Equals(currentUserData.playerName))
             {
                 userRankingPanel.SetRankingDetails(
                     userId,
@@ -164,7 +164,7 @@ public class LeaderboardMenu : MenuCanvas
 
         /* No need to query current player ranking if already in the ranking list.
          * Immediately show the leaderboard ranking list. */
-        if (userRankInfos.Keys.Contains(currentUserData.user_id))
+        if (userRankInfos.Keys.Contains(currentUserData.playerId))
         {
             CurrentView = LeaderboardMenuView.Default;
             return;
@@ -172,7 +172,7 @@ public class LeaderboardMenu : MenuCanvas
 
         // Get current player ranking if not already in the ranking list.
         leaderboardWrapper.GetUserRanking(
-            currentUserData.user_id,
+            currentUserData.playerId,
             currentLeaderboardCode,
             OnGetUserRankingCompleted);
     }
@@ -220,7 +220,7 @@ public class LeaderboardMenu : MenuCanvas
             Instantiate(rankingEntryPanelPrefab, rankingListPanel).GetComponent<RankingEntryPanel>();
         rankingEntryPanel.SetRankingDetails(userId, playerRank, playerName, playerScore);
 
-        if (userId != currentUserData.user_id) return;
+        if (userId != currentUserData.playerId) return;
 
         // Highlight players ranking entry and set ranking details to user ranking panel
         rankingEntryPanel.SetPanelColor(new Color(1.0f, 1.0f, 1.0f, 0.098f)); // rgba 255,255,255,25
