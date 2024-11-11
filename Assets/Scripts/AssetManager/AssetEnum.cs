@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -41,6 +41,7 @@ public enum AssetEnum
 	HelpAndOptionsMenuCanvas,
 	HelpMenuCanvas,
 	InfoMenuCanvas,
+	InGameLatencyInfo,
 	LeaderboardCycleMenuCanvas,
 	LeaderboardCycleMenuCanvas_Starter,
 	LeaderboardEssentialsAssetConfig,
@@ -130,4 +131,5 @@ public enum AssetEnum
 	StatsProfileMenuCanvas,
 	StatsProfileMenuCanvas_Starter,
 	TutorialModuleConfig,
+	UserDetailComponent,
 }

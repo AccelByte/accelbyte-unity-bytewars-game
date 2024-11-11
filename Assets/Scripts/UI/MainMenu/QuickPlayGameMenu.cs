@@ -1,13 +1,18 @@
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using UnityEngine;
 using UnityEngine.UI;
-
 
 public class QuickPlayGameMenu : MenuCanvas
 {
     public Button backButton;
     public Button eliminationButton;
     public Button teamDeadmatchButton;
-    private readonly IMatchmaking matchmaking = new MatchmakingWrapper();
+#if !UNITY_WEBGL
+    private readonly IMatchmaking matchmaking = new OfflineMatchmaker();
+#endif
     void Start()
     {
         eliminationButton.onClick.AddListener(OnEliminationButtonPressed);
@@ -19,7 +24,9 @@ public class QuickPlayGameMenu : MenuCanvas
     {
         MenuManager.Instance.ShowLoading("Finding Elimination Match...", null, ClickCancelMatchmakingElimination);
         //call dummy Accelbyte Game Services for matchmaking to get server ip address and port
+#if !UNITY_WEBGL
         matchmaking.StartMatchmaking(InGameMode.OnlineEliminationGameMode, OnMatchmakingFinished);
+#endif
 
     }
 
@@ -74,7 +81,9 @@ public class QuickPlayGameMenu : MenuCanvas
     private void ClickCancelMatchmakingElimination()
     {
         //TODO cancel matchmaking using SDK too
+#if !UNITY_WEBGL
         matchmaking.CancelMatchmaking();
+#endif
         MenuManager.Instance.HideLoading();
     }
 
@@ -82,9 +91,12 @@ public class QuickPlayGameMenu : MenuCanvas
     {
         MenuManager.Instance.ShowLoading("Finding Team Death-match ...", null, ClickCancelMatchmakingElimination);
         //call dummy Accelbyte Game Services for matchmaking to get server ip address and port
+#if !UNITY_WEBGL
         matchmaking.StartMatchmaking(InGameMode.OnlineDeathMatchGameMode,
             OnMatchmakingFinished);
+#endif
     }
+
 
     public override GameObject GetFirstButton()
     {

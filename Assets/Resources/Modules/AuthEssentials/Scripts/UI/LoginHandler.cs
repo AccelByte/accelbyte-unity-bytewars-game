@@ -13,7 +13,7 @@ using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEditor;
-
+using System.Collections.Generic;
 #if UNITY_EDITOR
 using ParrelSync;
 #endif
@@ -90,7 +90,35 @@ public class LoginHandler : MenuCanvas
 
     private void OnEnable()
     {
+        StartCoroutine(CheckWrapper(AutoLogin));
         CurrentView = LoginView.LoginState;
+    }
+
+    private void AutoLogin()
+    {
+        if ( MenuManager.Instance.GetCurrentMenu() is LoginHandler && !authWrapper.GetActiveUser())
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            AutoLoginURL();
+#else
+            AutoLoginCmd();
+#endif
+        }
+    }
+
+    private void OnDisable()
+    {
+        StopCoroutine(CheckWrapper(AutoLogin));
+    }
+
+    IEnumerator CheckWrapper(Action action)
+    {
+        while (authWrapper == null)
+        {
+            yield return null; // Wait for the next frame
+        }
+
+        action.Invoke();
     }
 
     private void Login(LoginType loginMethod)
@@ -125,16 +153,23 @@ public class LoginHandler : MenuCanvas
 
     private void AutoLoginCmd()
     {
+        bool argCheckingLoginWithUsername = Environment.GetCommandLineArgs().Contains("-AUTH_TYPE=ACCELBYTE");
         string[] cmdArgs = Environment.GetCommandLineArgs();
 
 #if UNITY_EDITOR
         if (ClonesManager.IsClone())
         {
+            argCheckingLoginWithUsername = ClonesManager.GetArgument().Contains("-AUTH_TYPE=ACCELBYTE");
             cmdArgs = ClonesManager.GetArgument().Split();
         }
 #endif
-        string username = "";
-        string password = "";
+        if (!argCheckingLoginWithUsername)
+        {
+            return;
+        }
+
+        string username = string.Empty;
+        string password = string.Empty;
 
         foreach (string cmdArg in cmdArgs)
         {
@@ -150,30 +185,56 @@ public class LoginHandler : MenuCanvas
         }
 
         // try login with the username and password specified with command-line arguments
-        if (username != "" && password != "")
+        if (username != string.Empty && password != string.Empty)
         {
+            CurrentView = LoginView.LoginLoading;
             authWrapper.LoginWithUsername(username, password, OnLoginCompleted);
         }
-        
+        else
+        {
+            failedMessageText.text = $"Login Failed:\n Email and Password fields cannot be empty.";
+            failedMessageText.alignment = TextAlignmentOptions.Center;
+            CurrentView = LoginView.LoginFailed;
+            StartCoroutine(SetSelectedGameObject(retryLoginButton.gameObject));
+            retryLoginButton.gameObject.SetActive(false);
+        }
     }
     
     private void OnLoginWithDeviceIdButtonClicked()
     {
-        bool argCheckingLoginWithUsername = Environment.GetCommandLineArgs().Contains("-AUTH_TYPE=ACCELBYTE");
+        Login(LoginType.DeviceId);
+    }
 
-#if UNITY_EDITOR
-        if (ClonesManager.IsClone())
+    private void AutoLoginURL()
+    {
+        Dictionary<string, string> urlParams = ConnectionHandler.GetURLParameters();
+
+        if (urlParams.Count == 0)
         {
-            argCheckingLoginWithUsername = ClonesManager.GetArgument().Contains("-AUTH_TYPE=ACCELBYTE");
+            BytewarsLogger.Log($"Url Params Not found");
+            return;
         }
-#endif
-        if (argCheckingLoginWithUsername)
+
+        CurrentView = LoginView.LoginLoading;
+
+        if (urlParams.TryGetValue("-AUTH_TYPE", out string authType))
         {
-            AutoLoginCmd();
-        }
-        else
-        {
-            Login(LoginType.DeviceId);
+            if (authType == "ACCELBYTE")
+            {
+                urlParams.TryGetValue("-AUTH_LOGIN", out string email);
+                urlParams.TryGetValue("-AUTH_PASSWORD", out string password);
+
+                if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+                {
+                    failedMessageText.text = $"Login Failed:\n Email and Password fields cannot be empty.";
+                    CurrentView = LoginView.LoginFailed;
+                    StartCoroutine(SetSelectedGameObject(retryLoginButton.gameObject));
+                    retryLoginButton.gameObject.SetActive(false);
+                    return;
+                }
+
+                authWrapper.LoginWithUsername(email, password, OnLoginCompleted);
+            }
         }
     }
 
@@ -189,7 +250,6 @@ public class LoginHandler : MenuCanvas
 #else
         Application.Quit();
 #endif
-
     }
 
     public override GameObject GetFirstButton()

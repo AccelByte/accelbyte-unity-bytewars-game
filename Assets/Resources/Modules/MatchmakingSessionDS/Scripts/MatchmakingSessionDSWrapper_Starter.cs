@@ -43,7 +43,6 @@ public class MatchmakingSessionDSWrapper_Starter : MatchmakingSessionWrapper
     protected internal async void StartDSMatchmaking(InGameMode inGameMode)
     {
         //Copy your code here
-        await Task.Delay(40);
         BytewarsLogger.Log("Start Create Match Ticket Not Implemented");
     }
 

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
+using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -46,7 +47,7 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
     /// </summary>
     /// <param name="matchPool"></param>
     /// <param name="isLocal"></param>
-    public async Task StartMatchmakingAsync(string matchPool, bool isLocal = false)
+    public async UniTask StartMatchmakingAsync(string matchPool, bool isLocal = false)
     {
         CheckActiveGameSessionClient();
 
@@ -69,7 +70,7 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
         {
             optionalParams.attributes.Add("server_name", ConnectionHandler.LocalServerName);
         }
-
+        
         // Add client version
         optionalParams.attributes.Add("client_version", TutorialModuleUtil.IsOverrideDedicatedServerVersion() ? Application.version : string.Empty);
 
@@ -253,11 +254,11 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
         });
     }
 
-    protected async Task WaitCheckActiveGameSessionAsync()
+    protected async UniTask WaitCheckActiveGameSessionAsync()
     {
         while (isGetActiveSessionCompleted == false)
         {
-            await Task.Yield();
+            await UniTask.Yield();
         }
     }
     

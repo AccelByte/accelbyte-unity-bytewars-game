@@ -27,8 +27,9 @@ public class PresenceEssentialsWrapper : MonoBehaviour
 
     private FriendsEssentialsWrapper friendsEssentialsWrapper;
     private MatchmakingSessionDSWrapper matchmakingSessionDSWrapper;
+#if !UNITY_WEBGL
     private MatchmakingSessionP2PWrapper matchmakingSessionP2PWrapper;
-
+#endif
     public static event Action<FriendsStatusNotif> OnFriendsStatusChanged = delegate { };
     public static event Action<BulkUserStatusNotif> OnBulkUserStatusReceived = delegate { };
 
@@ -52,18 +53,27 @@ public class PresenceEssentialsWrapper : MonoBehaviour
     private void Start()
     {
         friendsEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<FriendsEssentialsWrapper>();
-        matchmakingSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapper>();
-        matchmakingSessionP2PWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionP2PWrapper>();
-
+        matchmakingSessionDSWrapper ??= TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapper>();
+#if !UNITY_WEBGL
+        matchmakingSessionP2PWrapper ??= TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionP2PWrapper>();
+#endif
         friendsEssentialsWrapper.CachedFriendUserIds.ItemAdded += OnFriendUserIdAdded;
 
-        matchmakingSessionDSWrapper.OnMatchTicketCreated += OnMatchmakingStarted;
-        matchmakingSessionDSWrapper.OnMatchTicketDeleted += OnMatchmakingCanceled;
-        matchmakingSessionDSWrapper.OnMatchmakingError += OnMatchmakingError;
+        if (matchmakingSessionDSWrapper)
+        {
+            matchmakingSessionDSWrapper.OnMatchTicketCreated += OnMatchmakingStarted;
+            matchmakingSessionDSWrapper.OnMatchTicketDeleted += OnMatchmakingCanceled;
+            matchmakingSessionDSWrapper.OnMatchmakingError += OnMatchmakingError;
+        }
 
-        matchmakingSessionP2PWrapper.OnMatchTicketCreated += OnMatchmakingStarted;
-        matchmakingSessionP2PWrapper.OnMatchTicketDeleted += OnMatchmakingCanceled;
-        matchmakingSessionP2PWrapper.OnMatchmakingError += OnMatchmakingError;
+#if !UNITY_WEBGL
+        if (matchmakingSessionP2PWrapper)
+        {
+            matchmakingSessionP2PWrapper.OnMatchTicketCreated += OnMatchmakingStarted;
+            matchmakingSessionP2PWrapper.OnMatchTicketDeleted += OnMatchmakingCanceled;
+            matchmakingSessionP2PWrapper.OnMatchmakingError += OnMatchmakingError;
+        }
+#endif
     }
 
     private void OnDestroy()
@@ -82,14 +92,21 @@ public class PresenceEssentialsWrapper : MonoBehaviour
 
         friendsEssentialsWrapper.CachedFriendUserIds.ItemAdded -= OnFriendUserIdAdded;
 
-        matchmakingSessionDSWrapper.OnMatchTicketCreated -= OnMatchmakingStarted;
-        matchmakingSessionDSWrapper.OnMatchTicketDeleted -= OnMatchmakingCanceled;
-        matchmakingSessionDSWrapper.OnMatchmakingError -= OnMatchmakingError;
+        if (matchmakingSessionDSWrapper)
+        {
+            matchmakingSessionDSWrapper.OnMatchTicketCreated -= OnMatchmakingStarted;
+            matchmakingSessionDSWrapper.OnMatchTicketDeleted -= OnMatchmakingCanceled;
+            matchmakingSessionDSWrapper.OnMatchmakingError -= OnMatchmakingError;
+        }
 
-        matchmakingSessionP2PWrapper.OnMatchTicketCreated -= OnMatchmakingStarted;
-        matchmakingSessionP2PWrapper.OnMatchTicketDeleted -= OnMatchmakingCanceled;
-        matchmakingSessionP2PWrapper.OnMatchmakingError -= OnMatchmakingError;
-
+#if !UNITY_WEBGL
+        if (matchmakingSessionP2PWrapper)
+        {
+            matchmakingSessionP2PWrapper.OnMatchTicketCreated -= OnMatchmakingStarted;
+            matchmakingSessionP2PWrapper.OnMatchTicketDeleted -= OnMatchmakingCanceled;
+            matchmakingSessionP2PWrapper.OnMatchmakingError -= OnMatchmakingError;
+        }
+#endif
         SetPresenceStatus(string.Empty, UserStatus.Offline);
     }
 

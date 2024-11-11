@@ -30,8 +30,9 @@ public class BrowseMatchMenuCanvas : MenuCanvas
     private BrowseMatchSessionWrapper browseMatchSessionWrapper;
     private MatchSessionWrapper matchSessionWrapper;
     private MatchSessionDSWrapper matchSessionDSWrapper;
+#if !UNITY_WEBGL        
     private MatchSessionP2PWrapper matchSessionP2PWrapper;
-
+#endif
     private bool isEventsListened = false;
 
     private void Start()
@@ -39,8 +40,9 @@ public class BrowseMatchMenuCanvas : MenuCanvas
         browseMatchSessionWrapper = TutorialModuleManager.Instance.GetModuleClass<BrowseMatchSessionWrapper>();
         matchSessionWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionWrapper>();
         matchSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionDSWrapper>();
+#if !UNITY_WEBGL        
         matchSessionP2PWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionP2PWrapper>();
-
+#endif
         BindEvent();
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
         refreshBtn.onClick.AddListener(BrowseMatchSession);
@@ -86,7 +88,9 @@ public class BrowseMatchMenuCanvas : MenuCanvas
         matchSessionWrapper.OnJoinedMatchSession += OnJoinedMatchSession;
         matchSessionWrapper.OnCreateOrJoinError += OnCreateOrJoinError;
         matchSessionDSWrapper.BindMatchSessionDSEvents();
+#if !UNITY_WEBGL
         matchSessionP2PWrapper.BindMatchSessionP2PEvents();
+#endif
         isEventsListened = true;
     }
 
@@ -100,7 +104,9 @@ public class BrowseMatchMenuCanvas : MenuCanvas
         browseMatchSessionWrapper.UnbindEvents();
         matchSessionWrapper.UnbindEvents();
         matchSessionDSWrapper.UnbindMatchSessionDSEvents();
+#if !UNITY_WEBGL
         matchSessionP2PWrapper.UnbindMatchSessionP2PEvents();
+#endif
         isEventsListened = false;
     }
 

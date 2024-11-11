@@ -1,10 +1,17 @@
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using System.Threading.Tasks;
+#if !UNITY_WEBGL
 using Steamworks;
+#endif
 using UnityEngine;
 
 public class SteamHelper
 {
+    #if !UNITY_WEBGL
     private bool isInitialized;
     Callback<GetAuthSessionTicketResponse_t> m_AuthTicketResponseCallback;
     HAuthTicket m_AuthTicket;
@@ -47,4 +54,5 @@ public class SteamHelper
         // Call Unity Authentication SDK to sign in or link with Steam.
         Debug.Log("Steam Login success. Session Ticket: " + m_SessionTicket);
     }
+    #endif
 }

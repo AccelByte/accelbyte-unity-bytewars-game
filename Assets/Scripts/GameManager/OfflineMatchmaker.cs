@@ -4,17 +4,14 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
-public class MatchmakingWrapper : IMatchmaking
+public class OfflineMatchmaker : IMatchmaking
 {
-    public MatchmakingWrapper()
+
+#if !UNITY_WEBGL
+    public OfflineMatchmaker()
     {
         dummyResults = new[]
         {
-            // new AgsMatchmakingResult
-            // {
-            //     m_errorMessage = "test failed to matchmaking on first try"
-            // },
-
             new MatchmakingResult
             {
                 m_isSuccess = true,
@@ -23,6 +20,7 @@ public class MatchmakingWrapper : IMatchmaking
             }
         };
     }
+#endif
 
     private MatchmakingResult[] dummyResults;
 
@@ -57,6 +55,7 @@ public class MatchmakingWrapper : IMatchmaking
         _isCanceled = true;
     }
     
+#if !UNITY_WEBGL
     string GetLocalIPAddress()
     {
         var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
@@ -69,7 +68,6 @@ public class MatchmakingWrapper : IMatchmaking
         }
         
         return "0.0.0.0";
-        // return "127.0.0.1";
     }
-    
+#endif
 }

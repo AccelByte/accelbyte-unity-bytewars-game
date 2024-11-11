@@ -3,13 +3,15 @@
 // and restrictions contact your company contract manager.
 
 using System;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class PromptMenuCanvas : MenuCanvas
 {
+    [SerializeField] private PlayerInput playerInput;
     private const float FadeSpeed = 0.05f;
     private const float UnblurDelay = 0.2f;
     private const float BlurMenuAlpha = 0.5f;
@@ -57,6 +59,11 @@ public class PromptMenuCanvas : MenuCanvas
 
         UnblockActiveMenuInput();
         UnblurActiveMenu();
+    }
+
+    void OnHidePromptMenu()
+    {
+        HidePromptMenu();
     }
 
     #endregion Lifecycle Methods
@@ -254,7 +261,7 @@ public class PromptMenuCanvas : MenuCanvas
 
         MenuCanvas previousMenu = currentActiveMenu;
         shouldBlur = false;
-        await Task.Delay(TimeSpan.FromSeconds(UnblurDelay));
+        await UniTask.Delay(TimeSpan.FromSeconds(UnblurDelay));
 
         bool differentMenu = currentActiveMenu != previousMenu;
         if (differentMenu && previousMenu.transform.TryGetComponent(out Canvas previousCanvas))
@@ -313,7 +320,7 @@ public class PromptMenuCanvas : MenuCanvas
         while (canvasGroup != null && canvasGroup.alpha < 1f)
         {
             canvasGroup.alpha += 0.1f;
-            await Task.Delay(TimeSpan.FromSeconds(FadeSpeed));
+            await UniTask.Delay(TimeSpan.FromSeconds(FadeSpeed));
         }
     }
 
@@ -329,7 +336,7 @@ public class PromptMenuCanvas : MenuCanvas
             background.color = new Color(background.color.r, background.color.g, background.color.b,
                 background.color.a + 0.1f);
 
-            await Task.Delay(TimeSpan.FromSeconds(FadeSpeed));
+            await UniTask.Delay(TimeSpan.FromSeconds(FadeSpeed));
         }
 
         // Snap to backgroundAlpha to prevent flickering.
@@ -344,7 +351,7 @@ public class PromptMenuCanvas : MenuCanvas
             background.color = new Color(background.color.r, background.color.g, background.color.b,
                 background.color.a - 0.1f);
 
-            await Task.Delay(TimeSpan.FromSeconds(FadeSpeed));
+            await UniTask.Delay(TimeSpan.FromSeconds(FadeSpeed));
         }
 
         // Snap to 0 alpha to prevent flickering.

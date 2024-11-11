@@ -99,7 +99,9 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
         loginHandler.OnRetryLoginClicked = OnLoginWithSteamButtonClicked;
         loginHandler.SetView(LoginHandler.LoginView.LoginLoading);
         //get steam token to be used as platform token later
+        #if !UNITY_WEBGL
         steamHelper.GetAuthSessionTicket(OnGetAuthSessionTicketFinished);
+        #endif
     }
 
     private void GetUserPublicData(string receivedUserId)

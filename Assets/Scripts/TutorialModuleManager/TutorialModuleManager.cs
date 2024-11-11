@@ -282,7 +282,7 @@ public class TutorialModuleManager : MonoBehaviour
                 var assetScript = $"{moduleData.starterScript.name}.cs";
                 var scriptPath = assetScript;
                 
-#if UNITY_EDITOR
+#if UNITY_EDITOR && !UNITY_WEBGL
                 var asset = AssetDatabase.FindAssets($"{moduleData.starterScript.name}").FirstOrDefault();
                 scriptPath = AssetDatabase.GUIDToAssetPath(asset);
 #endif
@@ -295,7 +295,7 @@ public class TutorialModuleManager : MonoBehaviour
                 //Get default wrapper from asset config
                 var assetScript = $"{moduleData.defaultModuleScript.name}.cs";
                 var scriptPath = assetScript;
-#if UNITY_EDITOR
+#if UNITY_EDITOR && !UNITY_WEBGL
                 var asset = AssetDatabase.FindAssets($"{moduleData.defaultModuleScript.name}").FirstOrDefault();
                 scriptPath = AssetDatabase.GUIDToAssetPath(asset);
 #endif
@@ -317,7 +317,7 @@ public class TutorialModuleManager : MonoBehaviour
                 {
                     var assetScript = $"{x.name}.cs";
                     var assetPath = assetScript;
-#if UNITY_EDITOR
+#if UNITY_EDITOR && !UNITY_WEBGL
                     var asset = AssetDatabase.FindAssets($"{x.name}").FirstOrDefault();
                     assetPath = AssetDatabase.GUIDToAssetPath(asset);
 #endif
@@ -330,7 +330,7 @@ public class TutorialModuleManager : MonoBehaviour
                 {
                     var assetScript = $"{x.name}.cs";
                     var assetPath = assetScript;
-#if UNITY_EDITOR
+#if UNITY_EDITOR && !UNITY_WEBGL
                     var asset = AssetDatabase.FindAssets($"{x.name}").FirstOrDefault();
                     assetPath = AssetDatabase.GUIDToAssetPath(asset);
 #endif

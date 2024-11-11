@@ -53,8 +53,15 @@ public class AuthEssentialsWrapper : MonoBehaviour
         user.LoginWithDeviceId(result => OnLoginCompleted(result, resultCallback));
     }
 
+    public bool GetActiveUser()
+    {
+        return user?.Session?.IsValid() ?? false;
+    }
+    
     public void LoginWithUsername(string username, string password, ResultCallback<TokenData, OAuthError> resultCallback)
     {
+        BytewarsLogger.Log($"Trying login with email and password");
+        GameData.CachedPlayerState.platformId = "Accelbyte";
         user.LoginWithUsernameV3(username, password, result => OnLoginCompleted(result, resultCallback), false);
     }
 
@@ -194,6 +201,7 @@ public class AuthEssentialsWrapper : MonoBehaviour
         else
         {
             BytewarsLogger.Log($"The user failed to log in with Device ID. Error Message: {result.Error.error}");
+            GameData.CachedPlayerState.platformId = string.Empty;
         }
 
         customCallback?.Invoke(result);
@@ -297,6 +305,7 @@ public class AuthEssentialsWrapper : MonoBehaviour
             GameData.CachedPlayerState.avatarUrl = publicUserData.avatarUrl;
             GameData.CachedPlayerState.playerName = string.IsNullOrEmpty(publicUserData.displayName) ?
                 $"Player-{truncatedUserId}" : publicUserData.displayName;
+            GameData.CachedPlayerState.platformId = string.IsNullOrEmpty(GameData.CachedPlayerState.platformId) ? UserData.platform_id : GameData.CachedPlayerState.platformId;
         }
         else
         {

@@ -22,6 +22,7 @@ public class PlayerState : INetworkSerializable
     public Vector3 position = Vector3.zero;
     public string playerId = string.Empty;
     public string avatarUrl = string.Empty;
+    public string platformId = string.Empty;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -38,6 +39,7 @@ public class PlayerState : INetworkSerializable
         serializer.SerializeValue(ref position);
         serializer.SerializeValue(ref playerId);
         serializer.SerializeValue(ref avatarUrl);
+        serializer.SerializeValue(ref platformId);
     }
     
     public string GetPlayerName()

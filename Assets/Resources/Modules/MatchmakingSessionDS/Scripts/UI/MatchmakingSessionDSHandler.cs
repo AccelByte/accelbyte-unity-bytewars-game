@@ -3,7 +3,6 @@
 // and restrictions contact your company contract manager.
 
 using System;
-using System.Threading.Tasks;
 using UnityEngine;
 
 public class MatchmakingSessionDSHandler : MenuCanvas
@@ -87,7 +86,7 @@ public class MatchmakingSessionDSHandler : MenuCanvas
         matchmakingSessionDSWrapper.OnIntentionallyLeaveSession += Reset;
         matchmakingSessionDSWrapper.OnDSAvailable += Travelling;
         matchmakingSessionDSWrapper.OnInvitedToSession += OnInvitedToGameSession;
-        matchmakingSessionDSWrapper.OnRejectGameSessionCompleteEvent += OnSessionRejectedAsync;
+        matchmakingSessionDSWrapper.OnRejectGameSessionCompleteEvent += OnSessionRejected;
     }
 
     private void OnMatchTicketDSCreated()
@@ -127,10 +126,10 @@ public class MatchmakingSessionDSHandler : MenuCanvas
         matchmakingSessionDSWrapper.OnIntentionallyLeaveSession -= Reset;
         matchmakingSessionDSWrapper.OnDSAvailable -= Travelling;
         matchmakingSessionDSWrapper.OnInvitedToSession -= OnInvitedToGameSession;
-        matchmakingSessionDSWrapper.OnRejectGameSessionCompleteEvent -= OnSessionRejectedAsync;
+        matchmakingSessionDSWrapper.OnRejectGameSessionCompleteEvent -= OnSessionRejected;
     }
 
-    private async void OnSessionRejectedAsync(bool successed)
+    private void OnSessionRejected(bool successed)
     {
         if (!successed)
         {
@@ -138,7 +137,6 @@ public class MatchmakingSessionDSHandler : MenuCanvas
         }
 
         ShowAdditionalInfo("Match Rejected");
-        await Task.Delay(1000);
         ShowInfo("Match is rejected");
         Reset();
     }
@@ -177,16 +175,14 @@ public class MatchmakingSessionDSHandler : MenuCanvas
         ShowAdditionalInfo("Match Found", hideButton: true);
     }
 
-    private async void ErrorPanel(string message)
+    private void ErrorPanel(string message)
     {
-        await Task.Delay(1000);
         ShowError(message);
         Reset();
     }
 
-    private async void OnMatchmakingWithDSCanceled()
+    private void OnMatchmakingWithDSCanceled()
     {
-        await Task.Delay(1000);
         ShowInfo("Matchmaking is Canceled");
         Reset();
     }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AccelByte.Core;
 using AccelByte.Models;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
@@ -205,7 +206,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         cachedSessionId = result.Value.id;
         OnMatchmakingWithDSMatchFound?.Invoke();
 
-        await Task.Delay(1000);
+        await UniTask.Delay(1000);
 
         if (isInvited && !isJoined)
         {
@@ -272,7 +273,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     {
         OnJoinSessionCompleteEvent += OnJoiningSessionCompletedAsync;
         OnMatchmakingWithDSJoinSessionStarted?.Invoke();
-        await Task.Delay(1000);
+        await UniTask.Delay(1000);
         JoinSession(sessionId);
     }
 
@@ -328,7 +329,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         {
             OnDSAvailable?.Invoke(true);
             Reset(false);
-            await Task.Delay(1000); // Add a delay to ensure the server-found information appears.
+            await UniTask.Delay(1000); // Add a delay to ensure the server-found information appears.
             TravelToDS(result.Value, selectedInGameMode);
             UnbindMatchmakingEvent();
         }
@@ -367,7 +368,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
             {
                 case SessionV2DsStatus.AVAILABLE:
                     OnDSAvailable?.Invoke(true);
-                    await Task.Delay(1000); // Add a delay to ensure the server-found information appears.
+                    await UniTask.Delay(1000); // Add a delay to ensure the server-found information appears.
                     TravelToDS(session, selectedInGameMode);
                     UnbindMatchmakingEvent();
                     break;

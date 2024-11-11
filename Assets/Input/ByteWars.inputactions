@@ -9,7 +9,16 @@
                     "name": "Pause",
                     "type": "Button",
                     "id": "7c074bd7-d4cb-4272-ad8c-1800bbef424d",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "HidePromptMenu",
+                    "type": "Button",
+                    "id": "0d613491-5186-4f0f-9ef9-b90756ce26a1",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -24,6 +33,17 @@
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "Pause",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a9697e89-a34e-4007-8aeb-15b1b526e1e6",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "HidePromptMenu",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

@@ -6,7 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
@@ -106,7 +106,7 @@ public class GameManager : NetworkBehaviour
 
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-        NetworkManager.Singleton.ConnectionApprovalCallback = ConnectionApprovalCallback;
+        NetworkManager.Singleton.ConnectionApprovalCallback += ConnectionApprovalCallback;
         NetworkManager.Singleton.OnClientStopped += OnClientStopped;
         NetworkManager.Singleton.OnServerStopped += OnServerStopped;
 
@@ -124,14 +124,14 @@ public class GameManager : NetworkBehaviour
         debug ??= new DebugImplementation();
         hud.Reset();
         
-        InitMenuManagerWhenReady().ContinueWith(_ =>
+        InitMenuManagerWhenReady().ContinueWith(() =>
         {
             if (IsServer)
             {
                 menuManager.CloseMenuPanel();
                 OnRegisterServer?.Invoke();
             }
-            
+
             InGamePause = new InGamePause(menuManager, hud, this);
         });
     }
@@ -145,11 +145,11 @@ public class GameManager : NetworkBehaviour
         serverHelper.CancelCountdown();
     }
     
-    private async Task InitMenuManagerWhenReady()
+    private async UniTask InitMenuManagerWhenReady()
     {
         while (!MenuManager.Instance.IsInitiated)
         {
-            await Task.Delay(50);
+            await UniTask.Delay(50);
         }
         
         menuManager = MenuManager.Instance;
@@ -540,11 +540,14 @@ public class GameManager : NetworkBehaviour
         InGameMode = GetEnumFromGameMode(gameModeSo);
 
         AudioManager.Instance.PlaySfx("Enter_Simulate");
+        StartCoroutine(ShowTravelingLoadingCoroutine(LoadScene));
+    }
 
-        await ShowTravelingLoading();
-
+    public void LoadScene()
+    {
         SceneManager.LoadScene(GameConstant.GameSceneBuildIndex);
     }
+
 
     private InGameMode GetEnumFromGameMode(GameModeSO gameModeSo)
     {
@@ -744,7 +747,7 @@ public class GameManager : NetworkBehaviour
                     }
 
                     hud.gameObject.SetActive(false);
-                    menuManager.ShowInGameMenu(AssetEnum.GameOverMenuCanvas);
+                    MenuManager.Instance.ShowInGameMenu(AssetEnum.GameOverMenuCanvas);
                 }
                 break;
         }
@@ -817,7 +820,7 @@ public class GameManager : NetworkBehaviour
         hud.Reset();
     }
     
-    public async void StartOnlineGame()
+    public void StartOnlineGame()
     {
         if (!IsServer || !IsOwner)
         {
@@ -839,8 +842,18 @@ public class GameManager : NetworkBehaviour
 
         OnStartingGameClientRpc();
 
-        await Task.Delay(TimeSpan.FromSeconds(TravelingDelay));
+        StartCoroutine(CoroutineDelay(TravelingDelay, LoadMultiplayerScene));
+    }
 
+    IEnumerator CoroutineDelay(int delay, Action action = null)
+    {
+        MenuManager.Instance.ShowLoading("Traveling");
+        yield return new WaitForSeconds(delay);
+        action?.Invoke();
+    }
+
+    private void LoadMultiplayerScene()
+    {
         SceneEventProgressStatus status = NetworkManager.SceneManager.LoadScene(GameConstant.GameSceneName, LoadSceneMode.Single);
         if (status != SceneEventProgressStatus.Started)
         {
@@ -866,7 +879,7 @@ public class GameManager : NetworkBehaviour
 #if UNITY_SERVER
         OnDeregisterServer?.Invoke();
 #endif
-        await Task.Delay(150);
+        await UniTask.Delay(150);
         BytewarsLogger.Log("GameManager Application.Quit");
     }
     
@@ -1256,10 +1269,17 @@ public class GameManager : NetworkBehaviour
         return connectedClients.Count == sceneEvent.ClientsThatCompleted.Count;
     }
     
-    public static async Task ShowTravelingLoading()
+    public IEnumerator ShowTravelingLoadingCoroutine(Action action)
     {
         MenuManager.Instance.ShowLoading("Traveling");
-        await Task.Delay(TimeSpan.FromSeconds(TravelingDelay));
+        yield return new WaitForSeconds(TravelingDelay);
+        action?.Invoke();
+    }
+
+    public static async UniTask ShowTravelingLoading()
+    {
+        MenuManager.Instance.ShowLoading("Traveling");
+        await UniTask.Delay(TimeSpan.FromSeconds(TravelingDelay));
     }
 
     #endregion

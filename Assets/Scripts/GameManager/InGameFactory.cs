@@ -188,7 +188,7 @@ public class InGameFactory
                     teamIndex = a,
                     lives = gameModeSo.playerStartLives,
                     clientNetworkId = (ulong)playerIndex,
-                    playerId = TutorialModuleUtil.IsAccelbyteSDKInstalled()? AccelByteSDK.GetClientRegistry().GetApi().session.UserId : ""
+                    playerId = GameData.CachedPlayerState.playerId
                 });
                 playerIndex++;
             }
