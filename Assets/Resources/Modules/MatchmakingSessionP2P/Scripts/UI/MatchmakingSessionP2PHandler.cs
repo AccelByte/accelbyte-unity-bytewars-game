@@ -2,10 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-using System;
 using System.Threading.Tasks;
-using AccelByte.Core;
-using AccelByte.Models;
 using UnityEngine;
 
 public class MatchmakingSessionP2PHandler : MenuCanvas
@@ -137,7 +134,6 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
         ShowLoading("Joining Match", "Rejecting Match is timed out", cancelMatchmakingTimeoutSec);
     }
 
-
     private void OnMatchTicketP2PCreated()
     {
         switch (selectedGameMode)
@@ -180,7 +176,6 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
         Reset();
     }
 
-
     private void OnMatchmakingWithP2PJoinSessionCompleted(bool isLeader)
     {
         if (isLeader)
@@ -204,11 +199,6 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
         Reset();
     }
 
-    private void OnMatchmakingWithP2PMatchFound()
-    {
-        ShowLoading("Match Found", "Match Found timed out", joinSessionTimeoutSec);
-    }
-
     private async void ErrorPanelAsync(string message)
     {
         await Task.Delay(1000);
@@ -220,19 +210,6 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
     {
         selectedGameMode = InGameMode.None;
         UnbindMatchmakingEvents();
-    }
-
-    private async void OnMatchmakingWithDSCanceled()
-    {
-        await Task.Delay(1000);
-        ShowInfo("Matchmaking is Canceled");
-        Reset();
-    }
-
-    private void HideLoading(bool obj)
-    {
-        UnbindMatchmakingEvents();
-        HideLoading();
     }
 
     #region MenuCanvas

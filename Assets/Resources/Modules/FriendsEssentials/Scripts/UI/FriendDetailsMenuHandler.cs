@@ -206,7 +206,7 @@ public class FriendDetailsMenuHandler : MenuCanvas
     
     private void UpdatePartyButtons()
     {
-        if (!authEssentialsWrapper)
+        if (!authEssentialsWrapper || authEssentialsWrapper.UserData == null)
         {
             return;
         }

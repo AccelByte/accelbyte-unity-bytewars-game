@@ -2,8 +2,6 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-using System;
-using System.Threading.Tasks;
 using UnityEngine;
 
 public class MatchmakingSessionDSHandler_Starter : MenuCanvas
@@ -62,6 +60,25 @@ public class MatchmakingSessionDSHandler_Starter : MenuCanvas
         //TODO: Copy your code here
     }
 
+    private void OnSessionRejected(bool successed)
+    {
+        if (!successed)
+        {
+            CancelDSMatchmaking();
+        }
+
+        ShowAdditionalInfo("Match Rejected");
+        ShowInfo("Match is rejected");
+        Reset();
+    }
+
+    private void OnInvitedToGameSession()
+    {
+        ShowLoading("Match Is Ready", "Cancelling match is timed out",
+            cancelMatchmakingTimeoutSec, RejectMatch,
+            okCallback: AcceptMatch, okButtonText: "Accept", cancelButtonText: "Reject");
+    }
+
     private void OnMatchmakingWithDSJoinSessionStarted()
     {
         ShowLoading("Joining Match", "Joining Match is timed out", joinSessionTimeoutSec);
@@ -89,16 +106,14 @@ public class MatchmakingSessionDSHandler_Starter : MenuCanvas
         ShowLoading("Match Found", "Match Found timed out", joinSessionTimeoutSec);
     }
 
-    private async void ErrorPanel(string message)
+    private void ErrorPanel(string message)
     {
-        await Delay();
         ShowError(message);
         Reset();
     }
 
-    private async void OnMatchmakingWithDSCanceled()
+    private void OnMatchmakingWithDSCanceled()
     {
-        await Delay();
         ShowInfo("Matchmaking is Canceled");
         Reset();
     }
@@ -115,22 +130,22 @@ public class MatchmakingSessionDSHandler_Starter : MenuCanvas
         Reset();
     }
 
-    private async Task Delay(int milliseconds=1000)
-    {
-        await Task.Delay(milliseconds);
-    }
-
     private void CancelDSMatchmaking()
     {
         //TODO: Copy your code here
         ShowLoading("Cancelling Match", "Cancelling match is timed out", cancelMatchmakingTimeoutSec);
     }
 
-    private void ClientLeaveGameSession()
+    private void RejectMatch()
     {
-        UnbindMatchmakingEvents();
+        //TODO: Copy your code here
+        ShowLoading("Rejecting Match", "Rejecting Match is timed out", cancelMatchmakingTimeoutSec);
+    }
 
-        HideLoading();
+    private void AcceptMatch()
+    {
+        //TODO: Copy your code here
+        ShowLoading("Joining Match", "Rejecting Match is timed out", cancelMatchmakingTimeoutSec);
     }
 
     #region MenuCanvas

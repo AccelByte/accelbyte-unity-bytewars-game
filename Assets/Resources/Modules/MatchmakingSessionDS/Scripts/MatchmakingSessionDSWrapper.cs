@@ -1,14 +1,12 @@
-// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using AccelByte.Core;
 using AccelByte.Models;
 using Cysharp.Threading.Tasks;
-using UnityEngine;
 
 public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 {
@@ -206,6 +204,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         cachedSessionId = result.Value.id;
         OnMatchmakingWithDSMatchFound?.Invoke();
 
+        // Wait a moment to ensure the server information is received before join the game session.
         await UniTask.Delay(1000);
 
         if (isInvited && !isJoined)
@@ -273,7 +272,10 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
     {
         OnJoinSessionCompleteEvent += OnJoiningSessionCompletedAsync;
         OnMatchmakingWithDSJoinSessionStarted?.Invoke();
+
+        // Wait a moment to ensure the server information is received before join the game session.
         await UniTask.Delay(1000);
+
         JoinSession(sessionId);
     }
 
@@ -329,7 +331,10 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         {
             OnDSAvailable?.Invoke(true);
             Reset(false);
-            await UniTask.Delay(1000); // Add a delay to ensure the server-found information appears.
+            
+            // Wait a moment to ensure the server information is received before travel to the game server.
+            await UniTask.Delay(1000);
+
             TravelToDS(result.Value, selectedInGameMode);
             UnbindMatchmakingEvent();
         }
@@ -368,7 +373,10 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
             {
                 case SessionV2DsStatus.AVAILABLE:
                     OnDSAvailable?.Invoke(true);
-                    await UniTask.Delay(1000); // Add a delay to ensure the server-found information appears.
+                    
+                    // Wait a moment to ensure the server information is received before travel the game session.
+                    await UniTask.Delay(1000);
+
                     TravelToDS(session, selectedInGameMode);
                     UnbindMatchmakingEvent();
                     break;

@@ -1,14 +1,12 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using AccelByte.Core;
 using AccelByte.Models;
-using UnityEngine;
 
 public class MatchmakingSessionP2PWrapper : MatchmakingSessionWrapper
 {
@@ -196,6 +194,7 @@ public class MatchmakingSessionP2PWrapper : MatchmakingSessionWrapper
         cachedSessionId = result.Value.id;
         OnMatchmakingWithP2PMatchFound?.Invoke();
 
+        // Wait a moment to ensure the host information is received before join the game session.
         await Task.Delay(1000);
 
         if (isInvited && !isJoined)
@@ -263,7 +262,10 @@ public class MatchmakingSessionP2PWrapper : MatchmakingSessionWrapper
     {
         OnJoinSessionCompleteEvent += OnJoiningSessionCompletedAsync;
         OnMatchmakingWithP2PJoinSessionStarted?.Invoke();
+
+        // Wait a moment to ensure the host information is received before join the game session.
         await Task.Delay(1000);
+        
         JoinSession(sessionId);
     }
 
@@ -302,6 +304,7 @@ public class MatchmakingSessionP2PWrapper : MatchmakingSessionWrapper
 
     private async void OnJoiningSessionCompletedAsync(Result<SessionV2GameSession> result)
     {
+        // Wait a moment to ensure the host information is received.
         await Task.Delay(1000);
 
         if (result.IsError)
@@ -344,15 +347,18 @@ public class MatchmakingSessionP2PWrapper : MatchmakingSessionWrapper
     private async void GetP2PStatus(SessionV2GameSession session)
     {
         SessionV2DsInformation dsInfo = session.dsInformation;
-            switch (dsInfo.status)
-            {
-                case SessionV2DsStatus.NEED_TO_REQUEST:
-                    BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}");
-                    await Task.Delay(1000);
-                    StartP2PConnection(GameData.CachedPlayerState.playerId, session);
-                    UnbindMatchmakingEvent();
-                    break;
-            }
+        switch (dsInfo.status)
+        {
+            case SessionV2DsStatus.NEED_TO_REQUEST:
+                BytewarsLogger.LogWarning($"DS Status: {dsInfo.status}");
+
+                // Wait a moment to ensure the host information is received before connect to the host.
+                await Task.Delay(1000);
+                    
+                StartP2PConnection(GameData.CachedPlayerState.playerId, session);
+                UnbindMatchmakingEvent();
+                break;
+        }
     }
 
     private void StartP2PConnection(string currentUserId, SessionV2GameSession gameSession)

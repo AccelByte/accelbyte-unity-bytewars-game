@@ -112,13 +112,17 @@ public class BrowseMatchSessionWrapper : MatchSessionWrapper
         if (!result.IsError)
         {
             if (!isBrowseMatchSessionsCanceled)
+            {
                 onQueryMatchSessionFinished?.Invoke(new BrowseMatchResult(result.Value.data));
+            }
             nextPage = result.Value.paging.next;
         }
         else
         {
-            if (!isBrowseMatchSessionsCanceled)
+            if (!isBrowseMatchSessionsCanceled) 
+            {
                 onQueryMatchSessionFinished?.Invoke(new BrowseMatchResult(null, result.Error.Message));
+            }
         }
     }
 

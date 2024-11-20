@@ -121,8 +121,8 @@ public class AssetManager : MonoBehaviour
             .Where(kvp => kvp.Key.EndsWith(TutorialDataSuffix) && kvp.Value is TutorialModuleData);
 
 #if UNITY_WEBGL
-        // This line filters p2p modules since it is not yet supported in WebGL build. 
-        tutorialGameObjects = tutorialGameObjects.Where(kvp => !kvp.Key.Contains("P2P"));
+        // Opt out Single Platform Auth and P2P modules since they are not yet supported for WebGL build.
+        tutorialGameObjects = tutorialGameObjects.Where(kvp => !kvp.Key.Contains("SinglePlatformAuth") && !kvp.Key.Contains("P2P"));
 #endif
         foreach (KeyValuePair<string, object> keyValuePair in tutorialGameObjects)
         {

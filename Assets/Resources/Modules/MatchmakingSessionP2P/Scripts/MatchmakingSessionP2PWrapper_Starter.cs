@@ -1,14 +1,12 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AccelByte.Core;
 using AccelByte.Models;
-using UnityEngine;
 
 public class MatchmakingSessionP2PWrapper_Starter : MatchmakingSessionWrapper
 {
@@ -18,6 +16,9 @@ public class MatchmakingSessionP2PWrapper_Starter : MatchmakingSessionWrapper
     private bool isMatchTicketExpired = false;
     private InGameMode selectedInGameMode = InGameMode.None;
     private GameSessionServerType gameSessionServerType = GameSessionServerType.PeerToPeer;
+    private bool isMatchmakingFound = false;
+    private bool isJoined = false;
+    private bool isInvited = false;
     protected internal event Action OnMatchmakingWithP2PStarted;
     protected internal event Action OnMatchTicketP2PCreated;
     protected internal event Action OnMatchmakingWithP2PTicketExpired;
@@ -28,6 +29,9 @@ public class MatchmakingSessionP2PWrapper_Starter : MatchmakingSessionWrapper
     protected internal event Action OnIntentionallyLeaveSession;
     protected internal event Action<string /*Matchmaking Error Message*/> OnMatchmakingWithP2PError;
     protected internal event Action<bool> OnDSAvailable;
+    protected internal event Action OnInvitedToSession;
+    protected internal event Action OnUserJoinedGameSession;
+    protected internal event Action OnSessionMemberUpdate;
 
     private void Awake()
     {
@@ -126,18 +130,50 @@ public class MatchmakingSessionP2PWrapper_Starter : MatchmakingSessionWrapper
 
     private async void OnMatchFoundCallback(Result<MatchmakingV2MatchFoundNotification> result)
     {
-        if (!result.IsError)
+        if (result.IsError)
         {
-            BytewarsLogger.Log($"Match Found {result.Value}");
+            BytewarsLogger.LogWarning("Unable to get OnMatchFound Notification from lobby");
+            OnMatchmakingWithP2PError?.Invoke(result.Error.Message);
+            return;
+        }
+
+        BytewarsLogger.Log($"Match Found {result.Value.ToJsonString()}");
+        isMatchmakingFound = true;
             cachedSessionId = result.Value.id;
             OnMatchmakingWithP2PMatchFound?.Invoke();
-            await Delay();
-            StartJoinToGameSession(result.Value);
-        }
-        else
+
+        // Wait a moment to ensure the host information is received before join the game session.
+        await Task.Delay(1000);
+
+        if (isInvited && !isJoined)
         {
-            BytewarsLogger.LogWarning($"Unable to get OnMatchFound Notification from lobby");
-            OnMatchmakingWithP2PError?.Invoke(result.Error.Message);
+            BytewarsLogger.Log("OnInvitedToSession");
+            OnInvitedToSession?.Invoke();
+        }
+        else if (isJoined && !isInvited)
+        {
+            BytewarsLogger.Log("Auto-Accept Session");
+            OnGetSessionDetailsCompleteEvent += OnJoiningSessionCompletedAsync;
+            OnMatchmakingWithP2PJoinSessionStarted?.Invoke();
+            GetGameSessionDetailsById(cachedSessionId);
+        }
+    }
+
+    private void OnJoinedGameSessionCallback(Result<SessionV2GameJoinedNotification> result)
+    {
+        if (result.IsError)
+        {
+            BytewarsLogger.LogWarning($"Error: {result.Error.Message}");
+            return;
+    }
+
+        isJoined = true;
+
+        if (isMatchmakingFound && !isInvited)
+        {
+            OnGetSessionDetailsCompleteEvent += OnJoiningSessionCompletedAsync;
+            OnMatchmakingWithP2PJoinSessionStarted?.Invoke();
+            GetGameSessionDetailsById(cachedSessionId);
         }
     }
 
@@ -153,7 +189,7 @@ public class MatchmakingSessionP2PWrapper_Starter : MatchmakingSessionWrapper
         OnMatchTicketP2PCreated?.Invoke();
     }
 
-    private async void StartJoinToGameSession(MatchmakingV2MatchFoundNotification result)
+    private async void StartJoinToGameSession(string sessionId)
     {
         //Copy your code here
     }
@@ -169,7 +205,17 @@ public class MatchmakingSessionP2PWrapper_Starter : MatchmakingSessionWrapper
     {
         //Copy your code here
         BytewarsLogger.Log("Leave GameSession is not implemented");
+    }
 
+    public void RejectSessionInvitation()
+    {
+        RejectSession(cachedSessionId);
+        Reset();
+    }
+
+    public void AcceptSessionInvitation()
+    {
+        StartJoinToGameSession(cachedSessionId);
     }
 
     private void OnLeaveSessionComplete(Result<SessionV2GameSession> result)
@@ -181,22 +227,24 @@ public class MatchmakingSessionP2PWrapper_Starter : MatchmakingSessionWrapper
         }
     }
 
-    private void OnJoiningSessionCompleted(Result<SessionV2GameSession> result)
+    private async void OnJoiningSessionCompletedAsync(Result<SessionV2GameSession> result)
     {
         //Copy your code here
     }
 
     #region MatchmakingDSEventHandler
     
-    private void Reset()
+    private void Reset(bool resetCache = true)
     {
+        if (resetCache)
+        {
         matchTicket = string.Empty;
         cachedSessionId = string.Empty;
     }
 
-    private async Task Delay(int milliseconds=1000)
-    {
-        await Task.Delay(1000);
+        isInvited = false;
+        isJoined = false;
+        isMatchmakingFound = false;
     }
 
     #endregion EventHandler

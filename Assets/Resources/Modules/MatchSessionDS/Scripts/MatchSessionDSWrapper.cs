@@ -1,4 +1,4 @@
-// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -66,7 +66,7 @@ public class MatchSessionDSWrapper : MatchSessionWrapper
             BytewarsLogger.Log($"DS Status: {dsStatus}");
             if (dsStatus == SessionV2DsStatus.AVAILABLE)
             {
-                BytewarsLogger.Log($"{SelectedGameMode}");
+                BytewarsLogger.Log($"Selected Game Mode: {SelectedGameMode}");
                 lobby.SessionV2DsStatusChanged -= OnDSStatusChanged;
                 TravelToDS(result.Value.session, SelectedGameMode);
                 UnbindMatchSessionDSEvents();

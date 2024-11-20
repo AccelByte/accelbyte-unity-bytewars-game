@@ -2,7 +2,6 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-using System;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -50,6 +49,25 @@ public class MatchmakingSessionP2PHandler_Starter : MenuCanvas
         ShowLoading("Cancelling Match", "Cancelling match is timed out", cancelMatchmakingTimeoutSec);
     }
 
+    private void OnInvitedToGameSession()
+    {
+        ShowLoading("Match Is Ready", "Cancelling match is timed out",
+            cancelMatchmakingTimeoutSec, RejectMatch,
+            okCallback: AcceptMatch, okButtonText: "Accept", cancelButtonText: "Reject");
+    }
+
+    private void AcceptMatch()
+    {
+        //TODO: Copy your code here
+        ShowLoading("Joining Match", "Rejecting Match is timed out", cancelMatchmakingTimeoutSec);
+    }
+
+    private void RejectMatch()
+    {
+        //TODO: Copy your code here
+        ShowLoading("Rejecting Match", "Rejecting Match is timed out", cancelMatchmakingTimeoutSec);
+    }
+
     private void OnMatchTicketP2PCreated()
     {
         switch (selectedGameMode)
@@ -67,11 +85,28 @@ public class MatchmakingSessionP2PHandler_Starter : MenuCanvas
         }
     }
 
+    private void OnMatchFound()
+    {
+        ShowAdditionalInfo("Match Found", hideButton: true);
+    }
 
     private async void OnMatchmakingWithP2PCanceledAsync()
     {
-        await Delay();
+        await Task.Delay(1000);
         ShowInfo("Matchmaking is Canceled");
+        Reset();
+    }
+
+    private async void OnSessionRejectedAsync(bool successed)
+    {
+        if (!successed)
+        {
+            CancelP2PMatchmaking();
+        }
+
+        ShowAdditionalInfo("Match Rejected");
+        await Task.Delay(1000);
+        ShowInfo("Match is rejected");
         Reset();
     }
 

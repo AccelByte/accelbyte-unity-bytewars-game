@@ -85,7 +85,6 @@ public class GameSessionUtilityWrapper : SessionEssentialsWrapper
 
     private void StartClient(SessionV2GameSession sessionV2Game, InGameMode gameMode)
     {
-
         ushort port = GetPort(sessionV2Game.dsInformation);
         string ip = sessionV2Game.dsInformation.server.ip;
         InitialConnectionData initialData = new InitialConnectionData()
@@ -94,8 +93,7 @@ public class GameSessionUtilityWrapper : SessionEssentialsWrapper
             inGameMode = gameMode,
             serverSessionId = sessionV2Game.id
         };
-        GameManager.Instance
-            .StartAsClient(ip, port, initialData);
+        GameManager.Instance.StartAsClient(ip, port, initialData);
     }
 
     private ushort GetPort(SessionV2DsInformation dsInformation)
