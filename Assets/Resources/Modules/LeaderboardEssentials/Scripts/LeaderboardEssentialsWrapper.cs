@@ -1,5 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -36,7 +38,9 @@ public class LeaderboardEssentialsWrapper : MonoBehaviour
     /// <param name="resultCallback">callback function to get result from other script</param>
     public void GetRankings(string leaderboardCode, ResultCallback<LeaderboardRankingResult> resultCallback, int offset = default, int limit = default)
     {
-        leaderboard.GetRangkingsV3(
+        BytewarsLogger.Log($"Get leaderboard {leaderboardCode} rankings.");
+
+        leaderboard.GetRankingsV3(
             leaderboardCode,
             result => OnGetRankingsCompleted(result, resultCallback), 
             offset, 
@@ -46,6 +50,8 @@ public class LeaderboardEssentialsWrapper : MonoBehaviour
 
     public void GetUserRanking(string userId, string leaderboardCode, ResultCallback<UserRankingDataV3> resultCallback)
     {
+        BytewarsLogger.Log($"Get user {userId} ranking in leaderboard {leaderboardCode} rankings.");
+
         leaderboard.GetUserRankingV3(
             userId,
             leaderboardCode,

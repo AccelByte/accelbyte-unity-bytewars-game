@@ -1,4 +1,7 @@
-using System.Collections;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System.Collections.Generic;
 using AccelByte.Api;
 using AccelByte.Core;
@@ -20,55 +23,35 @@ public class StatsEssentialsWrapper : MonoBehaviour
     }
 
     #region AB Service Functions
-    
+
     /// <summary>
     /// Update User Statistics value from Client side
     /// </summary>
     /// <param name="statCode">stat code of the desired stat items</param>
-    /// <param name="statValue">desired value for stat item</param>
+    /// <param name="statItem">stat item containing desired new stat value</param>
     /// <param name="additionalKey">additional custom key that will be added to the slot</param>
     /// <param name="resultCallback">callback function to get result from other script</param>
-    public void UpdateUserStatsFromClient(string statCode, float statValue, string additionalKey, ResultCallback<UpdateUserStatItemValueResponse> resultCallback = null)
-    {
-        PublicUpdateUserStatItem userStatItem = new PublicUpdateUserStatItem
-        {
-            updateStrategy = StatisticUpdateStrategy.OVERRIDE,
-            value = statValue
-        };
-        
+    public void UpdateUserStatsFromClient(string statCode, PublicUpdateUserStatItem statItem, string additionalKey, ResultCallback<UpdateUserStatItemValueResponse> resultCallback = null)
+    {        
         statistic.UpdateUserStatItemsValue(
             statCode,
             additionalKey,
-            userStatItem,
+            statItem,
             result => OnUpdateUserStatsFromClientCompleted(result, resultCallback)
         );
     }
-    
+
     /// <summary>
     /// Update User Statistics value from Server side
     /// </summary>
     /// <param name="statCode">stat code of the desired stat item</param>
-    /// <param name="newStatItemsValue">dictionary of stat codes along with its new values</param>
+    /// <param name="statItems">a list of stat item containing desired new stat value and the target user ID</param>
     /// /// <param name="resultCallback">callback function to get result from other script</param>
-    public void UpdateManyUserStatsFromServer(string statCode, Dictionary<string, float> newStatItemsValue, ResultCallback<StatItemOperationResult[]> resultCallback)
-    {
-        List<UserStatItemUpdate> bulkUpdateUserStatItems = new List<UserStatItemUpdate>();
-        foreach (var newStatItem in newStatItemsValue)
-        {
-            UserStatItemUpdate userStatItem = new UserStatItemUpdate()
-            {
-                updateStrategy = StatisticUpdateStrategy.OVERRIDE,
-                statCode = statCode,
-                userId = newStatItem.Key,
-                value = newStatItem.Value
-            };
-            bulkUpdateUserStatItems.Add(userStatItem);
-        }
-        
+    public void UpdateManyUserStatsFromServer(string statCode, List<UserStatItemUpdate> statItems, ResultCallback<StatItemOperationResult[]> resultCallback)
+    {   
         serverStatistic.UpdateManyUsersStatItems(
-            bulkUpdateUserStatItems.ToArray(),
-            result => OnUpdateManyUserStatsFromServerCompleted(result, resultCallback)
-        );
+            statItems.ToArray(),
+            result => OnUpdateManyUserStatsFromServerCompleted(result, resultCallback));
     }
     
     /// <summary>
