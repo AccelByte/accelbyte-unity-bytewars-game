@@ -244,22 +244,16 @@ public class ServerHelper
 
     public bool IsGameOver()
     {
-        Dictionary<int, int> teamInGameIndexLive = new Dictionary<int, int>();
-        foreach (var keyValuePair in _connectedPlayerState)
+        int remainingActiveTeamNum = 0;
+        foreach (KeyValuePair<int, TeamState> kvp in _connectedTeamState)
         {
-            var playerState = keyValuePair.Value;
-            if(playerState.lives<1)
-                continue;
-            if (teamInGameIndexLive.ContainsKey(playerState.teamIndex))
+            if (GetTeamLive(kvp.Value.teamIndex) > 0)
             {
-                teamInGameIndexLive[playerState.teamIndex] += playerState.lives;
-            }
-            else
-            {
-                teamInGameIndexLive.Add(playerState.teamIndex, playerState.lives);
+                remainingActiveTeamNum++;
             }
         }
-        return teamInGameIndexLive.Count <= 1;
+
+        return remainingActiveTeamNum <= 1;
     }
 
     public Player AddReconnectPlayerState(string sessionId, 

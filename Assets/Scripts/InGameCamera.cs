@@ -111,6 +111,11 @@ public class InGameCamera : MonoBehaviour
 
     private async void LerpCameraSizeToDefault()
     {
+        if (!mainCamera) 
+        {
+            return;
+        }
+
         await Task.Delay(TimeSpan.FromSeconds(1));
 
         float currentSize = mainCamera.orthographicSize;

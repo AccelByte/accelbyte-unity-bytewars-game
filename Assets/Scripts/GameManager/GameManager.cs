@@ -548,7 +548,6 @@ public class GameManager : NetworkBehaviour
         SceneManager.LoadScene(GameConstant.GameSceneBuildIndex);
     }
 
-
     private InGameMode GetEnumFromGameMode(GameModeSO gameModeSo)
     {
         return (InGameMode)Enum.Parse(typeof(InGameMode), gameModeSo.name);
@@ -609,129 +608,79 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    public void CheckForGameOverCondition(bool isGameOver)
+    public void CheckForGameOverCondition()
     {
+        bool isGameOver = serverHelper.IsGameOver();
         bool isOfflineGame = gameMode is GameModeEnum.SinglePlayer or GameModeEnum.LocalMultiplayer;
+        bool hasAuthority = IsServer || IsHost || isOfflineGame;
 
-        if (isOfflineGame && isGameOver)
+        BytewarsLogger.Log($"Is game over: {isGameOver}");
+        if (isGameOver && hasAuthority) 
         {
-            EndGame();
-        }
-        else if ((NetworkManager.Singleton.IsServer || IsHost) && isGameOver)
-        {
-            UpdatePlayerStatesClientRpc(
-                serverHelper.ConnectedTeamStates.Values.ToArray(),
-                serverHelper.ConnectedPlayerStates.Values.ToArray());
-            //update to client
-            EndGame();
+            BytewarsLogger.Log($"Ending the game.");
+
+            if (IsServer || IsHost) 
+            {
+                UpdatePlayerStatesClientRpc(
+                    serverHelper.ConnectedTeamStates.Values.ToArray(),
+                    serverHelper.ConnectedPlayerStates.Values.ToArray());
+            }
+
+            SetInGameState(InGameState.GameOver);
         }
     }
 
-    private void EndGame()
+    public bool SetInGameState(InGameState newState)
     {
-        SetInGameState(InGameState.GameOver);
-    }
+        BytewarsLogger.Log($"Try to set in-game state to: {newState}");
 
-    public bool SetInGameState(InGameState state)
-    {
-        BytewarsLogger.Log("try SetInGameState: "+state);
-        if (InGameState == state)
+        if (InGameState == newState)
         {
+            BytewarsLogger.LogWarning($"Cannot set in-game state to {newState} because the current state is already the same.");
             return false;
         }
 
-        if (!IsDedicatedServer && hud)
-        {
-            hud.HideGameStatusContainer();
-        }
-
-        int remainingGameDuration = GameData.GameModeSo.gameDuration;
-        if (gameTimeLeft > 0)
-        {
-            remainingGameDuration = gameTimeLeft;
-        }
-
-        InGameState = state;
-        switch (state)
+        BytewarsLogger.Log($"In-game state changed from {InGameState} to {newState}");
+        InGameState = newState;
+        
+        // Handle in-game state changes.
+        switch (newState)
         {
             case InGameState.None:
-                if (!IsDedicatedServer && hud)
-                {
-                    hud.gameObject.SetActive(false);
-                }
                 ResetLevel();
 #if !UNITY_SERVER
                 OnGameStateIsNone?.Invoke();
 #endif
                 break;
-
             case InGameState.Initializing:
-                if (!IsDedicatedServer && hud)
-                {
-                    hud.gameObject.SetActive(false);
-                }
+                gameTimeLeft = GameData.GameModeSo.gameDuration;
                 break;
-
             case InGameState.PreGameCountdown:
-                if (!IsDedicatedServer && hud)
-                {
-                    hud.gameObject.SetActive(true);
-                    hud.SetTime(remainingGameDuration);
-                }
-
+                // Start pre-game countdown.
                 serverHelper.CancelCountdown();
-                
-                if (this)
-                {
-                    serverHelper.StartCoroutineCountdown(this, 
-                        GameData.GameModeSo.beforeGameCountdownSecond, 
-                        OnPreGameTimerUpdated);
-                }
+                serverHelper.StartCoroutineCountdown(
+                    this,
+                    GameData.GameModeSo.beforeGameCountdownSecond,
+                    OnPreGameTimerUpdated);
                 break;
-
             case InGameState.Playing:
-                if (!IsDedicatedServer && hud)
-                {
-                    hud.gameObject.SetActive(true);
-                }
-                
+                // Continue game duration countdown.
                 serverHelper.CancelCountdown();
-                serverHelper.StartCoroutineCountdown(this, 
-                    remainingGameDuration,
+                serverHelper.StartCoroutineCountdown(
+                    this,
+                    gameTimeLeft,
                     OnGameTimeUpdated);
                 break;
-
             case InGameState.ShuttingDown:
-                if (!IsDedicatedServer && hud)
-                {
-                    hud.gameObject.SetActive(true);
-                }
-                
+                // Start server shutdown countdown.
                 serverHelper.CancelCountdown();
-                serverHelper.StartCoroutineCountdown(this, 
+                serverHelper.StartCoroutineCountdown(
+                    this, 
                     GameData.GameModeSo.beforeShutDownCountdownSecond, 
                     OnShutdownCountdownUpdate);
                 break;
-
-            case InGameState.LocalPause:
-                if (!IsDedicatedServer && hud)
-                {
-                    hud.gameObject.SetActive(false);
-                }
-                break;
-
             case InGameState.GameOver:
-                OnGameOver.Invoke(gameMode, InGameMode, ConnectedPlayerStates.Values.ToList());
-                serverHelper.CancelCountdown();
-
-                bool isShuttingDown = GameData.GameModeSo.gameOverShutdownCountdown > -1;
-                if (!IsLocalGame() && isShuttingDown)
-                {
-                    serverHelper.StartCoroutineCountdown(this, 
-                        GameData.GameModeSo.gameOverShutdownCountdown,
-                        OnGameOverShutDownCountdown);
-                }
-
+                // Broadcast to update player states on connected game clients.
                 if (IsHost || IsServer)
                 {
                     UpdatePlayerStatesClientRpc(
@@ -739,70 +688,102 @@ public class GameManager : NetworkBehaviour
                         serverHelper.ConnectedPlayerStates.Values.ToArray());
                 }
 
-                if (!IsDedicatedServer)
-                {
-                    if (InGamePause.IsPausing())
-                    {
-                        InGamePause.ToggleGamePause();
-                    }
+                OnGameOver.Invoke(gameMode, InGameMode, ConnectedPlayerStates.Values.ToList());
 
-                    hud.gameObject.SetActive(false);
-                    MenuManager.Instance.ShowInGameMenu(AssetEnum.GameOverMenuCanvas);
+                // Start game over server shutdown countdown.
+                bool isShuttingDown = GameData.GameModeSo.gameOverShutdownCountdown > -1;
+                serverHelper.CancelCountdown();
+                if (!IsLocalGame() && isShuttingDown)
+                {
+                    serverHelper.StartCoroutineCountdown(
+                        this, 
+                        GameData.GameModeSo.gameOverShutdownCountdown,
+                        OnGameOverShutDownCountdown);
                 }
                 break;
         }
-        
-        if (state == InGameState.LocalPause)
-        {
-            Time.timeScale = 0;
-        }
-        else
-        {
-            Time.timeScale = 1;
-        }
 
-        if (inGameCamera)
-        {
-            inGameCamera.enabled = state == InGameState.Playing;
-        }
+        UpdateInGameUI();
 
+        // Broadcast to update in-game state on connected game clients.
         if (IsServer || IsHost)
         {
-            UpdateInGameStateClientRpc(InGameState, remainingGameDuration);
+            UpdateInGameStateClientRpc(InGameState, gameTimeLeft);
         }
 
-        OnGameStateChanged?.Invoke(state);
+        OnGameStateChanged?.Invoke(newState);
 
         return true;
     }
     
     [ClientRpc]
-    private void UpdateInGameStateClientRpc(InGameState inGameState, int remainingGameTime)
+    private void UpdateInGameStateClientRpc(InGameState newState, int remainingGameTime)
     {
-        BytewarsLogger.Log($"change state to {inGameState}");
-        
-        if (hud)
+        if (IsHost) 
         {
+            BytewarsLogger.LogWarning($"[Client] Unable to set in-game state from {InGameState} to: {newState}. The player is a host, abort to handle client RPC.");
+            return;
+        }
+
+        BytewarsLogger.Log($"[Client] Try to set in-game state from {InGameState} to: {newState}");
+        if (InGameState == newState)
+        {
+            BytewarsLogger.LogWarning($"[Client] Cannot set in-game state from {InGameState} to {newState} because the current state is already the same.");
+            return;
+        }
+
+        BytewarsLogger.Log($"[Client] In-game state changed from {InGameState} to {newState}");
+        InGameState = newState;
+
+        gameTimeLeft = remainingGameTime;
+        UpdateInGameUI();
+    }
+
+    private void UpdateInGameUI() 
+    {
+        BytewarsLogger.Log("Received to update in-game user interface.");
+
+        // Adjust time scale when the game is paused or resumed.
+        Time.timeScale = InGameState == InGameState.LocalPause ? 0 : 1;
+
+        // Enable the in-game camera behaviors during gameplay.
+        if (inGameCamera)
+        {
+            inGameCamera.enabled = InGameState == InGameState.Playing;
+        }
+
+        // Update HUD based on in-game state.
+        if (hud && !IsDedicatedServer)
+        {
+            // Reset game status overlay (the UI to show countdown) by hiding it first.
             hud.HideGameStatusContainer();
-        }
 
-        InGameState = inGameState;
-        if (inGameState == InGameState.Initializing)
-        {
-            hud.SetTime(remainingGameTime);
-        }
-        if (inGameState == InGameState.GameOver)
-        {
-            if (InGamePause.IsPausing())
+            switch (InGameState)
             {
-                InGamePause.ToggleGamePause();
+                // Hide HUD during non-gameplay.
+                case InGameState.None:
+                case InGameState.Initializing:
+                case InGameState.LocalPause:
+                    hud.gameObject.SetActive(false);
+                    break;
+                // Keep showing HUD during gameplay.
+                case InGameState.PreGameCountdown:
+                case InGameState.Playing:
+                case InGameState.ShuttingDown:
+                    hud.gameObject.SetActive(true);
+                    hud.SetTime(gameTimeLeft);
+                    break;
+                // Hide HUD and show game over when game is over.
+                case InGameState.GameOver:
+                    if (InGamePause.IsPausing())
+                    {
+                        InGamePause.ToggleGamePause();
+                    }
+                    hud.gameObject.SetActive(false);
+                    menuManager.ShowInGameMenu(AssetEnum.GameOverMenuCanvas);
+                    break;
             }
-
-            hud.gameObject.SetActive(false);
-            menuManager.ShowInGameMenu(AssetEnum.GameOverMenuCanvas);
         }
-        
-        inGameCamera.enabled = InGameState == InGameState.Playing;
     }
 
     private void ResetLevel()
@@ -819,7 +800,7 @@ public class GameManager : NetworkBehaviour
         planets.Clear();
         hud.Reset();
     }
-    
+
     public void StartOnlineGame()
     {
         if (!IsServer || !IsOwner)
@@ -1113,32 +1094,38 @@ public class GameManager : NetworkBehaviour
         hud.UpdatePreGameCountdown(second);
     }
 
-    private void OnGameTimeUpdated(int remainingTime)
+    private void OnGameTimeUpdated(int remainingGameTime)
     {
         if (InGameState != InGameState.Playing)
         {
+            BytewarsLogger.LogWarning($"Unable to handle update game time event. In-game state is not in {InGameState.Playing} state");
             return;
         }
+
+        BytewarsLogger.Log("Recieved update game time event.");
+        gameTimeLeft = remainingGameTime;
+        UpdateInGameUI();
+
+        UpdateGameTimeClientRpc(remainingGameTime);
         
-        gameTimeLeft = remainingTime;
-        hud.SetTime(remainingTime);
-        UpdateGameTimeClientRpc(remainingTime);
-        
-        if (remainingTime <= 0)
+        if (remainingGameTime <= 0)
         {
             SetInGameState(InGameState.GameOver);
         }
     }
     
     [ClientRpc]
-    private void UpdateGameTimeClientRpc(int remainingTimeSecond)
+    private void UpdateGameTimeClientRpc(int remainingGameTime)
     {
         if (IsHost)
         {
+            BytewarsLogger.LogWarning($"[Client] Unable to handle update game time event. The player is a host, abort to handle client RPC.");
             return;
         }
-        
-        hud.SetTime(remainingTimeSecond);
+
+        BytewarsLogger.Log("[Client] Recieved update game time event.");
+        gameTimeLeft = remainingGameTime;
+        UpdateInGameUI();
     }
     
     private void OnGameOverShutDownCountdown(int countdownSeconds)
