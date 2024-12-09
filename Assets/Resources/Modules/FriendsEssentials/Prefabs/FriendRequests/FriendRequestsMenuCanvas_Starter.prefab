@@ -415,11 +415,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainButtonsContainer: {fileID: 0}
-  friendEntryPrefab: {fileID: 0}
-  defaultPanel: {fileID: 0}
-  loadingPanel: {fileID: 0}
-  loadingFailedPanel: {fileID: 0}
-  resultContentPanel: {fileID: 0}
+  friendEntryPrefab: {fileID: 2745871300434368602, guid: 5bf2d2a416cdeb347bba8ea21726af12,
+    type: 3}
+  defaultPanel: {fileID: 3125074292088705143}
+  loadingPanel: {fileID: 8864642127922650816}
+  loadingFailedPanel: {fileID: 4626897353688820108}
+  resultContentPanel: {fileID: 4722500314856286846}
   backButton: {fileID: 5406751274186335520}
 --- !u!1 &2169716257961203028
 GameObject:

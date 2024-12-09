@@ -72,35 +72,25 @@ public class FindFriendsMenuHandler_Starter : MenuCanvas
     private void OnDisable()
     {
         ClearSearchPanel();
+        friendSearchBar.text = string.Empty;
 
         CurrentView = FindFriendsView.Default;
     }
 
-    #region Search for Players Module
+    private void OnEnable()
+    {
+        friendSearchBar.enabled = true;
+    }
 
-    #region Main Functions
+    #region Search for Players Module
 
     private void FindFriend(string friendId)
     {
         BytewarsLogger.LogWarning("The FindFriend method is not implemented yet");
     }
 
-    // TODO: Implement Search for Players main functions here.
-
-    #endregion
-
-    #region Callback Functions
-
-    // TODO: Implement Search for Players callback functions here.
-
-    #endregion Callback Functions
-
-    #region View Management
-
     private void ClearSearchPanel()
     {
-        friendSearchBar.text = string.Empty;
-
         resultContentPanel.DestroyAllChildren();
 
         if (userResult != null)
@@ -124,7 +114,7 @@ public class FindFriendsMenuHandler_Starter : MenuCanvas
         friendCodeCopyButton.interactable = true;
     }
 
-    #endregion View Management
+    // TODO: Implement Search for Players functions here.
 
     #endregion Search for Players Module
 

@@ -56,35 +56,35 @@ public class FriendDetailsMenuHandler_Starter : MenuCanvas
         // TODO: Define Module Wrapper listeners here.
     }
 
-    #region Friend List Module
-
-    #region Main Functions
+    #region Manage Friends Module
 
     private void Unfriend()
     {
+        // TODO: Implement Unfriend function here.
         BytewarsLogger.LogWarning("Unfriend is not yet implemented.");
     }
     
     private void BlockPlayer()
     {
+        // TODO: Implement Block Player function here.
         BytewarsLogger.LogWarning("BlockPlayer is not yet implemented.");
     }
 
-    #endregion Main Functions
+    private void OnUnfriendCompleted(Result result)
+    {
+        // TODO: Implement OnUnfriendCompleted function here.
+        BytewarsLogger.LogWarning("OnUnfriendCompleted is not yet implemented.");
+    }
 
-    #region Callback Functions
+    private void OnBlockPlayerComplete(Result<BlockPlayerResponse> result)
+    {
+        // TODO: Implement OnBlockPlayerComplete function here.
+        BytewarsLogger.LogWarning("OnBlockPlayerComplete is not yet implemented.");
+    }
 
-    // TODO: Implement Friend Details callback functions here.
+    // TODO: Implement Friend Details functions here.
 
-    #endregion Callback Functions
-
-    #region View Management
-
-    // TODO: Implement Friend Details view management here.
-
-    #endregion View Management
-
-    #endregion Friend List Module
+    #endregion Manage Friends Module
 
     #region Party Module
 
@@ -111,9 +111,11 @@ public class FriendDetailsMenuHandler_Starter : MenuCanvas
 
     private void InitializePartyButtons(bool inParty)
     {
-        promoteToLeaderButton.gameObject.SetActive(!inParty);
-        kickButton.gameObject.SetActive(!inParty);
-        inviteToPartyButton.gameObject.SetActive(inParty);
+        bool partyEssentialsActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.PartyEssentials);
+
+        promoteToLeaderButton.gameObject.SetActive(partyEssentialsActive && !inParty);
+        kickButton.gameObject.SetActive(partyEssentialsActive && !inParty);
+        inviteToPartyButton.gameObject.SetActive(partyEssentialsActive && inParty);
     }
 
     // TODO: Implement Party view management functions here.

@@ -25,7 +25,7 @@ public class BlockedPlayersMenuHandler : MenuCanvas
     
     private ManagingFriendsWrapper managingFriendsWrapper;
 
-    private FriendsEssentialsWrapper friendEssentialsWrapper;
+    private FriendsEssentialsWrapper friendsEssentialsWrapper;
     
     private enum BlockedFriendsView
     {
@@ -52,10 +52,17 @@ public class BlockedPlayersMenuHandler : MenuCanvas
     
     private void OnEnable()
     {
-        managingFriendsWrapper ??= TutorialModuleManager.Instance.GetModuleClass<ManagingFriendsWrapper>();
-        friendEssentialsWrapper ??= TutorialModuleManager.Instance.GetModuleClass<FriendsEssentialsWrapper>();
+        if (managingFriendsWrapper == null)
+        {
+            managingFriendsWrapper = TutorialModuleManager.Instance.GetModuleClass<ManagingFriendsWrapper>();
+        }
+
+        if (friendsEssentialsWrapper == null)
+        {
+            friendsEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<FriendsEssentialsWrapper>();
+        }
         
-        if (managingFriendsWrapper != null && friendEssentialsWrapper != null)
+        if (managingFriendsWrapper != null && friendsEssentialsWrapper != null)
         {
             LoadBlockedPlayers();
         }
@@ -88,7 +95,7 @@ public class BlockedPlayersMenuHandler : MenuCanvas
 
     private void GetBulkUserInfo(params string[] userIds)
     {
-        friendEssentialsWrapper.GetBulkUserInfo(userIds, OnGetBulkUserInfoCompleted);
+        friendsEssentialsWrapper.GetBulkUserInfo(userIds, OnGetBulkUserInfoCompleted);
     }
 
     private void UnblockPlayer(string userId)
@@ -107,41 +114,12 @@ public class BlockedPlayersMenuHandler : MenuCanvas
 
     private void RetrieveUserAvatar(string userId)
     {
-        friendEssentialsWrapper.GetUserAvatar(userId, result => OnGetAvatarCompleted(userId, result));
+        friendsEssentialsWrapper.GetUserAvatar(userId, result => OnGetAvatarCompleted(userId, result));
     }
     
     #endregion Main Functions
 
     #region Callback Functions
-    
-    private void OnUnblockPlayerCompleted(string userId, Result<UnblockPlayerResponse> result)
-    {
-        if (result.IsError)
-        {
-            MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptErrorTitle,
-                result.Error.Message, "OK", null);
-            return;
-        }
-
-        MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptMessageTitle,
-            FriendsHelper.UnblockPlayerCompletedMessage, "OK", null);
-
-        LoadBlockedPlayers();
-    }
-    
-    private void OnGetBulkUserInfoCompleted(Result<ListBulkUserInfoResponse> result)
-    {
-        if (result.IsError)
-        {
-            return;
-        }
-
-        CurrentView = BlockedFriendsView.LoadSuccess;
-
-        ClearBlockedPlayers();
-
-        PopulateBlockedPlayers(result.Value.data);
-    }
     
     private void OnLoadBlockedPlayersCompleted(Result<BlockedList> result)
     {
@@ -164,6 +142,35 @@ public class BlockedPlayersMenuHandler : MenuCanvas
         IEnumerable<string> blockedPlayerIds = blockedData.Select(player => player.blockedUserId);
 
         GetBulkUserInfo(blockedPlayerIds.ToArray());
+    }
+    
+    private void OnGetBulkUserInfoCompleted(Result<ListBulkUserInfoResponse> result)
+    {
+        if (result.IsError)
+        {
+            return;
+        }
+
+        CurrentView = BlockedFriendsView.LoadSuccess;
+
+        ClearBlockedPlayers();
+
+        PopulateBlockedPlayers(result.Value.data);
+    }
+    
+    private void OnUnblockPlayerCompleted(string userId, Result<UnblockPlayerResponse> result)
+    {
+        if (result.IsError)
+        {
+            MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptErrorTitle,
+                result.Error.Message, "OK", null);
+            return;
+        }
+
+        MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptMessageTitle,
+            FriendsHelper.UnblockPlayerCompletedMessage, "OK", null);
+
+        LoadBlockedPlayers();
     }
     
     private void OnGetAvatarCompleted(string userId, Result<Texture2D> result)

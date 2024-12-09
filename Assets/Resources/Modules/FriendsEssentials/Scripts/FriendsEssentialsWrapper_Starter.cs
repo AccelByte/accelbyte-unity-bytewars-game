@@ -12,8 +12,6 @@ using UnityEngine.Rendering;
 
 public class FriendsEssentialsWrapper_Starter : MonoBehaviour
 {
-    #region Predefined - Friends Essentials
-
     private static ApiClient ApiClient => AccelByteSDK.GetClientRegistry().GetApi();
     private User user;
     private UserProfiles userProfiles;
@@ -27,35 +25,36 @@ public class FriendsEssentialsWrapper_Starter : MonoBehaviour
     public static event Action<string> OnRequestCanceled = delegate { };
     public static event Action<string> OnRequestRejected = delegate { };
     public static event Action<string> OnRequestAccepted = delegate { };
-    public static event Action<string> OnUnfriended = delegate { };
-
-    #endregion Predefined - Friends Essentials
-
+    
     private void Awake()
     {
         user = ApiClient.GetUser();
         userProfiles = ApiClient.GetUserProfiles();
         lobby = ApiClient.GetLobby();
 
-        LoginHandler.onLoginCompleted += CheckLobbyConnection;
+        // Assign to both starter and non to make sure we support mix matched modules starter mode
+        AuthEssentialsWrapper.OnUserProfileReceived += SetPlayerInfo;
+        SinglePlatformAuthWrapper.OnUserProfileReceived += SetPlayerInfo;
+        AuthEssentialsWrapper_Starter.OnUserProfileReceived += SetPlayerInfo;
+        SinglePlatformAuthWrapper_Starter.OnUserProfileReceived += SetPlayerInfo;
+
+        // TODO: Bind listeners here.
     }
     
     private void OnDestroy()
     {
-        LoginHandler.onLoginCompleted -= CheckLobbyConnection;
+        AuthEssentialsWrapper.OnUserProfileReceived -= SetPlayerInfo;
+        SinglePlatformAuthWrapper.OnUserProfileReceived -= SetPlayerInfo;
+        AuthEssentialsWrapper_Starter.OnUserProfileReceived -= SetPlayerInfo;
+        SinglePlatformAuthWrapper_Starter.OnUserProfileReceived -= SetPlayerInfo;
+
+        // TODO: Unbind listeners here.
     }
-    
+
     private void SetPlayerInfo(UserProfile userProfile)
     {
-        BytewarsLogger.LogWarning("The SetPlayerInfo method is not implemented yet");
-    }
-    
-    private void CheckLobbyConnection(TokenData tokenData)
-    {
-        if (!lobby.IsConnected)
-        {
-            lobby.Connect();
-        }
+        PlayerUserId = userProfile.userId;
+        PlayerFriendCode = userProfile.publicId;
     }
 
     #region Add Friends
@@ -64,13 +63,11 @@ public class FriendsEssentialsWrapper_Starter : MonoBehaviour
 
     #endregion Add Friends
 
-
     #region Search for Players
 
     // TODO: Implement Search for Players Module functions here.
 
     #endregion Search for Players
-
 
     #region Friend List
 

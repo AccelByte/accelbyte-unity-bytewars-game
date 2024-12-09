@@ -22,6 +22,8 @@ public class BlockedPlayersMenuHandler_Starter : MenuCanvas
     [Header("Menu Components"), SerializeField] private Button backButton;
     
     private readonly Dictionary<string, GameObject> blockedPlayers = new();
+
+    // TODO: Declare Module Wrappers here.
     
     private enum BlockedFriendsView
     {
@@ -56,6 +58,7 @@ public class BlockedPlayersMenuHandler_Starter : MenuCanvas
         CurrentView = BlockedFriendsView.Default;
 
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
+        ClearBlockedPlayers();
     }
     
     private void OnDisable()
@@ -67,19 +70,17 @@ public class BlockedPlayersMenuHandler_Starter : MenuCanvas
 
     #region Managing Friends Module
 
-    #region Main Functions
+    private void LoadBlockedPlayers()
+    {
+        // TODO: Implement Load Blocked Players function here.
+        BytewarsLogger.LogWarning("The LoadBlockedPlayers method is not implemented yet");
+    }
 
-    // TODO: Implement Block Player main functions here.
-
-    #endregion Main Functions
-
-    #region Callback Functions
-
-    // TODO: Implement Block Player callback functions here.
-
-    #endregion Callback Functions
-
-    #region View Management
+    private void OnLoadBlockedPlayersCompleted(Result<BlockedList> result)
+    {
+        // TODO: Implement Load Blocked Players callback functions here.
+        BytewarsLogger.LogWarning("The OnLoadBlockedPlayersCompleted method is not implemented yet");
+    }
 
     private void ClearBlockedPlayers()
     {
@@ -88,9 +89,7 @@ public class BlockedPlayersMenuHandler_Starter : MenuCanvas
         blockedPlayers.Clear();
     }
 
-    // TODO: Implement Block Player view management functions here.
-
-    #endregion View Management
+    // TODO: Implement Block Player functions here.
 
     #endregion Managing Friends Module
 

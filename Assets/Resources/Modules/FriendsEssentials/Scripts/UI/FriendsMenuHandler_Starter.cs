@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using AccelByte.Core;
 using AccelByte.Models;
 using Extensions;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Image = UnityEngine.UI.Image;
@@ -55,6 +54,14 @@ public class FriendsMenuHandler_Starter : MenuCanvas
     private void OnEnable()
     {
         // TODO: Define Module Wrappers and Load Friends here.
+
+        if (CurrentView == FriendsView.Loading)
+        {
+            BytewarsLogger.Log("Already loading friend list");
+            return;
+        }
+
+        LoadFriendList();
     }
 
     private void Awake()
@@ -68,47 +75,47 @@ public class FriendsMenuHandler_Starter : MenuCanvas
 
         ClearFriendList();
     }
-    
+
+    private void OnDestroy()
+    {
+        // TODO: Unbind event action here
+    }
+
     private void OnDisable()
     {
         ClearFriendList();
-        
-        CurrentView = FriendsView.Default;
     }
 
     #region Friend List Module
 
-    #region Main Functions
+    private void LoadFriendList()
+    {
+        // TODO: Implement Load Friend List function here.
+        BytewarsLogger.LogWarning("The LoadFriendList method is not implemented yet");
+    }
 
-    // TODO: Implement Friend List main functions here.
-
-    #endregion Main Functions
-
-    #region Callback Functions
-
-    // TODO: Implement Friend List callback functions here.
-
-    #endregion Callback Functions
-
-    #region View Management
+    private void OnLoadFriendListCompleted(Result<Friends> result)
+    {
+        // TODO: Implement Load Friend List callback functions here.
+        BytewarsLogger.LogWarning("The OnLoadFriendListCompleted method is not implemented yet");
+    }
 
     private void ClearFriendList()
     {
-        resultContentPanel.DestroyAllChildren();
+        resultColumnLeftPanel.DestroyAllChildren();
+        resultColumnRightPanel.DestroyAllChildren();
         
         friendEntries.Clear();
     }
     
     private GameObject InstantiateToColumn(GameObject playerEntryPrefab)
     {
-        bool leftPanelHasSpace = resultColumnLeftPanel.childCount <= resultColumnRightPanel.childCount;
+        bool shouldPlaceOnRightPanel = resultColumnLeftPanel.childCount > resultColumnRightPanel.childCount;
         
-        return Instantiate(playerEntryPrefab, leftPanelHasSpace ? resultColumnLeftPanel : resultColumnRightPanel);
+        return Instantiate(playerEntryPrefab, shouldPlaceOnRightPanel ? resultColumnRightPanel : resultColumnLeftPanel);
     }
 
-    // TODO: Implement Friend List view management functions here.
-
-    #endregion View Management
+    // TODO: Implement Friend List functions here.
 
     #endregion Friend List Module
 

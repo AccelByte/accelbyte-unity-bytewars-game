@@ -3,11 +3,10 @@
 // and restrictions contact your company contract manager.
 
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 using AccelByte.Core;
 using AccelByte.Models;
 using Extensions;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Image = UnityEngine.UI.Image;
@@ -31,8 +30,6 @@ public class FriendsMenuHandler : MenuCanvas
     private AssetEnum friendDetailMenuCanvas;
 
     private FriendsEssentialsWrapper friendsEssentialsWrapper;
-    
-    private AuthEssentialsWrapper authEssentialsWrapper;
 
     private enum FriendsView
     {
@@ -63,16 +60,20 @@ public class FriendsMenuHandler : MenuCanvas
         {
             friendsEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<FriendsEssentialsWrapper>();
         }
-        
-        if (authEssentialsWrapper == null)
+
+        if (friendsEssentialsWrapper == null)
         {
-            authEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
+            BytewarsLogger.LogWarning("FriendsEssentialsWrapper is not enabled");
+            return;
         }
 
-        if (friendsEssentialsWrapper != null && authEssentialsWrapper != null)
+        if (CurrentView == FriendsView.Loading)
         {
-            LoadFriendList();
+            BytewarsLogger.Log("Already loading friend list");
+            return;
         }
+
+        LoadFriendList();
     }
     
     private void Awake()
@@ -82,18 +83,30 @@ public class FriendsMenuHandler : MenuCanvas
         
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
         
-        FriendsEssentialsWrapper.OnRequestAccepted += OnFriendRequestAccepted;
-        FriendsEssentialsWrapper.OnUnfriended += OnUnfriendedOrBlocked;
-        ManagingFriendsWrapper.OnPlayerBlocked += OnUnfriendedOrBlocked;
+        // Bind to both starter and non starter to allow mixed usage of starter and non
+        FriendsEssentialsWrapper.OnRequestAccepted += OnFriendListUpdate;
+        ManagingFriendsWrapper.OnPlayerUnfriended += OnFriendListUpdate;
+        ManagingFriendsWrapper.OnPlayerBlocked += OnFriendListUpdate;
+        FriendsEssentialsWrapper_Starter.OnRequestAccepted += OnFriendListUpdate;
+        ManagingFriendsWrapper_Starter.OnPlayerUnfriended += OnFriendListUpdate;
+        ManagingFriendsWrapper_Starter.OnPlayerBlocked += OnFriendListUpdate;
 
         ClearFriendList();
     }
 
+    private void OnDestroy()
+    {
+        FriendsEssentialsWrapper.OnRequestAccepted -= OnFriendListUpdate;
+        ManagingFriendsWrapper.OnPlayerUnfriended -= OnFriendListUpdate;
+        ManagingFriendsWrapper.OnPlayerBlocked -= OnFriendListUpdate;
+        FriendsEssentialsWrapper_Starter.OnRequestAccepted -= OnFriendListUpdate;
+        ManagingFriendsWrapper_Starter.OnPlayerUnfriended -= OnFriendListUpdate;
+        ManagingFriendsWrapper_Starter.OnPlayerBlocked -= OnFriendListUpdate;
+    }
+    
     private void OnDisable()
     {
         ClearFriendList();
-
-        CurrentView = FriendsView.Default;
     }
 
     #region Friend List Module
@@ -103,18 +116,19 @@ public class FriendsMenuHandler : MenuCanvas
     private void LoadFriendList()
     {
         CurrentView = FriendsView.Loading;
-        
+        ClearFriendList();
+
         friendsEssentialsWrapper.GetFriendList(OnLoadFriendListCompleted);
     }
     
     private void GetBulkUserInfo(Friends friends)
     {
-        friendsEssentialsWrapper.GetBulkUserInfo(friends.friendsId, OnBulkUserInfoCompleted);
+        friendsEssentialsWrapper.GetBulkUserInfo(friends.friendsId, OnGetBulkUserInfoCompleted);
     }
 
     private void RetrieveUserAvatar(string userId)
     {
-        friendsEssentialsWrapper.GetUserAvatar(userId, result => OnGetAvatarComplete(result, userId));
+        friendsEssentialsWrapper.GetUserAvatar(userId, result => OnGetAvatarCompleted(result, userId));
     }
 
     #endregion Main Functions
@@ -126,21 +140,19 @@ public class FriendsMenuHandler : MenuCanvas
         if (result.IsError)
         {
             CurrentView = FriendsView.LoadFailed;
-            
             return;
         }
         
         if (result.Value.friendsId.Length <= 0)
         {
             CurrentView = FriendsView.Default;
-            
             return;
         }
         
         GetBulkUserInfo(result.Value);
     }
-    
-    private void OnBulkUserInfoCompleted(Result<ListBulkUserInfoResponse> result)
+
+    private void OnGetBulkUserInfoCompleted(Result<ListBulkUserInfoResponse> result)
     {
         if (result.IsError)
         {
@@ -153,13 +165,13 @@ public class FriendsMenuHandler : MenuCanvas
         PopulateFriendList(result.Value.data);
     }
 
-    private void OnGetAvatarComplete(Result<Texture2D> result, string userId)
+    private void OnGetAvatarCompleted(Result<Texture2D> result, string userId)
     {
         if (result.IsError)
         {
             BytewarsLogger.LogWarning($"Unable to get avatar for user Id: {userId}, " +
-                                      $"Error Code: {result.Error.Code}, " +
-                                      $"Error Message: {result.Error.Message}");
+                $"Error Code: {result.Error.Code}, " +
+                $"Error Message: {result.Error.Message}");
             return;
         }
         
@@ -173,49 +185,14 @@ public class FriendsMenuHandler : MenuCanvas
         friendImage.sprite = Sprite.Create(result.Value, imageRect, Vector2.zero);
     }
     
-    private void OnFriendRequestAccepted(string userId)
+    private void OnFriendListUpdate(string userId)
     {
         if (!gameObject.activeSelf)
         {
             return;
         }
 
-        if (friendEntries.ContainsKey(userId))
-        {
-            return;
-        }
-        
-        if (CurrentView != FriendsView.LoadSuccess)
-        {
-            CurrentView = FriendsView.LoadSuccess;
-        }
-
-        authEssentialsWrapper.GetUserByUserId(userId, result =>
-        {
-            if (result.IsError)
-            {
-                return;
-            }
-
-            CreateFriendEntry(userId, result.Value.displayName);
-        });
-    }
-    
-    private void OnUnfriendedOrBlocked(string userId)
-    {
-        if (!gameObject.activeSelf)
-        {
-            return;
-        }
-
-        if (!friendEntries.TryGetValue(userId, out GameObject playerEntry))
-        {
-            return;
-        }
-
-        Destroy(playerEntry);
-
-        friendEntries.Remove(userId);
+        LoadFriendList();
     }
 
     #endregion Callback Functions
@@ -232,9 +209,9 @@ public class FriendsMenuHandler : MenuCanvas
     
     private GameObject InstantiateToColumn(GameObject playerEntryPrefab)
     {
-        bool leftPanelHasSpace = resultColumnLeftPanel.childCount <= resultColumnRightPanel.childCount;
+        bool shouldPlaceOnRightPanel = resultColumnLeftPanel.childCount > resultColumnRightPanel.childCount;
         
-        return Instantiate(playerEntryPrefab, leftPanelHasSpace ? resultColumnLeftPanel : resultColumnRightPanel);
+        return Instantiate(playerEntryPrefab, shouldPlaceOnRightPanel ? resultColumnRightPanel : resultColumnLeftPanel);
     }
     
     private void PopulateFriendList(params BaseUserInfo[] userInfo)
@@ -281,7 +258,6 @@ public class FriendsMenuHandler : MenuCanvas
         if (!MenuManager.Instance.AllMenu.TryGetValue(friendDetailCanvas, out MenuCanvas menuCanvas))
         {
             BytewarsLogger.LogWarning($"Unable to find {friendDetailCanvas} in menu manager");
-
             return;
         }
         

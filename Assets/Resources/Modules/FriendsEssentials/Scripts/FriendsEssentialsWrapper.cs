@@ -14,7 +14,7 @@ public class FriendsEssentialsWrapper : MonoBehaviour
 {
     private static ApiClient ApiClient => AccelByteSDK.GetClientRegistry().GetApi();
     private User user;
-    private UserProfiles userProfiles ;
+    private UserProfiles userProfiles;
     private Lobby lobby;
 
     public string PlayerUserId { get; private set; } = string.Empty;
@@ -25,50 +25,42 @@ public class FriendsEssentialsWrapper : MonoBehaviour
     public static event Action<string> OnRequestCanceled = delegate { };
     public static event Action<string> OnRequestRejected = delegate { };
     public static event Action<string> OnRequestAccepted = delegate { };
-    public static event Action<string> OnUnfriended = delegate { };
-    
+
     private void Awake()
     {
         user = ApiClient.GetUser();
         userProfiles = ApiClient.GetUserProfiles();
         lobby = ApiClient.GetLobby();
 
-        LoginHandler.onLoginCompleted += CheckLobbyConnection;
+        // Assign to both starter and non to make sure we support mix matched modules starter mode
         AuthEssentialsWrapper.OnUserProfileReceived += SetPlayerInfo;
         SinglePlatformAuthWrapper.OnUserProfileReceived += SetPlayerInfo;
+        AuthEssentialsWrapper_Starter.OnUserProfileReceived += SetPlayerInfo;
+        SinglePlatformAuthWrapper_Starter.OnUserProfileReceived += SetPlayerInfo;
 
         lobby.OnIncomingFriendRequest += OnIncomingFriendRequest;
         lobby.FriendRequestCanceled += OnFriendRequestCanceled;
         lobby.FriendRequestRejected += OnFriendRequestRejected;
         lobby.FriendRequestAccepted += OnFriendRequestAccepted;
-        lobby.OnUnfriend += OnUserUnfriended;
     }
     
     private void OnDestroy()
     {
-        LoginHandler.onLoginCompleted -= CheckLobbyConnection;
         AuthEssentialsWrapper.OnUserProfileReceived -= SetPlayerInfo;
         SinglePlatformAuthWrapper.OnUserProfileReceived -= SetPlayerInfo;
+        AuthEssentialsWrapper_Starter.OnUserProfileReceived -= SetPlayerInfo;
+        SinglePlatformAuthWrapper_Starter.OnUserProfileReceived -= SetPlayerInfo;
 
         lobby.OnIncomingFriendRequest -= OnIncomingFriendRequest;
         lobby.FriendRequestCanceled -= OnFriendRequestCanceled;
         lobby.FriendRequestRejected -= OnFriendRequestRejected;
         lobby.FriendRequestAccepted -= OnFriendRequestAccepted;
-        lobby.OnUnfriend -= OnUserUnfriended;
     }
     
     private void SetPlayerInfo(UserProfile userProfile)
     {
         PlayerUserId = userProfile.userId;
         PlayerFriendCode = userProfile.publicId;
-    }
-
-    private void CheckLobbyConnection(TokenData tokenData)
-    {
-        if (!lobby.IsConnected)
-        {
-            lobby.Connect();
-        }
     }
 
     #region Add Friends
@@ -79,13 +71,12 @@ public class FriendsEssentialsWrapper : MonoBehaviour
         {
             if (result.IsError)
             {
-                BytewarsLogger.LogWarning("Error ListIncomingFriends, " +
+                BytewarsLogger.LogWarning("Error loading incoming friend requests, " +
                     $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
             else
             {
                 BytewarsLogger.Log("Successfully loaded incoming friend requests");
-
                 CachedFriendUserIds.Add(result.Value.friendsId);
             }
 
@@ -99,11 +90,13 @@ public class FriendsEssentialsWrapper : MonoBehaviour
         {
             if (result.IsError)
             {
-                BytewarsLogger.LogWarning($"{result.Error.Message}");
+                BytewarsLogger.LogWarning("Error declining friend request, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
             else
             {
                 BytewarsLogger.Log($"Successfully rejected friend request with User Id: {userId}");
+                CachedFriendUserIds.Remove(userId);
             }
 
             resultCallback?.Invoke(result);
@@ -116,11 +109,13 @@ public class FriendsEssentialsWrapper : MonoBehaviour
         {
             if (result.IsError)
             {
-                BytewarsLogger.LogWarning($"{result.Error.Message}");
+                BytewarsLogger.LogWarning("Error accepting friend request, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
             else
             {
                 BytewarsLogger.Log($"Successfully accepted friend request with User Id: {userId}");
+                CachedFriendUserIds.Add(userId);
             }
 
             resultCallback?.Invoke(result);
@@ -133,13 +128,12 @@ public class FriendsEssentialsWrapper : MonoBehaviour
         {
             if (result.IsError)
             {
-                BytewarsLogger.LogWarning("Error ListOutgoingFriends," +
-                                          $" Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+                BytewarsLogger.LogWarning("Error loading outgoing friend requests, " +
+                    $" Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
             else
             {
                 BytewarsLogger.Log("Successfully loaded outgoing friend requests");
-
                 CachedFriendUserIds.Add(result.Value.friendsId);
             }
 
@@ -153,28 +147,32 @@ public class FriendsEssentialsWrapper : MonoBehaviour
         {
             if (result.IsError)
             {
-                BytewarsLogger.LogWarning($"{result.Error.Message}");
+                BytewarsLogger.LogWarning("Error canceling friend request, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
             else
             {
                 BytewarsLogger.Log($"Successfully canceled outgoing friend request with User Id: {userId}");
+                CachedFriendUserIds.Remove(userId);
             }
 
             resultCallback?.Invoke(result);
         });
     }
 
-    public void GetBulkUserInfo(string[] usersId, ResultCallback<ListBulkUserInfoResponse> resultCallback)
+    public void GetBulkUserInfo(string[] userIds, ResultCallback<ListBulkUserInfoResponse> resultCallback)
     {
-        user.BulkGetUserInfo(usersId, result =>
+        user.BulkGetUserInfo(userIds, result =>
         {
             if (result.IsError)
             {
-                BytewarsLogger.LogWarning($"{result.Error.Message}");
+                BytewarsLogger.LogWarning("Error getting bulk user info, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
             else
             {
                 BytewarsLogger.Log($"Successfully retrieved bulk user info");
+                CachedFriendUserIds.Add(userIds);
             }
 
             resultCallback?.Invoke(result);
@@ -185,83 +183,122 @@ public class FriendsEssentialsWrapper : MonoBehaviour
     {
         if (result.IsError)
         {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
-            
+            BytewarsLogger.LogWarning("Error receiving incoming friend request notification, " +
+                $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             return;
         }
 
         BytewarsLogger.Log($"Incoming friend request from {result.Value.friendId}");
-
         CachedFriendUserIds.Add(result.Value.friendId);
 
         OnIncomingRequest?.Invoke(result.Value.friendId);
     }
     
-    private static void OnFriendRequestCanceled(Result<Acquaintance> result)
+    private void OnFriendRequestCanceled(Result<Acquaintance> result)
     {
         if (result.IsError)
         {
-            BytewarsLogger.LogWarning("Error OnFriendRequestCanceled, " +
+            BytewarsLogger.LogWarning("Error receiving friend request canceled notification, " +
                 $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
-
             return;
         }
 
         BytewarsLogger.Log($"Friend request from {result.Value.userId} has been canceled");
+        CachedFriendUserIds.Remove(result.Value.userId);
 
         OnRequestCanceled?.Invoke(result.Value.userId);
     }
     
-    private static void OnFriendRequestRejected(Result<Acquaintance> result)
+    private void OnFriendRequestRejected(Result<Acquaintance> result)
     {
         if (result.IsError)
         {
-            BytewarsLogger.LogWarning("Error OnFriendRequestRejected, " + 
+            BytewarsLogger.LogWarning("Error receiving friend request rejected notification, " +
                 $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
-            
             return;
         }
 
         BytewarsLogger.Log($"Friend request from {result.Value.userId} has been rejected");
+        CachedFriendUserIds.Remove(result.Value.userId);
 
         OnRequestRejected?.Invoke(result.Value.userId);
     }
     
-    private static void OnFriendRequestAccepted(Result<Friend> result)
+    private void OnFriendRequestAccepted(Result<Friend> result)
     {
         if (result.IsError)
         {
-            BytewarsLogger.LogWarning("Error OnFriendRequestAccepted, " +
+            BytewarsLogger.LogWarning("Error receiving friend request accepted notification, " +
                 $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
-            
             return;
         }
 
         BytewarsLogger.Log($"Friend request from {result.Value.friendId} has been accepted");
+        CachedFriendUserIds.Add(result.Value.friendId);
 
         OnRequestAccepted?.Invoke(result.Value.friendId);
-    }
-    
-    private void OnUserUnfriended(Result<Friend> result)
-    {
-        if (result.IsError)
-        {
-            BytewarsLogger.LogWarning("Error OnUserUnfriended, " +
-                $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
-
-            return;
-        }
-
-        BytewarsLogger.Log($"Unfriend from {result.Value.friendId}");
-
-        CachedFriendUserIds.Remove(result.Value.friendId);
-
-        OnUnfriended?.Invoke(result.Value.friendId);
     }
 
     #endregion Add Friends
 
     #region Search for Players
+
+    public void GetUserByFriendCode(string friendCode, ResultCallback<PublicUserData> resultCallback)
+    {
+        userProfiles.GetUserProfilePublicInfoByPublicId(friendCode, result =>
+        {
+            if (result.IsError)
+            {
+                BytewarsLogger.LogWarning("Error getting user profile public info by public id, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+
+                resultCallback?.Invoke(Result<PublicUserData>.CreateError(result.Error.Code, result.Error.Message));
+
+                return;
+            }
+
+            BytewarsLogger.Log("Successfully retrieved user profile public info by public id.");
+            CachedFriendUserIds.Add(result.Value.userId);
+
+            GetUserByUserId(result.Value.userId, resultCallback);
+        });
+    }
+
+    private void GetUserByUserId(string userId, ResultCallback<PublicUserData> resultCallback)
+    {
+        user.GetUserByUserId(userId, result =>
+        {
+            if (result.IsError)
+            {
+                BytewarsLogger.LogWarning("Error getting user by user id, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+            }
+            else
+            {
+                BytewarsLogger.Log("Successfully retrieved user by user id.");
+            }
+
+            resultCallback?.Invoke(result);
+        });
+    }
+
+    public void GetFriendshipStatus(string userId, ResultCallback<FriendshipStatus> resultCallback)
+    {
+        lobby.GetFriendshipStatus(userId, result =>
+        {
+            if (result.IsError)
+            {
+                BytewarsLogger.LogWarning("Error getting friendship status, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+            }
+            else
+            {
+                BytewarsLogger.Log($"Successfully retrieved friendship status for {userId}");
+            }
+
+            resultCallback.Invoke(result);
+        });
+    }
 
     public void GetUserByExactDisplayName(string displayName, ResultCallback<PublicUserInfo> resultCallback)
     {
@@ -271,7 +308,7 @@ public class FriendsEssentialsWrapper : MonoBehaviour
         {
             if (result.IsError)
             {
-                BytewarsLogger.LogWarning($"Error SearchUsers, " +
+                BytewarsLogger.LogWarning("Error searching users by display name, " +
                     $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
 
                 resultCallback?.Invoke(Result<PublicUserInfo>.CreateError(result.Error.Code, result.Error.Message));
@@ -290,64 +327,24 @@ public class FriendsEssentialsWrapper : MonoBehaviour
             }
 
             BytewarsLogger.Log($"Successfully found users for display name: {displayName}");
-
             CachedFriendUserIds.Add(userByExactDisplayName.userId);
 
             resultCallback?.Invoke(Result<PublicUserInfo>.CreateOk(userByExactDisplayName));
         });
     }
 
-    public void GetFriendshipStatus(string userId, ResultCallback<FriendshipStatus> resultCallback)
+    public void GetUserAvatar(string userId, ResultCallback<Texture2D> resultCallback)
     {
-        lobby.GetFriendshipStatus(userId, result =>
+        user.GetUserAvatar(userId, result =>
         {
             if (result.IsError)
             {
-                BytewarsLogger.LogWarning($"{result.Error.Message}");
-            }
-            else
-            {
-                BytewarsLogger.Log($"Successfully retrieved friendship status for {userId}");
-            }
-
-            resultCallback.Invoke(result);
-        });
-    }
-
-    public void GetUserByFriendCode(string friendCode, ResultCallback<PublicUserData> resultCallback)
-    {
-        userProfiles.GetUserProfilePublicInfoByPublicId(friendCode, result =>
-        {
-            if (result.IsError)
-            {
-                BytewarsLogger.LogWarning("Error GetUserProfilePublicInfoByPublicId, " +
-                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
-
-                resultCallback?.Invoke(Result<PublicUserData>.CreateError(result.Error.Code, result.Error.Message));
-
-                return;
-            }
-
-            BytewarsLogger.Log("Successfully retrieved user profile public info by public id.");
-
-            CachedFriendUserIds.Add(result.Value.userId);
-
-            GetUserByUserId(result.Value.userId, resultCallback);
-        });
-    }
-
-    private void GetUserByUserId(string userId, ResultCallback<PublicUserData> resultCallback)
-    {
-        user.GetUserByUserId(userId, result =>
-        {
-            if (result.IsError)
-            {
-                BytewarsLogger.LogWarning("Error GetUserByUserId, " +
+                BytewarsLogger.LogWarning("Error getting Avatar, " +
                     $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
             else
             {
-                BytewarsLogger.Log("Successfully retrieved user by user id.");
+                BytewarsLogger.Log($"Successfully retrieved Avatar for User Id: {userId}");
             }
 
             resultCallback?.Invoke(result);
@@ -360,28 +357,12 @@ public class FriendsEssentialsWrapper : MonoBehaviour
         {
             if (result.IsError)
             {
-                BytewarsLogger.LogWarning($"Failed to send a friends request: error code: {result.Error.Code} message: {result.Error.Message}");
+                BytewarsLogger.LogWarning("Error sending Friends Request, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
             else
             {
                 BytewarsLogger.Log("Successfully sent Friends Request");
-            }
-
-            resultCallback?.Invoke(result);
-        });
-    }
-
-    public void GetUserAvatar(string userId, ResultCallback<Texture2D> resultCallback)
-    {
-        user.GetUserAvatar(userId, result =>
-        {
-            if (result.IsError)
-            {
-                BytewarsLogger.LogWarning($"Unable to retrieve Avatar for User {userId} : {result.Error}");
-            }
-            else
-            {
-                BytewarsLogger.Log($"Successfully retrieved Avatar for User Id: {userId}");
             }
 
             resultCallback?.Invoke(result);
@@ -398,13 +379,12 @@ public class FriendsEssentialsWrapper : MonoBehaviour
         {
             if (result.IsError)
             {
-                BytewarsLogger.LogWarning(
-                    $"Error LoadFriendsList, Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+                BytewarsLogger.LogWarning("Error loading friends list, " +
+                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
             }
             else
             {
                 BytewarsLogger.Log("Successfully loaded friends list");
-
                 CachedFriendUserIds.Add(result.Value.friendsId);
             }
 

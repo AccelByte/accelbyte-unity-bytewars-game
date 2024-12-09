@@ -73,11 +73,14 @@ public class FriendDetailsMenuHandler : MenuCanvas
         
         InitializePartyButtons(false);
 
-        FriendsEssentialsWrapper.OnUnfriended += OnUnfriendedOrBlocked;
+        // Bind to both to support mixed usage of starter and non modules
+        ManagingFriendsWrapper.OnPlayerUnfriended += OnUnfriendedOrBlocked;
         ManagingFriendsWrapper.OnPlayerBlocked += OnUnfriendedOrBlocked;
+        ManagingFriendsWrapper_Starter.OnPlayerUnfriended += OnUnfriendedOrBlocked;
+        ManagingFriendsWrapper_Starter.OnPlayerBlocked += OnUnfriendedOrBlocked;
     }
 
-    #region Friend List Module
+    #region Manage Friends Module
 
     #region Main Functions
 
@@ -124,7 +127,7 @@ public class FriendDetailsMenuHandler : MenuCanvas
             return;
         }
 
-        BytewarsLogger.Log($"Successfully unfriend a user with an ID {UserId}");
+        BytewarsLogger.Log($"Successfully unfriended player with user ID: {UserId}");
 
         MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptMessageTitle,
             FriendsHelper.UnfriendCompletedMessage, "OK", null);
@@ -141,7 +144,7 @@ public class FriendDetailsMenuHandler : MenuCanvas
             return;
         }
         
-        BytewarsLogger.Log($"Successfully blocked user with user Id: {UserId}");
+        BytewarsLogger.Log($"Successfully blocked player with user ID: {UserId}");
 
         MenuManager.Instance.PromptMenu.ShowPromptMenu(FriendsHelper.PromptMessageTitle,
             FriendsHelper.BlockPlayerCompletedMessage, "OK", null);
@@ -166,7 +169,7 @@ public class FriendDetailsMenuHandler : MenuCanvas
 
     #endregion Callback Functions
 
-    #endregion Friend List Module
+    #endregion Manage Friends Module
 
     #region Party Module
 
@@ -199,25 +202,23 @@ public class FriendDetailsMenuHandler : MenuCanvas
 
     private void InitializePartyButtons(bool inParty)
     {
-        promoteToLeaderButton.gameObject.SetActive(!inParty);
-        kickButton.gameObject.SetActive(!inParty);
-        inviteToPartyButton.gameObject.SetActive(inParty);
+        bool partyEssentialsActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.PartyEssentials);
+
+        promoteToLeaderButton.gameObject.SetActive(partyEssentialsActive && !inParty);
+        kickButton.gameObject.SetActive(partyEssentialsActive && !inParty);
+        inviteToPartyButton.gameObject.SetActive(partyEssentialsActive && inParty);
     }
     
     private void UpdatePartyButtons()
     {
-        if (!authEssentialsWrapper || authEssentialsWrapper.UserData == null)
-        {
-            return;
-        }
-        
+        bool partyEssentialsActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.PartyEssentials);
         bool selfPartyLeader = authEssentialsWrapper.UserData.user_id == PartyHelper.CurrentLeaderUserId;
         bool partyLeader = UserId == PartyHelper.CurrentLeaderUserId;
         bool inParty = PartyHelper.PartyMembersData.Any(data => data.UserId == UserId);
 
-        promoteToLeaderButton.gameObject.SetActive(selfPartyLeader && inParty);
-        kickButton.gameObject.SetActive(selfPartyLeader && inParty);
-        inviteToPartyButton.gameObject.SetActive(!partyLeader && !inParty);
+        promoteToLeaderButton.gameObject.SetActive(partyEssentialsActive && selfPartyLeader && inParty);
+        kickButton.gameObject.SetActive(partyEssentialsActive && selfPartyLeader && inParty);
+        inviteToPartyButton.gameObject.SetActive(partyEssentialsActive && !partyLeader && !inParty);
     }
     
     #endregion View Management

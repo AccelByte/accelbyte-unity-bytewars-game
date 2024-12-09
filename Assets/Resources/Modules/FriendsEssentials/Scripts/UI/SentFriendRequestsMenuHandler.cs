@@ -101,7 +101,7 @@ public class SentFriendRequestsMenuHandler : MenuCanvas
 
     private void CancelFriendRequest(string userId)
     {
-        MenuManager.Instance.PromptMenu.ShowLoadingPrompt(FriendsHelper.CancellingFriendRequestMessage);
+        MenuManager.Instance.PromptMenu.ShowLoadingPrompt(FriendsHelper.CancelingFriendRequestMessage);
 
         friendsEssentialsWrapper.CancelFriendRequests(userId, result => OnCancelFriendRequestCompleted(userId, result));
     }
@@ -115,17 +115,15 @@ public class SentFriendRequestsMenuHandler : MenuCanvas
         if (result.IsError)
         {
             CurrentView = SentFriendRequestsView.LoadFailed;
-
             return;
         }
         
         if (result.Value.friendsId.Length <= 0)
         {
             CurrentView = SentFriendRequestsView.Default;
-
             return;
         }
-        
+
         GetBulkUserInfo(result.Value);
     }
 
@@ -134,12 +132,12 @@ public class SentFriendRequestsMenuHandler : MenuCanvas
         if (result.IsError)
         {
             CurrentView = SentFriendRequestsView.LoadFailed;
-
             return;
         }
         
+        ClearFriendRequestList();
         CurrentView = SentFriendRequestsView.LoadSuccess;
-        
+
         PopulateFriendRequestList(result.Value.data);
     }
 
@@ -153,7 +151,7 @@ public class SentFriendRequestsMenuHandler : MenuCanvas
             return;
         }
         
-        if (result.Value is null || !friendRequests.TryGetValue(userId, out GameObject friendEntry))
+        if (result.Value == null || !friendRequests.TryGetValue(userId, out GameObject friendEntry))
         {
             return;
         }
@@ -172,7 +170,7 @@ public class SentFriendRequestsMenuHandler : MenuCanvas
             return;
         }
 
-        MenuManager.Instance.PromptMenu.ShowPromptMenu("Message", FriendsHelper.FriendRequestCancelledMessage, "OK", null);
+        MenuManager.Instance.PromptMenu.ShowPromptMenu("Message", FriendsHelper.FriendRequestCanceledMessage, "OK", null);
         LoadOutgoingFriendRequests();
     }
     
@@ -183,13 +181,7 @@ public class SentFriendRequestsMenuHandler : MenuCanvas
             return;
         }
 
-        if (!friendRequests.TryGetValue(userId, out GameObject playerEntry))
-        {
-            return;
-        }
-        
-        Destroy(playerEntry);
-        friendRequests.Remove(userId);
+        LoadOutgoingFriendRequests();
     }
 
     #endregion Callback Functions

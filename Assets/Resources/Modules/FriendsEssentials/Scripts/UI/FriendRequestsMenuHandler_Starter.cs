@@ -69,19 +69,17 @@ public class FriendRequestsMenuHandler_Starter : MenuCanvas
 
     #region Add Friends Module
 
-    #region Main Functions
+    private void LoadIncomingFriendRequests()
+    {
+        // TODO: Implement Load Incoming Friend Requests here.
+        BytewarsLogger.LogWarning("The LoadIncomingFriendRequests method is not implemented yet");
+    }
 
-    // TODO: Implement Incoming Friend Requests main functions here.
-
-    #endregion Main Functions
-
-    #region Callback Functions
-
-    // TODO: Implement Incoming Friend Requests callback functions here.
-
-    #endregion Callback Functions
-
-    #region View Management
+    private void OnLoadIncomingFriendRequestsCompleted(Result<Friends> result)
+    {
+        // TODO: Implement Load Incoming Friend Requests callback functions here.
+        BytewarsLogger.LogWarning("The OnLoadIncomingFriendRequestsCompleted method is not implemented yet");
+    }
 
     private void ClearFriendRequestList()
     {
@@ -90,9 +88,7 @@ public class FriendRequestsMenuHandler_Starter : MenuCanvas
         friendRequests.Clear();
     }
 
-    // TODO: Implement Incoming Friend Requests view management here.
-
-    #endregion View Management
+    // TODO: Implement Incoming Friend Requests functions here.
 
     #endregion Add Friends Module
 

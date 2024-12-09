@@ -21,7 +21,7 @@ public static class FriendsHelper
     public const string SendingFriendRequestMessage = "Sending Friend Request";
     public const string AcceptingFriendRequestMessage = "Accepting Friend Request";
     public const string RejectingFriendRequestMessage = "Rejecting Friend Request";
-    public const string CancellingFriendRequestMessage = "Cancelling Friend Request";
+    public const string CancelingFriendRequestMessage = "Canceling Friend Request";
 
     public const string UnfriendingMessage = "Unfriending";
     public const string BlockingPlayerMessage = "Blocking Player";
@@ -33,7 +33,7 @@ public static class FriendsHelper
 
     public const string FriendRequestAcceptedMessage = "Friend Request Accepted";
     public const string FriendRequestRejectedMessage = "Friend Request Rejected";
-    public const string FriendRequestCancelledMessage = "Friend Request Cancelled";
+    public const string FriendRequestCanceledMessage = "Friend Request Canceled";
 
     public const string UnfriendConfirmationMessage = "Are you sure you want to unfriend this player?";
     public const string BlockPlayerConfirmationMessage = "Are you sure you want to block this player?";

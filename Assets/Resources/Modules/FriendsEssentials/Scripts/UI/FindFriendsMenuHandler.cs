@@ -4,6 +4,7 @@
 
 using System;
 using System.Threading.Tasks;
+using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
 using Extensions;
@@ -74,8 +75,14 @@ public class FindFriendsMenuHandler : MenuCanvas
     private void OnDisable()
     {
         ClearSearchPanel();
-        
+        friendSearchBar.text = string.Empty;
+
         CurrentView = FindFriendsView.Default;
+    }
+
+    private void OnEnable()
+    {
+        friendSearchBar.enabled = true;
     }
 
     #region Search for Players Module
@@ -90,6 +97,7 @@ public class FindFriendsMenuHandler : MenuCanvas
         }
 
         CurrentView = FindFriendsView.Loading;
+        friendSearchBar.enabled = false;
         ClearSearchPanel();
 
         friendsEssentialsWrapper.GetUserByFriendCode(query, result =>
@@ -113,9 +121,9 @@ public class FindFriendsMenuHandler : MenuCanvas
         friendsEssentialsWrapper.SendFriendRequest(userId, result => OnSendRequestComplete(result, usingFriendCode));
     }
     
-    private void RetrievedUserAvatar(string userId)
+    private void RetrieveUserAvatar(string userId)
     {
-        friendsEssentialsWrapper.GetUserAvatar(userId, OnGetAvatarComplete);
+        friendsEssentialsWrapper.GetUserAvatar(userId, result => OnGetAvatarCompleted(result, userId));
     }
     
     #endregion Main Functions
@@ -137,6 +145,8 @@ public class FindFriendsMenuHandler : MenuCanvas
     
     private void OnUsersFriendCodeFound(Result<PublicUserData> result, string query, Action fallbackAction = null)
     {
+        friendSearchBar.enabled = true;
+        
         if (result.IsError)
         {
             if (fallbackAction is not null)
@@ -199,6 +209,7 @@ public class FindFriendsMenuHandler : MenuCanvas
         
         entryHandler.SendInviteButton.interactable = false;
         entryHandler.SendInviteButton.GetComponentInChildren<TMP_Text>().text = FriendsHelper.RequestSentMessage;
+        entryHandler.FriendStatus.text = FriendsHelper.StatusMessageMap[RelationshipStatusCode.Outgoing];
     }
     
     private void OnGetFriendshipStatusCompleted(Result<FriendshipStatus> result)
@@ -232,15 +243,17 @@ public class FindFriendsMenuHandler : MenuCanvas
         }
     }
     
-    private void OnGetAvatarComplete(Result<Texture2D> result)
+    private void OnGetAvatarCompleted(Result<Texture2D> result, string userId)
     {
         if (result.IsError)
         {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
+            BytewarsLogger.LogWarning($"Unable to get avatar for user Id: {userId}, " +
+                $"Error Code: {result.Error.Code}, " +
+                $"Error Message: {result.Error.Message}");
             return;
         }
         
-        if (result.Value == null || userResult is null)
+        if (result.Value == null || userResult == null)
         {
             return;
         }
@@ -256,8 +269,6 @@ public class FindFriendsMenuHandler : MenuCanvas
     
     private void ClearSearchPanel()
     {
-        friendSearchBar.text = string.Empty;
-
         resultContentPanel.DestroyAllChildren();
 
         if (userResult != null)
@@ -308,7 +319,7 @@ public class FindFriendsMenuHandler : MenuCanvas
         userResult = playerEntry;
         
         CheckFriendshipStatus(userId);
-        RetrievedUserAvatar(userId);
+        RetrieveUserAvatar(userId);
     }
     
     private void CheckFriendshipStatus(string userId)

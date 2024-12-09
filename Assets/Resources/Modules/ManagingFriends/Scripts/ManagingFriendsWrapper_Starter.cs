@@ -18,6 +18,7 @@ public class ManagingFriendsWrapper_Starter : MonoBehaviour
     // TODO: Declare the dependency module wrapper here.
 
     public static event Action<string> OnPlayerBlocked = delegate { };
+    public static event Action<string> OnPlayerUnfriended = delegate { };
 
     private void Awake()
     {

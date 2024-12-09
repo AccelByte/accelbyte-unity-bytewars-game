@@ -17,6 +17,9 @@ public class SinglePlatformAuthWrapper_Starter : MonoBehaviour
     private const PlatformType PlatformType = AccelByte.Models.PlatformType.Steam;
     private ResultCallback<TokenData, OAuthError> platformLoginCallback;
     private TokenData tokenData;
+
+    public static event Action<UserProfile> OnUserProfileReceived = delegate { };
+
     private void Start()
     {
         Debug.Log($"[{ClassName}] is started");

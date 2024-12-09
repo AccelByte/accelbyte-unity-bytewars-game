@@ -25,8 +25,6 @@ public class FriendRequestsMenuHandler : MenuCanvas
     
     private FriendsEssentialsWrapper friendsEssentialsWrapper;
 
-    private AuthEssentialsWrapper authEssentialsWrapper;
-
     private enum FriendRequestsView
     {
         Default,
@@ -57,12 +55,7 @@ public class FriendRequestsMenuHandler : MenuCanvas
             friendsEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<FriendsEssentialsWrapper>();
         }
         
-        if (authEssentialsWrapper == null)
-        {
-            authEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
-        }
-        
-        if (friendsEssentialsWrapper != null && authEssentialsWrapper != null)
+        if (friendsEssentialsWrapper != null)
         {
             LoadIncomingFriendRequests();
         }
@@ -74,8 +67,8 @@ public class FriendRequestsMenuHandler : MenuCanvas
 
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
 
-        FriendsEssentialsWrapper.OnIncomingRequest += OnIncomingFriendRequest;
-        FriendsEssentialsWrapper.OnRequestCanceled += OnFriendRequestCanceled;
+        FriendsEssentialsWrapper.OnIncomingRequest += OnFriendRequestUpdated;
+        FriendsEssentialsWrapper.OnRequestCanceled += OnFriendRequestUpdated;
     }
 
     private void OnDisable()
@@ -101,7 +94,7 @@ public class FriendRequestsMenuHandler : MenuCanvas
 
     private void RetrieveUserAvatar(string userId)
     {
-        friendsEssentialsWrapper.GetUserAvatar(userId, result => OnGetAvatarCompleted(userId, result));
+        friendsEssentialsWrapper.GetUserAvatar(userId, result => OnGetAvatarCompleted(result, userId));
     }
 
     private void AcceptFriendInvitation(string userId)
@@ -127,31 +120,33 @@ public class FriendRequestsMenuHandler : MenuCanvas
         if (result.IsError)
         {
             CurrentView = FriendRequestsView.LoadFailed;
-
             return;
         }
         
         if (result.Value.friendsId.Length <= 0)
         {
             CurrentView = FriendRequestsView.Default;
-            
             return;
         }
-        
-        CurrentView = FriendRequestsView.LoadSuccess;
-        
+
         GetBulkUserInfo(result.Value);
     }
 
     private void OnGetBulkUserInfoCompleted(Result<ListBulkUserInfoResponse> result)
     {
-        if (!result.IsError)
+        if (result.IsError)
         {
-            PopulateFriendRequestList(result.Value.data);
+            CurrentView = FriendRequestsView.LoadFailed;
+            return;
         }
+        
+        ClearFriendRequestList();
+        CurrentView = FriendRequestsView.LoadSuccess;
+
+        PopulateFriendRequestList(result.Value.data);
     }
 
-    private void OnGetAvatarCompleted(string userId, Result<Texture2D> result)
+    private void OnGetAvatarCompleted(Result<Texture2D> result, string userId)
     {
         if (result.IsError)
         {
@@ -201,47 +196,14 @@ public class FriendRequestsMenuHandler : MenuCanvas
         LoadIncomingFriendRequests();
     }
     
-    private void OnIncomingFriendRequest(string userId)
+    private void OnFriendRequestUpdated(string userId)
     {
         if (!gameObject.activeSelf)
         {
             return;
         }
 
-        if (CurrentView != FriendRequestsView.LoadSuccess)
-        {
-            CurrentView = FriendRequestsView.LoadSuccess;
-        }
-
-        authEssentialsWrapper.GetUserByUserId(userId, result =>
-        {
-            if (result.IsError)
-            {
-                return;
-            }
-
-            CreateFriendEntry(userId, result.Value.displayName);
-        });
-    }
-    
-    private void OnFriendRequestCanceled(string userId)
-    {
-        if (!gameObject.activeSelf)
-        {
-            return;
-        }
-
-        if (friendRequests.ContainsKey(userId))
-        {
-            friendRequests.Remove(userId);
-        }
-
-        Destroy(friendRequests[userId]);
-
-        if (friendRequests.Count <= 0)
-        {
-            CurrentView = FriendRequestsView.Default;
-        }
+        LoadIncomingFriendRequests();
     }
 
     #endregion Callback Functions

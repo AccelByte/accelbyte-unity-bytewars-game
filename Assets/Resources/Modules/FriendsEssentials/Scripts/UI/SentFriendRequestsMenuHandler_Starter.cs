@@ -59,29 +59,29 @@ public class SentFriendRequestsMenuHandler_Starter : MenuCanvas
 
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
 
-        ClearFriendRequestList();
+        // TODO: Define Module Wrapper listeners here.
     }
 
     private void OnDisable()
     {
         ClearFriendRequestList();
+
+        CurrentView = SentFriendRequestsView.Default;
     }
 
     #region Add Friends Module
 
-    #region Main Functions
+    private void LoadOutgoingFriendRequests()
+    {
+        // TODO: Implement Load Outgoing Friend Requests here.
+        BytewarsLogger.LogWarning("The LoadOutgoingFriendRequests method is not implemented yet");
+    }
 
-    // TODO: Implement Outgoing Friend Requests main functions here.
-
-    #endregion Main Functions
-
-    #region Callback Functions
-
-    // TODO: Implement Outgoing Friend Requests callback functions here.
-
-    #endregion Callback Functions
-
-    #region View Management
+    private void OnLoadOutgoingRequestsCompleted(Result<Friends> result)
+    {
+        // TODO: Implement Load Outgoing Friend Requests callback functions here.
+        BytewarsLogger.LogWarning("The OnLoadOutgoingRequestsCompleted method is not implemented yet");
+    }
 
     private void ClearFriendRequestList()
     {
@@ -90,9 +90,7 @@ public class SentFriendRequestsMenuHandler_Starter : MenuCanvas
         friendRequests.Clear();
     }
 
-    // TODO: Implement Outgoing Friend Requests view management here.
-
-    #endregion View Management
+    // TODO: Implement Outgoing Friend Requests functions here.
 
     #endregion Add Friends Module
 
