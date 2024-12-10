@@ -3,10 +3,10 @@
 // and restrictions contact your company contract manager.
 
 using System;
-using System.Threading.Tasks;
 using UnityEngine.Video;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using Cysharp.Threading.Tasks;
 
 public static class SplashMovieCanvas
 {
@@ -27,7 +27,7 @@ public static class SplashMovieCanvas
         VideoPlayer videoPlayer = AddVideoPlayerComponent(splashCanvas);
         videoPlayer.Play();
 
-        await Task.Delay(TimeSpan.FromSeconds(SplashMovieDuration));
+        await UniTask.Delay(TimeSpan.FromSeconds(SplashMovieDuration));
         Object.Destroy(splashCanvas);
 
         GlobalVolumeUtils.GlobalVolumeObject.SetActive(true);

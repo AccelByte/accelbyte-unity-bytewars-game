@@ -7,5 +7,7 @@ public enum InGameMode
     Local4PlayerDeathMatchGameMode,
     OnlineEliminationGameMode,
     OnlineDeathMatchGameMode,
+    CreateMatchEliminationGameMode,
+    CreateMatchDeathMatchGameMode,
     None//None should always last, because this enum is actually an index to GameManager.availableInGameMode
 }

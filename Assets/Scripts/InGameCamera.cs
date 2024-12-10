@@ -1,19 +1,20 @@
-// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class InGameCamera : MonoBehaviour
 {
-    [SerializeField] private float minMaxSizeMultiplier;
+    [SerializeField] private float minMaxSizeMultiplier = 1.2f;
     [SerializeField] private Camera mainCamera;
     [SerializeField] private GameManager gameManager;
     
-    private readonly HashSet<Missile> activeMissiles = new();
     private Vector2 minCameraFrameExtents = new();
     private Vector2 maxCameraFrameExtents = new();
     private Vector2 furthestMissilePositionToFrame = new();
@@ -34,76 +35,136 @@ public class InGameCamera : MonoBehaviour
         ResetToDefaultState();
     }
 
-    private void Update()
+#if !UNITY_SERVER
+    private void LateUpdate()
     {
         if (!HasActiveGameEntities())
         {
             return;
         }
-        
-        activeMissiles.Clear();
-        GetActiveMissiles(activeMissiles);
 
-        if (activeMissiles.Count == 0)
+        if (GetActiveMissiles().Count() <= 0)
         {
             LerpCameraSizeToDefault();
             return;
         }
 
-        UpdateCameraSizeByMissiles(activeMissiles);
+        UpdateCameraSizeByMissiles();
     }
+#endif
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
     {
         ResetToDefaultState();
+#if !UNITY_SERVER
+        if (scene.buildIndex is GameConstant.GameSceneBuildIndex)
+        {
+            LerpCameraSizeInitial(GameConstant.DefaultOrthographicSize - 1f);
+        }
+#endif
     }
 
     private void ResetToDefaultState()
     {
         largestWidthToFrame = GameConstant.DefaultOrthographicSize;
-        mainCamera.orthographicSize = largestWidthToFrame;
-        
         cameraAspectRatio = mainCamera.aspect;
+
         minCameraFrameExtents.y = mainCamera.orthographicSize;
         minCameraFrameExtents.x = minCameraFrameExtents.y * cameraAspectRatio;
         maxCameraFrameExtents = minCameraFrameExtents * minMaxSizeMultiplier;
         furthestMissilePositionToFrame = minCameraFrameExtents;
+
+#if UNITY_SERVER
+        mainCamera.orthographicSize = maxCameraFrameExtents.y;
+#else
+        mainCamera.orthographicSize = largestWidthToFrame;
+#endif
     }
 
     #endregion Initialization and Lifecycle
 
-    #region Camera Size Adjustment 
+    #region Camera Size Adjustment
 
-    private void LerpCameraSizeToDefault()
-    { 
-        float currentSize = mainCamera.orthographicSize;
+    private async void LerpCameraSizeInitial(float initialOrthoSize)
+    {
+        mainCamera.orthographicSize = initialOrthoSize;
+
+        float currentSize = initialOrthoSize;
         float defaultSize = GameConstant.DefaultOrthographicSize;
 
-        bool isCloseEnough = Mathf.Abs(currentSize - defaultSize) < cameraLerpTolerance;
-        if (isCloseEnough)
+        while (true)
+        {
+            bool isCloseEnough = Math.Abs(currentSize - defaultSize) < cameraLerpTolerance;
+            if (isCloseEnough)
+            {
+                return;
+            }
+
+            float lerpSpeed = 0.02f;
+            float newSize = currentSize + lerpSpeed * (defaultSize - currentSize);
+            mainCamera.orthographicSize = newSize;
+            currentSize = newSize;
+
+            await Task.Yield();
+        }
+    }
+
+    private async void LerpCameraSizeToDefault()
+    {
+        if (!mainCamera) 
         {
             return;
         }
 
-        float newSize = Mathf.Lerp(currentSize, defaultSize, Time.deltaTime);
+        await Task.Delay(TimeSpan.FromSeconds(1));
+
+        float currentSize = mainCamera.orthographicSize;
+        float defaultSize = GameConstant.DefaultOrthographicSize;
+
+        bool isCloseEnough = Math.Abs(currentSize - defaultSize) < cameraLerpTolerance;
+        if (isCloseEnough)
+        {
+            return;
+        }
+        
+        float lerpSpeed = 5f;
+        float newSize = currentSize + lerpSpeed * (defaultSize - currentSize) * Time.deltaTime;
         mainCamera.orthographicSize = newSize;
     }
 
-    private void UpdateCameraSizeByMissiles(IEnumerable<Missile> activeMissiles)
+    private void UpdateCameraSizeByMissiles()
     {
         furthestMissilePositionToFrame = minCameraFrameExtents;
-        float extraSpace = 1.0f;
+        float extraSpace = 2f;
 
-        foreach (var missile in activeMissiles)
+        foreach (Missile missile in GetActiveMissiles())
         {
             Vector3 missilePosition = missile.transform.position;
             Vector2 positionWithExtraSpace = GetPositionWithExtraSpace(missilePosition, extraSpace);
             furthestMissilePositionToFrame = Vector2.Max(furthestMissilePositionToFrame, positionWithExtraSpace);
         }
 
+        bool missileWithinMinExtent = furthestMissilePositionToFrame.magnitude <= minCameraFrameExtents.magnitude;
+        if (missileWithinMinExtent)
+        {
+            return;
+        }
+
+        float bufferZone = 2f;
+        Vector2 bufferZoneExtents = minCameraFrameExtents - new Vector2(bufferZone, bufferZone);
+
+        bool missileWithinBufferZone = furthestMissilePositionToFrame.magnitude <= bufferZoneExtents.magnitude;
+        if (missileWithinBufferZone)
+        {
+            return;
+        }
+
         furthestMissilePositionToFrame = Vector2.Min(furthestMissilePositionToFrame, maxCameraFrameExtents);
         largestWidthToFrame = GetLargestWidthToFrame();
-        mainCamera.orthographicSize = largestWidthToFrame;
+
+        float lerpSpeed = 15f;
+        mainCamera.orthographicSize = mainCamera.orthographicSize + lerpSpeed 
+            * (largestWidthToFrame - mainCamera.orthographicSize) * Time.deltaTime;
     }
 
     #endregion Camera Size Adjustment
@@ -112,21 +173,16 @@ public class InGameCamera : MonoBehaviour
 
     private bool HasActiveGameEntities() => gameManager != null && gameManager.ActiveGEs.Count > 0;
     
-    private void GetActiveMissiles(HashSet<Missile> activeMissiles)
+    private IEnumerable<Missile> GetActiveMissiles()
     {
-        foreach (var missile in gameManager.ActiveGEs.OfType<Missile>())
-        {
-            if (missile.isActiveAndEnabled)
-            {
-                activeMissiles.Add(missile);
-            }
-        }
+        return gameManager.ActiveGEs.OfType<Missile>()
+            .Where(missile => missile.isActiveAndEnabled);
     }
 
     private static Vector2 GetPositionWithExtraSpace(Vector3 position, float extraSpace)
     {
-        float xExtra = Mathf.Abs(position.x) + extraSpace;
-        float yExtra = Mathf.Abs(position.y) + extraSpace;
+        float xExtra = Math.Abs(position.x) + extraSpace;
+        float yExtra = Math.Abs(position.y) + extraSpace;
         return new Vector2(xExtra, yExtra);
     }
 
@@ -134,7 +190,7 @@ public class InGameCamera : MonoBehaviour
     {
         float largestWidthBasedOnY = furthestMissilePositionToFrame.y;
         float largestWidthBasedOnX = furthestMissilePositionToFrame.x / cameraAspectRatio;
-        return Mathf.Max(largestWidthBasedOnY, largestWidthBasedOnX);
+        return Math.Max(largestWidthBasedOnY, largestWidthBasedOnX);
     }
 
     #endregion Camera Calculation

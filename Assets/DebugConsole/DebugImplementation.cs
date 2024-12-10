@@ -1,4 +1,4 @@
-#if BYTEWARS_TUTORIAL
+﻿#if BYTEWARS_TUTORIAL
 using AccelByte.Core;
 #endif
 using Debugger;
@@ -25,7 +25,7 @@ public class DebugImplementation
 #if BYTEWARS_TUTORIAL
     private void OnDisconnectLocalDs()
     {
-        MultiRegistry.GetServerApiClient()
+        AccelByteSDK.GetServerRegistry().GetApi()
             .GetDedicatedServerManager()
             .DeregisterLocalServer(result =>
             {

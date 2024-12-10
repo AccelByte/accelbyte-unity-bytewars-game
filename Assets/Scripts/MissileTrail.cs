@@ -1,68 +1,106 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
+[RequireComponent(typeof(TrailRenderer))]
 public class MissileTrail : FxEntity
 {
-    public const float FadeDelayAfterMissileDestruct = 7.0f;
-    public const float FadeRate = 4.0f;
-    [SerializeField] private TrailRenderer trailRenderer;
-
     private const float CurrentAlphaStart = 1;
     private const float WantedAlphaStart = 1;
-    GameObject m_parentMissile;
-    float m_currentAlpha = 1.0f;
-    float m_wantedAlpha = 1.0f;
-    float _timeWithoutMissile = 0.0f;
 
-    public void Init(GameObject missile, Vector3 pos, Quaternion rot)
+    [SerializeField] private float fadeDelayAfterMissileDestruct = 4f;
+    [SerializeField] private float fadeRate = 10f;
+    [SerializeField] private TrailRenderer trailRenderer;
+
+    private float currentAlpha = 1f;
+    private float wantedAlpha = 1f;
+    private float timeWithoutMissile = 0f;
+    private GameObject parentMissile;
+    private bool parentMissileDestroyed = false;
+
+    public void Init(GameObject missile, Vector3 pos, Quaternion rot, Color color)
     {
-        trailRenderer.Clear();
-        transform.position = pos;
-        transform.rotation = rot;
-        trailRenderer.Clear();
-        m_parentMissile = missile;
-        m_wantedAlpha = WantedAlphaStart;
+        transform.SetPositionAndRotation(pos, rot);
+
+        parentMissile = missile;
+        parentMissileDestroyed = false;
+        wantedAlpha = WantedAlphaStart;
+
+        trailRenderer.colorGradient = new()
+        {
+            alphaKeys = new GradientAlphaKey[] { new(1.0f, 0.0f), new(0.0f, 1.0f)},
+            colorKeys = new GradientColorKey[] { new(color, 0.0f), new(color, 1.0f) }
+        };
         trailRenderer.material.SetFloat("_Alpha", CurrentAlphaStart);
+        
+        trailRenderer.Clear();
+
+        SceneManager.activeSceneChanged += OnSceneChanged;
+    }
+
+    public void OnDestroy()
+    {
+        SceneManager.activeSceneChanged -= OnSceneChanged;
     }
 
     public void TriggerFadeOut()
     {
-        m_wantedAlpha = 0.0f;
+        wantedAlpha = 0.0f;
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        if (m_parentMissile && m_parentMissile.activeSelf)
+        bool hasParentMissile = parentMissile && parentMissile.activeSelf;
+        if (hasParentMissile && !parentMissileDestroyed)
         {
-            transform.position = m_parentMissile.transform.position;
+            transform.SetPositionAndRotation(parentMissile.transform.position,
+                parentMissile.transform.rotation);
         }
         else
         {
-            _timeWithoutMissile += Time.deltaTime;
-            if (_timeWithoutMissile > FadeDelayAfterMissileDestruct)
+            parentMissileDestroyed = true;
+            timeWithoutMissile += Time.deltaTime;
+            if (timeWithoutMissile > fadeDelayAfterMissileDestruct)
             {
                 TriggerFadeOut();
             }
         }
-        if(Math.Abs(m_wantedAlpha - WantedAlphaStart) < 0.1f)
-            return;
-        m_currentAlpha = Mathf.Lerp(m_currentAlpha, m_wantedAlpha, FadeRate * Time.deltaTime);
-        trailRenderer.material.SetFloat("_Alpha", m_currentAlpha);
 
-        // if the object is effectively faded out, destroy
-        if (m_currentAlpha < 0.001f)
+        bool isTrailOpaque = Math.Abs(wantedAlpha - WantedAlphaStart) < 0.1f;
+        if (isTrailOpaque)
+        {
+            return;
+        }
+
+        currentAlpha = Mathf.Lerp(currentAlpha, wantedAlpha, fadeRate * Time.deltaTime);
+        trailRenderer.material.SetFloat("_Alpha", currentAlpha);
+
+        float fadeOutTolerance = 0.05f;
+        bool objectIsFadedOut = currentAlpha < fadeOutTolerance;
+        if (objectIsFadedOut)
         {
             Reset();
         }
     }
 
+    private void OnSceneChanged(Scene current, Scene next)
+    {
+        Reset();
+    }
+
     public override void Reset()
     {
-        m_parentMissile = null;
-        m_currentAlpha = CurrentAlphaStart;
-        m_wantedAlpha = WantedAlphaStart;
-        _timeWithoutMissile = 0;
+        trailRenderer.Clear();
+
+        currentAlpha = CurrentAlphaStart;
+        wantedAlpha = WantedAlphaStart;
+        parentMissile = null;
+        timeWithoutMissile = 0;
+
         trailRenderer.material.SetFloat("_Alpha", CurrentAlphaStart);
         gameObject.SetActive(false);
     }

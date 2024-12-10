@@ -1,5 +1,14 @@
-﻿using System;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
+using System;
 using System.Collections;
+using System.Threading.Tasks;
+using AccelByte.Api;
+using AccelByte.Core;
+using AccelByte.Server;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -21,8 +30,16 @@ namespace Debugger
         private Text logText;
         [SerializeField]
         private ContentSizeFitter contentSizeFitter;
+        [SerializeField]
+        private MaxActivePanel maxActiveSessionPanel;
+
 
         private static DebugConsole _instance = null;
+        private Lobby lobby;
+#if UNITY_SERVER
+        private ServerDSHub serverDSHub;
+        private ServerSession serverSession;
+#endif
 
         public static DebugConsole Instance
         {
@@ -45,6 +62,19 @@ namespace Debugger
             AddButton("destroy debugger", Destroy);
             AddButton("toggle log", SwitchLogVisibility);
             AddButton("clear log", ClearLog);
+            AddButton("disconnect lobby", DisconnecLobby);
+#if UNITY_SERVER
+            AddButton("disconnect dshub", DisconnecDSHub);
+            AddButton("reconcile max active session", ReconcileMaxActive);
+            AddButton("check user max active", CheckUserMaxActive);
+#endif
+
+
+            lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
+#if UNITY_SERVER
+            serverDSHub = AccelByteSDK.GetServerRegistry().GetApi().GetDsHub();
+            serverSession = AccelByteSDK.GetServerRegistry().GetApi().GetSession();
+#endif
         }
 
         private void Destroy()
@@ -72,10 +102,7 @@ namespace Debugger
         }
         private void OnReceivedMsg(string logString, string stackTrace, LogType type)
         {
-            if(type==LogType.Error || type==LogType.Exception)
-            {
-                Log(logString);
-            }
+            Log(logString);
         }
 
         private void ClearLog()
@@ -85,6 +112,80 @@ namespace Debugger
             StartCoroutine(waitOneFrame(() => { Instance.contentSizeFitter.enabled = true; }));
         }
 
+        private void DisconnecLobby()
+        {
+            lobby.Disconnect();
+        }
+
+#if UNITY_SERVER
+
+        private void DisconnecDSHub()
+        {
+            serverDSHub.Disconnect();
+            Log("Disconnected");
+        }
+
+        private void ReconcileMaxActive()
+        {
+            maxActiveSessionPanel.gameObject.SetActive(true);
+            maxActiveSessionPanel.Title.text = "Reconcile Max Active Session";
+            TMP_Text resultText = maxActiveSessionPanel.LogResult.GetComponentInChildren<TMP_Text>();
+            string playerId = maxActiveSessionPanel.PlayerIdInput.text;
+            string sessionConfiguration = maxActiveSessionPanel.SessionConfigurationInput.text;
+            maxActiveSessionPanel.TriggerButton.GetComponentInChildren<TMP_Text>().text = "Reconcile";
+            maxActiveSessionPanel.TriggerButton.onClick.AddListener(() =>
+            {   
+                maxActiveSessionPanel.TriggerButton.onClick.RemoveAllListeners();
+                serverSession.ReconcileMaxActiveSession(playerId, sessionConfiguration, result => 
+                {
+                    if (!result.IsError)
+                    {
+                        resultText.color = Color.green;
+                        string log = $"Successfully reconcile max active session : {!result.IsError}";
+                        Log(log);
+                        resultText.text = log;
+                    }
+                    else
+                    {
+                        resultText.color = Color.red;
+                        Log($"{result.Error.Message}");
+                        resultText.text = result.Error.Message;
+                    }
+                });
+            });
+        }
+        
+        private void CheckUserMaxActive()
+        {
+            
+            maxActiveSessionPanel.gameObject.SetActive(true);
+            maxActiveSessionPanel.Title.text = "Check User Max Active Session";
+            TMP_Text resultText = maxActiveSessionPanel.LogResult.GetComponentInChildren<TMP_Text>();
+            string playerId = maxActiveSessionPanel.PlayerIdInput.text;
+            string sessionConfiguration = maxActiveSessionPanel.SessionConfigurationInput.text;
+            maxActiveSessionPanel.TriggerButton.GetComponentInChildren<TMP_Text>().text = "Check MaxActiveSession";
+            maxActiveSessionPanel.TriggerButton.onClick.AddListener(() =>
+            {   
+                maxActiveSessionPanel.TriggerButton.onClick.RemoveAllListeners();
+                serverSession.GetMemberActiveSession(playerId, sessionConfiguration, result => 
+                {
+                    if (!result.IsError)
+                    {
+                        resultText.color = Color.green;
+                        Log($"User Max Active Session {result.Value.Total}");
+                        resultText.text = result.Value.ToJsonString();
+                    }
+                    else
+                    {
+                        resultText.color = Color.red;
+                        Log($"{result.Error.Message}");
+                        resultText.text = result.Error.Message;
+                    }
+                });
+            });
+        }
+
+#endif
         public static void AddButton(string btnLabel, UnityAction callback)
         {
 #if BYTEWARS_DEBUG
@@ -94,13 +195,13 @@ namespace Debugger
 #endif
         }
 
-        public static void Log(string text)
+        private static void Log(string text)
         {
 #if BYTEWARS_DEBUG
             Instance.logText.text += text + '\n';
             Instance.contentSizeFitter.enabled = false;
             Instance.StartCoroutine(waitOneFrame(() => { Instance.contentSizeFitter.enabled = true; }));
-            Debug.Log(text);
+            //Debug.Log(text);
 #endif
         }
 

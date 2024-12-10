@@ -14,10 +14,6 @@ public class InGamePause
     
     public bool CanPauseGame()
     {
-        if (GameManager.IsLocalGame())
-        {
-            return true;
-        }
         return _gameManager.InGameState is InGameState.Playing or InGameState.ShuttingDown;
     }
     
@@ -45,6 +41,11 @@ public class InGamePause
     
     public void ToggleGamePause()
     {
+        if (!IsPausing() && !CanPauseGame())
+        {
+            return;
+        }
+
         if (GameManager.IsLocalGame())
         {
             ToggleGamePauseLocal();

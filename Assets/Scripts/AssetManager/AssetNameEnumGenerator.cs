@@ -1,36 +1,51 @@
-using System.Linq;
-using UnityEngine;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using UnityEditor;
+using UnityEngine;
 
 public class AssetNameEnumGenerator : AssetModificationProcessor
 {
     private const string EnumPath = "/Scripts/AssetManager/AssetEnum.cs";
-    private const string AssetFolder = "Assets/Resources/"+AssetManager.ModuleFolder;
+    private const string AssetFolder = "Assets/Resources/" + AssetManager.ModuleFolder;
     private const string MetaExtension = ".meta";
     private const string CsExtension = ".cs";
+
     static string[] OnWillSaveAssets(string[] paths)
     {
-        List<string> newAssetNames = new List<string>();
+        List<string> newAssetNames = new();
         foreach (string path in paths)
         {
-            //don't process meta file updates
             if (path.EndsWith(MetaExtension))
-                continue;
-            //don't process c# script
-            if (path.EndsWith(CsExtension))
-                continue;
-            if (path.StartsWith(AssetFolder))
             {
-                newAssetNames.Add(Path.GetFileNameWithoutExtension(path));
+                continue;
             }
+
+            if (path.EndsWith(CsExtension))
+            {
+                continue;
+            }
+
+            if (!path.StartsWith(AssetFolder))
+            {
+                continue;
+            }
+
+            newAssetNames.Add(Path.GetFileNameWithoutExtension(path));
         }
 
-        if (newAssetNames.Count==0) return paths;
+        if (newAssetNames.Count == 0) 
+        {
+            return paths;
+        }
+
         UpdateAssetEnum(newAssetNames);
         return paths;
     }
@@ -39,7 +54,7 @@ public class AssetNameEnumGenerator : AssetModificationProcessor
     {
         try
         {
-            if (String.IsNullOrEmpty(Path.GetExtension(assetPath)))
+            if (string.IsNullOrEmpty(Path.GetExtension(assetPath)))
             {
                 Directory.Delete(assetPath, true);
                 File.Delete(assetPath+MetaExtension);
@@ -56,96 +71,129 @@ public class AssetNameEnumGenerator : AssetModificationProcessor
             throw;
         }
 
-        if (assetPath.StartsWith(AssetFolder) &&
-            !assetPath.EndsWith(CsExtension))
+        if (assetPath.StartsWith(AssetFolder) && !assetPath.EndsWith(CsExtension))
         {
+            if (options is RemoveAssetOptions.DeleteAssets)
+            {
+                UpdateAssetEnum(new(){assetPath});
+
+                return AssetDeleteResult.DidNotDelete;
+            }
+
             UpdateAssetEnum();
         }
+
         return AssetDeleteResult.DidDelete;
     }
 
     private static AssetMoveResult OnWillMoveAsset(string sourcePath, string destinationPath)
     {
-        if (String.IsNullOrEmpty(Path.GetExtension(sourcePath)))
+        if (string.IsNullOrEmpty(Path.GetExtension(sourcePath)))
         {
             Directory.Move(sourcePath, destinationPath);
             File.Move(sourcePath+MetaExtension, destinationPath+MetaExtension);
+            
             return AssetMoveResult.DidMove;
         }
+
         File.Move(sourcePath, destinationPath);
         File.Move(sourcePath+MetaExtension, destinationPath+MetaExtension);
-        bool isDestinationAssetFolder = destinationPath.StartsWith(AssetFolder);
-        bool isSourceAssetFolder = sourcePath.StartsWith(AssetFolder);
-        if ((isDestinationAssetFolder && !isSourceAssetFolder) ||
-            (isSourceAssetFolder && !isDestinationAssetFolder)  ||
-            (!sourcePath.EndsWith(MetaExtension) && 
-             !Path.GetFileName(sourcePath).Equals(Path.GetFileName(destinationPath)) && 
-             isSourceAssetFolder && !sourcePath.EndsWith(CsExtension)
-             ))
+
+        bool metaOrCsFile = sourcePath.EndsWith(MetaExtension) || sourcePath.EndsWith(CsExtension);
+        bool assetFolderChanged = destinationPath.StartsWith(AssetFolder) != sourcePath.StartsWith(AssetFolder);
+        bool fileInAssetFolderChanged = !Path.GetFileName(sourcePath).Equals(Path.GetFileName(destinationPath)) 
+                                        && sourcePath.StartsWith(AssetFolder);
+
+        if (!metaOrCsFile && (assetFolderChanged || fileInAssetFolderChanged))
         {
-            //Debug.Log("update on move");
             UpdateAssetEnum();
         }
+        
         return AssetMoveResult.DidMove;
     }
 
     private static void UpdateAssetEnum(List<string> newAssetNames = null)
     {
-        List<String> enumNames = new List<string>();
-        if (newAssetNames != null)
-        {
-            foreach (var newAssetName in newAssetNames)
-            {
-                enumNames.Add(newAssetName);
-            }
-        }
-        String[] assetNames = Directory.GetFiles(AssetFolder, "*", SearchOption.AllDirectories);
-        foreach (var file in assetNames)
-        {
-            string fullFileName = Path.GetFileName(file);
-            if (!fullFileName.EndsWith(MetaExtension) && !fullFileName.EndsWith(CsExtension))
-            {
-                string fileName = Path.GetFileNameWithoutExtension(fullFileName);
-                if (enumNames.Contains(fileName))
-                {
-                    Debug.Log("Asset name: "+fileName+" already exist");
-                    newAssetNames?.Remove(fileName);
-                }
-                else
-                {
-                    enumNames.Add(fileName);
-                }
-            }
-        }
+        List<string> enumNames = ExtractAssetNames(newAssetNames);
         enumNames.Sort();
+
         if (newAssetNames?.Count == 0)
-            return;
-        string enumScript = @"//auto generated from AssetNameEnumGenerator
-public enum AssetEnum 
-{
-";
-        foreach (var enumName in enumNames)
         {
-            enumScript += "      " + enumName + ",\n";
+            return;
         }
-        enumScript += "}";
+
+        StringBuilder enumScript = new();
+        enumScript.AppendLine(@"// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.");
+        enumScript.AppendLine(@"// This is licensed software from AccelByte Inc, for limitations");
+        enumScript.AppendLine(@"// and restrictions contact your company contract manager.");
+        enumScript.AppendLine();
+        enumScript.AppendLine(@"//Auto-generated from AssetNameEnumGenerator");
+        enumScript.AppendLine(@"public enum AssetEnum");
+        enumScript.AppendLine(@"{");
+        foreach (string enumName in enumNames)
+        {
+            string formattedEnumName = enumName.Replace(" ", "_");
+            enumScript.AppendLine($"\t{formattedEnumName},");
+        }
+        enumScript.AppendLine(@"}");
+
+        string enumScriptString = enumScript.ToString();
+
         try
         {
-            var existing = File.ReadAllText(Application.dataPath + EnumPath);
-            if (!String.IsNullOrEmpty(existing) && enumScript.Equals(existing))
+            string existing = File.ReadAllText(Application.dataPath + EnumPath);
+            bool assetUpToDate = !string.IsNullOrEmpty(existing) && enumScriptString.Equals(existing);
+            if (assetUpToDate)
             {
-                Debug.Log("AssetEnum is already up to date");
+                BytewarsLogger.Log("AssetEnum is already up to date");
+
                 return;
             }
-            using var fs = File.Create(Application.dataPath + EnumPath);
-            var content = new UTF8Encoding(true).GetBytes(enumScript);
+
+            using FileStream fs = File.Create(Application.dataPath + EnumPath);
+            byte[] content = new UTF8Encoding(true).GetBytes(enumScriptString);
             fs.Write(content, 0, content.Length);
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            BytewarsLogger.LogWarning(e.ToString());
             throw;
         }
+    }
+
+    private static List<string> ExtractAssetNames(List<string> newAssetNames = null)
+    {
+        List<string> enumNames = new();
+
+        List<string> assetNames = Directory.GetFiles(AssetFolder, "*", SearchOption.AllDirectories).ToList();
+        if (newAssetNames != null)
+        {
+            assetNames.AddRange(newAssetNames);
+        }
+
+        foreach (string file in assetNames)
+        {
+            string fullFileName = Path.GetFileName(file);
+
+            bool metaOrCsFile = fullFileName.EndsWith(MetaExtension) || fullFileName.EndsWith(CsExtension);
+            if (metaOrCsFile)
+            {
+                continue;
+            }
+
+            string fileName = Path.GetFileNameWithoutExtension(fullFileName);
+            if (enumNames.Contains(fileName))
+            {
+                BytewarsLogger.Log($"Asset name: {fileName} already exists.");
+                newAssetNames?.Remove(fileName);
+
+                continue;
+            }
+
+            enumNames.Add(fileName);
+        }
+
+        return enumNames;
     }
 }
 #endif

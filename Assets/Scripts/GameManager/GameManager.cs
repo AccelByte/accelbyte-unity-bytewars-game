@@ -6,7 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
@@ -15,15 +15,15 @@ using UnityEngine.SceneManagement;
 
 public class GameManager : NetworkBehaviour
 {
-    [SerializeField] private EventSystem _eventSystem;
-    [SerializeField] private InGameHUD _hud;
-    [SerializeField] private Camera _camera;
-    [SerializeField] private GameEntityAbs[] _gamePrefabs;
-    [SerializeField] private FxEntity[] _FxPrefabs;
+    [SerializeField] private EventSystem eventSystem;
+    [SerializeField] private InGameHUD hud;
+    [SerializeField] private Camera mainCamera;
+    [SerializeField] private GameEntityAbs[] gamePrefabs;
+    [SerializeField] private FxEntity[] fxPrefabs;
     [SerializeField] private GameModeSO[] availableInGameMode;
     [SerializeField] private Reconnect reconnect;
-    [SerializeField] private Transform _container;
-    [SerializeField] private InGameCamera _inGameCamera;
+    [SerializeField] private Transform container;
+    [SerializeField] private InGameCamera inGameCamera;
     
     public static GameManager Instance { get; private set; }
     
@@ -31,48 +31,53 @@ public class GameManager : NetworkBehaviour
     public static event GameOverDelegate OnGameOver = delegate {};
     public static event Action<string> OnDisconnectedInMainMenu;
     public static event Action<InGameState> OnGameStateChanged;
-    
+    public static event Action<PlayerState /*deathPlayer*/, PlayerState /*killer*/> OnPlayerDie = delegate { };
+
     public event Action OnClientLeaveSession;
     public event Action OnDeregisterServer;
     public event Action OnRegisterServer;
     public event Action OnRejectBackfill;
-    
+    public event Action OnGameStateIsNone;
+
     public InGameState InGameState { get; private set; } = InGameState.None;
+    public InGameMode InGameMode { get; private set; } = InGameMode.None;
     public InGamePause InGamePause { get; private set; }
     public List<GameEntityAbs> ActiveGEs { get; } = new();
     public Dictionary<ulong, Player> Players { get; } = new();
     public ObjectPooling Pool { get; private set; }
-    public Camera MainCamera => _camera;
-    public TeamState[] TeamStates => _serverHelper.GetTeamStates();
-    public Dictionary<int, TeamState> ConnectedTeamStates => _serverHelper.ConnectedTeamStates;
-    public Dictionary<ulong, PlayerState> ConnectedPlayerStates => _serverHelper.ConnectedPlayerStates;
-    public ulong ClientNetworkId => _clientHelper.ClientNetworkId;
+    public Camera MainCamera => mainCamera;
+    public TeamState[] TeamStates => serverHelper.GetTeamStates();
+    public Dictionary<int, TeamState> ConnectedTeamStates => serverHelper.ConnectedTeamStates;
+    public Dictionary<ulong, PlayerState> ConnectedPlayerStates => serverHelper.ConnectedPlayerStates;
+    public ulong ClientNetworkId => clientHelper.ClientNetworkId;
     
     private const string NotEnoughPlayer = "Not enough players, shutting down DS in: ";
-    private const int MinPlayerForOnlineGame = 2;
-    private const int MinTeamForOnlineGame = 2;
     
     private readonly Dictionary<ulong, GameClientController> connectedClients = new();
-    private readonly Dictionary<string, GameEntityAbs> _gamePrefabDict = new();
-    private readonly Dictionary<int, Planet> _planets = new();
+    private readonly Dictionary<string, GameEntityAbs> gamePrefabDict = new();
+    private readonly Dictionary<int, Planet> planets = new();
     private readonly ConnectionHelper connectionHelper = new();
-    private readonly ServerHelper _serverHelper = new();
-    private readonly ClientHelper _clientHelper = new();
+    private readonly ServerHelper serverHelper = new();
+    private readonly ClientHelper clientHelper = new();
     
-    private InGameMode _inGameMode = InGameMode.None;
-    private GameModeEnum _gameMode = GameModeEnum.MainMenu;
+    private GameModeEnum gameMode = GameModeEnum.MainMenu;
     private List<Vector3> availablePositions;
-    private UnityTransport _unityTransport;
+    private UnityTransport unityTransport;
     private DebugImplementation debug;
-    private MenuManager _menuManager;
-    private int _gameTimeLeft;
+    private MenuManager menuManager;
+    private int gameTimeLeft;
+
+    public static readonly int TravelingDelay = 1;
+    private bool isGameStarted = false;
+
+    public bool IsDedicatedServer { get { return IsServer && !IsHost && !IsClient; } }
 
     #region Initialization and Lifecycle
 
     [RuntimeInitializeOnLoadMethod]
     private static void CreateInstance()
     {
-        bool isMainMenuScene = SceneManager.GetActiveScene().buildIndex is GameConstant.MenuSceneBuildIndex;
+        bool isMainMenuScene = SceneManager.GetActiveScene().buildIndex == GameConstant.MenuSceneBuildIndex;
         if (isMainMenuScene && Instance == null)
         {
             Instance = Instantiate(AssetManager.Singleton.GameManagerPrefab);
@@ -94,22 +99,22 @@ public class GameManager : NetworkBehaviour
 
     private void Start()
     {
-        foreach (GameEntityAbs gamePrefab in _gamePrefabs)
+        foreach (GameEntityAbs gamePrefab in gamePrefabs)
         {
-            _gamePrefabDict.Add(gamePrefab.name, gamePrefab);
+            gamePrefabDict.Add(gamePrefab.name, gamePrefab);
         }
 
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-        NetworkManager.Singleton.ConnectionApprovalCallback = ConnectionApprovalCallback;
+        NetworkManager.Singleton.ConnectionApprovalCallback += ConnectionApprovalCallback;
         NetworkManager.Singleton.OnClientStopped += OnClientStopped;
         NetworkManager.Singleton.OnServerStopped += OnServerStopped;
 
         SceneManager.activeSceneChanged += OnActiveSceneChanged;
 
-        if (_unityTransport == null)
+        if (unityTransport == null)
         {
-            _unityTransport = (UnityTransport)NetworkManager.Singleton.NetworkConfig.NetworkTransport;
+            unityTransport = (UnityTransport)NetworkManager.Singleton.NetworkConfig.NetworkTransport;
         }
 
 #if UNITY_SERVER
@@ -117,55 +122,62 @@ public class GameManager : NetworkBehaviour
 #endif
 
         debug ??= new DebugImplementation();
-        _hud.Reset();
+        hud.Reset();
         
-        InitMenuManagerWhenReady().ContinueWith(_ =>
+        InitMenuManagerWhenReady().ContinueWith(() =>
         {
             if (IsServer)
             {
-                _menuManager.CloseMenuPanel();
+                menuManager.CloseMenuPanel();
                 OnRegisterServer?.Invoke();
             }
-            
-            InGamePause = new InGamePause(_menuManager, _hud, this);
+
+            InGamePause = new InGamePause(menuManager, hud, this);
         });
     }
-    
+
     public void OnDisable()
     {
         Pool?.DestroyAll();
         Pool?.ClearAll();
         Players?.Clear();
         BytewarsLogger.Log("GameManager OnDisable");
-        _serverHelper.CancelCountdown();
+        serverHelper.CancelCountdown();
     }
     
-    private async Task InitMenuManagerWhenReady()
+    private async UniTask InitMenuManagerWhenReady()
     {
         while (!MenuManager.Instance.IsInitiated)
         {
-            await Task.Delay(50);
+            await UniTask.Delay(50);
         }
         
-        _menuManager = MenuManager.Instance;
-        _menuManager.SetEventSystem(_eventSystem);
+        menuManager = MenuManager.Instance;
+        menuManager.SetEventSystem(eventSystem);
     }
 
     private void SetupGame()
     {
+        if (!InGameState.Equals(InGameState.None))
+        {
+            BytewarsLogger.LogWarning("Cannot setup game. Game is already setup.");
+            return;
+        }
+
         if (!SetInGameState(InGameState.Initializing))
         {
+            BytewarsLogger.LogWarning("Cannot setup game. Failed to initialize game state.");
             return;
         }
 
         BytewarsLogger.Log("Setup Game");
 
-        Pool ??= new ObjectPooling(_container, _gamePrefabs, _FxPrefabs);
+        Pool ??= new ObjectPooling(container, gamePrefabs, fxPrefabs);
 
         ActiveGEs.RemoveAll(ge => !ge);
         Players.Clear();
         
-        if (_gameMode is GameModeEnum.OnlineMultiplayer)
+        if (gameMode == GameModeEnum.OnlineMultiplayer)
         {
             SetupOnlineGame();
         }
@@ -179,14 +191,14 @@ public class GameManager : NetworkBehaviour
     {
         var states = InGameFactory.CreateLocalGameState(GameData.GameModeSo);
         
-        _serverHelper.SetTeamAndPlayerState(states);
+        serverHelper.SetTeamAndPlayerState(states);
         
         CreateLevelAndInitializeHud(states.m_teamStates, states.m_playerStates, out _);
         
-        bool isSinglePlayer = _gameMode is GameModeEnum.SinglePlayer;
+        bool isSinglePlayer = gameMode == GameModeEnum.SinglePlayer;
         if (isSinglePlayer && Players.TryGetValue(1, out Player player))
         {
-            player.playerInput.enabled = false;
+            player.PlayerInput.enabled = false;
         }
         
         SetInGameState(InGameState.PreGameCountdown);
@@ -199,21 +211,21 @@ public class GameManager : NetworkBehaviour
             return;
         }
         
-        if (_hud != null)
+        if (hud != null)
         {
-            _hud.gameObject.SetActive(true);
-            _hud.Init(_serverHelper.ConnectedTeamStates.Values.ToArray(),
-                      _serverHelper.ConnectedPlayerStates.Values.ToArray());
+            hud.gameObject.SetActive(true);
+            hud.Init(serverHelper.ConnectedTeamStates.Values.ToArray(),
+                      serverHelper.ConnectedPlayerStates.Values.ToArray());
         }
         
-        CreateLevelAndInitializeHud(_serverHelper.ConnectedTeamStates,
-                                    _serverHelper.ConnectedPlayerStates,
+        CreateLevelAndInitializeHud(serverHelper.ConnectedTeamStates,
+                                    serverHelper.ConnectedPlayerStates,
                                     out CreateLevelResult result);
         
         PlaceObjectsClientRpc(result.LevelObjects, Players.Keys.ToArray(),
                               result.AvailablePositions.ToArray(),
-                              _serverHelper.ConnectedTeamStates.Values.ToArray(),
-                              _serverHelper.ConnectedPlayerStates.Values.ToArray());
+                              serverHelper.ConnectedTeamStates.Values.ToArray(),
+                              serverHelper.ConnectedPlayerStates.Values.ToArray());
     }
     
     private void CreateLevelAndInitializeHud(Dictionary<int, TeamState> teamStates,
@@ -223,17 +235,26 @@ public class GameManager : NetworkBehaviour
         result = InGameFactory.CreateLevel(GameData.GameModeSo, ActiveGEs, Players, Pool, teamStates, playerStates);
         availablePositions = result.AvailablePositions;
         
-        if (_hud == null)
+        if (hud == null)
         {
             return;
         }
         
-        _hud.gameObject.SetActive(true);
-        _hud.Init(teamStates.Values.ToArray(), playerStates.Values.ToArray());
+        hud.gameObject.SetActive(true);
+        hud.Init(teamStates.Values.ToArray(), playerStates.Values.ToArray());
+    }
+    
+    public void ResetCache()
+    {
+        isGameStarted = false;
+        gameMode = GameModeEnum.MainMenu;
+        InGameMode = InGameMode.None;
+        connectedClients.Clear();
+        serverHelper.Reset();
     }
 
     #endregion
-
+    
     #region Connection Management
 
     private void OnServerStopped(bool isHostStopped)
@@ -241,42 +262,41 @@ public class GameManager : NetworkBehaviour
         if (isHostStopped)
         {
             BytewarsLogger.Log("Hosting server has stopped");
-            _inGameMode = InGameMode.None;
+            InGameMode = InGameMode.None;
         }
 
-        connectedClients.Clear();
-        _serverHelper.Reset();
+        ResetCache();
     }
-
 
     private void OnClientStopped(bool isHostStopped)
     {
-        if (isHostStopped)
+        if (isHostStopped) 
         {
-            connectedClients.Clear();
+            ResetCache();
         }
-
-        reconnect.OnClientStopped(isHostStopped, InGameState, _serverHelper,
-            _clientHelper.ClientNetworkId, _inGameMode);
+        
+        reconnect.OnClientStopped(isHostStopped, InGameState, serverHelper,
+            clientHelper.ClientNetworkId, InGameMode);
     }
-
 
     private void StartServer()
     {
-        if (!_unityTransport)
+        if (!unityTransport)
         {
             return;
         }
 
-        _unityTransport.ConnectionData.Address = ConnectionHandler.GetLocalIPAddress();
-        _unityTransport.ConnectionData.Port = ConnectionHandler.GetPort();
-        _unityTransport.ConnectionData.ServerListenAddress = "0.0.0.0";
+        GameData.ServerType = ServerType.OnlineDedicatedServer;
+
+        unityTransport.ConnectionData.Address = ConnectionHandler.GetLocalIPAddress();
+        unityTransport.ConnectionData.Port = ConnectionHandler.GetPort();
+        unityTransport.ConnectionData.ServerListenAddress = "0.0.0.0";
 
         NetworkManager.Singleton.StartServer();
         NetworkManager.SceneManager.OnSceneEvent += OnNetworkSceneEvent;
 
-        BytewarsLogger.Log("Server Address: " + _unityTransport.ConnectionData.ServerListenAddress.ToString());
-        BytewarsLogger.Log("Server Port: " + _unityTransport.ConnectionData.Port.ToString());
+        BytewarsLogger.Log("Server Address: " + unityTransport.ConnectionData.ServerListenAddress.ToString());
+        BytewarsLogger.Log("Server Port: " + unityTransport.ConnectionData.Port.ToString());
         BytewarsLogger.Log("server started");
     }
     
@@ -286,16 +306,16 @@ public class GameManager : NetworkBehaviour
     /// <param name="clientNetworkId"></param>
     private void OnClientConnected(ulong clientNetworkId)
     {
-        reconnect.OnClientConnected(clientNetworkId, IsOwner, IsServer, IsClient, IsHost, _serverHelper,
-                                    _inGameMode, connectedClients, InGameState, Players, _gameTimeLeft, _clientHelper);
+        reconnect.OnClientConnected(clientNetworkId, IsOwner, IsServer, IsClient, IsHost, serverHelper,
+                                    InGameMode, connectedClients, InGameState, GameData.ServerType, Players, gameTimeLeft, clientHelper);
     }
 
     private void OnClientDisconnected(ulong clientNetworkId)
     {
         string reason = string.Empty;
         int activeSceneBuildIndex = SceneManager.GetActiveScene().buildIndex;
-        bool isInMainMenu = activeSceneBuildIndex is GameConstant.MenuSceneBuildIndex;
-        bool isInGameScene = activeSceneBuildIndex is GameConstant.GameSceneBuildIndex;
+        bool isInMenuScene = activeSceneBuildIndex == GameConstant.MenuSceneBuildIndex;
+        bool isInGameScene = activeSceneBuildIndex == GameConstant.GameSceneBuildIndex;
 
         if (!string.IsNullOrEmpty(NetworkManager.Singleton.DisconnectReason))
         {
@@ -305,61 +325,94 @@ public class GameManager : NetworkBehaviour
         BytewarsLogger.Log($"OnClientDisconnected client id {clientNetworkId} disconnected reason:{reason} " +
                   $"active entity count:{ActiveGEs.Count} IsServer:{IsServer}");
 
-        if (isInMainMenu)
+        if (isInMenuScene)
         {
-            OnDisconnectedInMainMenu?.Invoke(reason);
-
-            if (_menuManager.IsLoading)
+            if (ClientNetworkId == clientNetworkId)
             {
-                _menuManager.HideLoading();
+                OnDisconnectedInMainMenu?.Invoke(reason);
             }
 
-            if (!IsServer)
+            if (menuManager.IsLoading)
             {
-                return;
+                menuManager.HideLoading();
             }
 
-            RemoveConnectedClient(clientNetworkId, isInGameScene);
-            MenuCanvas currentMenu = _menuManager.GetCurrentMenu();
-
-            if (IsHost && currentMenu is MatchLobbyMenu lobby)
-            {
-                lobby.Refresh();
-            }
-
-            if (reconnect.IsServerShutdownOnLobby(connectedClients.Count))
-            {
-                _serverHelper.StartCoroutineCountdown(this, 
-                    GameData.GameModeSo.lobbyShutdownCountdown, OnLobbyShutdownCountdown);  
-            }
-
-            //wait reconnect
-            // if (connectedClients.Count < 1)
-            // {
-            //     _serverHelper.CancelCountdown();
-            //     _inGameMode = InGameMode.None;
-            // }
-        } 
-        else if (isInGameScene)
-        {
             if (IsServer)
             {
-                //player might reconnect in the middle of game, missile will not reset
+                RemoveConnectedClient(clientNetworkId, isInGameScene);
+
+                // If host, refresh lobby player entries.
+                if (IsHost && menuManager.GetCurrentMenu() is MatchLobbyMenu lobby)
+                {
+                    lobby.Refresh();
+                }
+
+                // Start lobby countdown to shutdown server if no connected clients.
+                if (reconnect.IsServerShutdownOnLobby(connectedClients.Count))
+                {
+                    serverHelper.StartCoroutineCountdown(this,
+                        GameData.GameModeSo.lobbyShutdownCountdown, OnLobbyShutdownCountdown);
+                }
+            }
+        }
+        else if (isInGameScene)
+        {
+            if (IsServer && InGameState != InGameState.GameOver)
+            {                
+                // Player might reconnect in the middle of game, missile will not reset
                 RemoveConnectedClient(clientNetworkId, isInGameScene, false);
 
-                if (connectedClients.Count < MinPlayerForOnlineGame)
+                // Start the in-game countdown to shut down the server if the required active team is not met.
+                if (serverHelper.GetActiveTeamsCount() <= GameData.GameModeSo.minimumTeamCountToPlay)
                 {
                     SetInGameState(InGameState.ShuttingDown);
                 }
             }
         }
 
-        if (IsClient && !IsHost)
+        StartCoroutine(OnClientDisconnectedComplete(clientNetworkId, reason));
+    }
+
+    private IEnumerator OnClientDisconnectedComplete(ulong clientNetworkId, string reason)
+    {
+        BytewarsLogger.Log($"OnClientDisconnectedComplete client id {clientNetworkId} disconnected reason:{reason} " +
+          $"active entity count:{ActiveGEs.Count} IsServer:{IsServer}");
+
+        int activeSceneBuildIndex = SceneManager.GetActiveScene().buildIndex;
+        bool isInGameScene = activeSceneBuildIndex == GameConstant.GameSceneBuildIndex;
+
+        // Back to the main menu and show the disconnected message (only for client or local network).
+        bool isLocalNetwork = ClientNetworkId.Equals(clientNetworkId);
+        if (!IsHost && (IsClient || isLocalNetwork))
         {
-            StartCoroutine(QuitToMainMenu());
+            bool isInMainMenu = !(isInGameScene || menuManager.GetCurrentMenu() is MatchLobbyMenu);
+            if (!isInMainMenu)
+            {
+                yield return QuitToMainMenu();
+            }
+
+            ShowDisconnectedFromServerMessage(reason);
         }
     }
-    
+
+    private void ShowDisconnectedFromServerMessage(string disconnectReason = "")
+    {
+        if (InGameState == InGameState.GameOver)
+        {
+            BytewarsLogger.Log("No need to show disconnected from server message if the game state was over.");
+            return;
+        }
+
+        const string title = "Connection Error";
+        string message = "Connection to the server or host has been lost.";
+        if (!string.IsNullOrEmpty(disconnectReason))
+        {
+            message = $"{message}\n\n{disconnectReason}";
+        }
+
+        menuManager.ShowInfo(message, title);
+    }
+
     /// <summary>
     /// this is only called in server/hosting
     /// </summary>
@@ -369,15 +422,15 @@ public class GameManager : NetworkBehaviour
                                                   NetworkManager.ConnectionApprovalResponse response)
     {
         ConnectionApprovalResult result = await connectionHelper.ConnectionApproval(request, response, IsServer,
-                                              InGameState, availableInGameMode, _inGameMode, _serverHelper);
+                                              InGameState, availableInGameMode, InGameMode, serverHelper);
         if (result == null)
         {
             return;
         }
         
-        if (_inGameMode == InGameMode.None)
+        if (InGameMode == InGameMode.None)
         {
-            _inGameMode = result.InGameMode;
+            InGameMode = result.InGameMode;
             GameData.GameModeSo = result.GameModeSo;
         }
         
@@ -390,7 +443,7 @@ public class GameManager : NetworkBehaviour
     public void RemoveConnectedClient(ulong clientNetworkId, bool isInGameScene, bool isResetMissile = true)
     {
         connectedClients.Remove(clientNetworkId);
-        
+
         if (!Players.TryGetValue(clientNetworkId, out Player player) && isInGameScene)
         {
             return;
@@ -404,26 +457,21 @@ public class GameManager : NetworkBehaviour
 
         if (!isInGameScene || InGameState == InGameState.GameOver)
         {
-            _serverHelper.RemovePlayerState(clientNetworkId);
+            serverHelper.RemovePlayerState(clientNetworkId);
         }
         else
         {
-            _serverHelper.DisconnectPlayerState(clientNetworkId, player);
+            serverHelper.DisconnectPlayerState(clientNetworkId, player);
         }
 
-        RemoveConnectedClientRpc(clientNetworkId, _serverHelper.ConnectedTeamStates.Values.ToArray(), 
-            _serverHelper.ConnectedPlayerStates.Values.ToArray(), isResetMissile);
+        RemoveConnectedClientRpc(clientNetworkId, serverHelper.ConnectedTeamStates.Values.ToArray(), 
+            serverHelper.ConnectedPlayerStates.Values.ToArray(), isResetMissile);
     }
 
     [ClientRpc]
     private void RemoveConnectedClientRpc(ulong clientNetworkId, TeamState[] teamStates,
         PlayerState[] playerStates, bool isResetMissile)
     {
-        if (IsHost)
-        {
-            return;
-        }
-
         UpdateInGamePlayerState(teamStates, playerStates);
         connectedClients.Remove(clientNetworkId);
 
@@ -447,17 +495,17 @@ public class GameManager : NetworkBehaviour
     {
         BytewarsLogger.Log($"ReAddReconnectedPlayerOnClient IsServer:{IsServer} clientNetworkId:{clientNetworkId}");
 
-        _clientHelper.SetClientNetworkId(clientNetworkId);
-        _hud.HideGameStatusContainer();
+        clientHelper.SetClientNetworkId(clientNetworkId);
+        hud.HideGameStatusContainer();
 
-        Player player = InGameFactory.SpawnReconnectedShip(clientNetworkId, _serverHelper, Pool);
+        Player player = InGameFactory.SpawnReconnectedShip(clientNetworkId, serverHelper, Pool);
         if (player)
         {
-            player.SetFiredMissilesID(firedMissilesId);
+            player.SetFiredMissilesId(firedMissilesId);
             Players.TryAdd(clientNetworkId, player);
         }
 
-        _serverHelper.UpdatePlayerStates(teamStates, playerStates);
+        serverHelper.UpdatePlayerStates(teamStates, playerStates);
     }
 
     [ClientRpc]
@@ -478,28 +526,37 @@ public class GameManager : NetworkBehaviour
 
     public async void StartGame(GameModeSO gameModeSo)
     {
-        GameData.GameModeSo = gameModeSo;
-        _gameMode = gameModeSo.gameMode;
+        if (isGameStarted)
+        {
+            BytewarsLogger.LogWarning("Cannot start game. Game has already started.");
+            return;
+        }
 
-        _menuManager.CloseMenuPanel();
-        _menuManager.ShowLoading("Starting Game...");
+        isGameStarted = true;
+
+        GameData.GameModeSo = gameModeSo;
+        GameData.ServerType = ServerType.Offline;
+        gameMode = gameModeSo.gameMode;
+        InGameMode = GetEnumFromGameMode(gameModeSo);
 
         AudioManager.Instance.PlaySfx("Enter_Simulate");
+        StartCoroutine(ShowTravelingLoadingCoroutine(LoadScene));
+    }
 
-        const float changeSceneDuration = 1.5f;
-        CameraMovement.CancelMoveCameraLerp(_camera);
-        Vector3 powerBarVisiblePosition = _menuManager.TargetCameraPositions.First();
-        CameraMovement.MoveCameraLerp(_camera, powerBarVisiblePosition, changeSceneDuration);
-        
-        await Task.Delay(TimeSpan.FromSeconds(changeSceneDuration));
-        _menuManager.HideLoading();
-
+    public void LoadScene()
+    {
         SceneManager.LoadScene(GameConstant.GameSceneBuildIndex);
+    }
+
+    private InGameMode GetEnumFromGameMode(GameModeSO gameModeSo)
+    {
+        return (InGameMode)Enum.Parse(typeof(InGameMode), gameModeSo.name);
     }
 
     public void RestartLocalGame()
     {
-        _menuManager.CloseInGameMenu();
+        InGameState = InGameState.None;
+        menuManager.CloseInGameMenu();
         ResetLevel();
         SetupGame();
     }
@@ -508,206 +565,230 @@ public class GameManager : NetworkBehaviour
     {
         if (IsServer)
         {
-            _serverHelper.CancelCountdown();
+            serverHelper.CancelCountdown();
         }
 
         yield return reconnect.ClientDisconnectIntentionally();
 
-        if (InGameState is InGameState.LocalPause)
+        if (InGameState == InGameState.LocalPause)
         {
             Time.timeScale = 1f;
         }
 
         OnClientLeaveSession?.Invoke();
-        
-        _menuManager.CloseInGameMenu();
-        _menuManager.ChangeToMainMenu();
+
+        ResetCache();
+
+        menuManager.CloseInGameMenu();
+        menuManager.ChangeToMainMenu();
     }
 
     public void OnObjectHit(Player player, Missile missile)
     {
-        CollisionHelper.OnObjectHit(player, missile, Players, _serverHelper,
-            _hud, this, _gameMode, availablePositions);
+        CollisionHelper.OnObjectHit(player, missile, Players, serverHelper,
+            hud, this, gameMode, availablePositions);
+
+        // Broadcast on-player die event.
+        OnPlayerDie?.Invoke(player.PlayerState, missile.GetOwningPlayerState());
+        OnPlayerDieClientRpc(player.PlayerState, missile.GetOwningPlayerState());
+        player.PlayerState.numKilledAttemptInSingleLifetime = 0;
     }
 
-    public void CheckForGameOverCondition(bool isGameOver)
+    public void OnNearHitPlayer(Player nearHitPlayer, Missile missile) 
     {
-        bool isOfflineGame = _gameMode is GameModeEnum.SinglePlayer or GameModeEnum.LocalMultiplayer;
+        nearHitPlayer.PlayerState.numKilledAttemptInSingleLifetime++;
+    }
 
-        if (isOfflineGame && isGameOver)
+    [ClientRpc]
+    private void OnPlayerDieClientRpc(PlayerState deathPlayer, PlayerState killer)
+    {
+        if (!IsHost)
         {
-            EndGame();
+            OnPlayerDie?.Invoke(deathPlayer, killer);
         }
-        else if (NetworkManager.Singleton.IsServer && isGameOver)
-        {
-            UpdatePlayerStatesClientRpc(
-                _serverHelper.ConnectedTeamStates.Values.ToArray(),
-                _serverHelper.ConnectedPlayerStates.Values.ToArray());
+    }
 
-            EndGame();
+    public void CheckForGameOverCondition()
+    {
+        bool isGameOver = serverHelper.IsGameOver();
+        bool isOfflineGame = gameMode is GameModeEnum.SinglePlayer or GameModeEnum.LocalMultiplayer;
+        bool hasAuthority = IsServer || IsHost || isOfflineGame;
+
+        BytewarsLogger.Log($"Is game over: {isGameOver}");
+        if (isGameOver && hasAuthority) 
+        {
+            BytewarsLogger.Log($"Ending the game.");
+
+            if (IsServer || IsHost) 
+            {
+                UpdatePlayerStatesClientRpc(
+                    serverHelper.ConnectedTeamStates.Values.ToArray(),
+                    serverHelper.ConnectedPlayerStates.Values.ToArray());
+            }
+
+            SetInGameState(InGameState.GameOver);
         }
     }
 
-    private void EndGame()
+    public bool SetInGameState(InGameState newState)
     {
-        SetInGameState(InGameState.GameOver);
-    }
+        BytewarsLogger.Log($"Try to set in-game state to: {newState}");
 
-    public bool SetInGameState(InGameState state)
-    {
-        BytewarsLogger.Log("try SetInGameState: "+state);
-        if (InGameState == state)
+        if (InGameState == newState)
         {
+            BytewarsLogger.LogWarning($"Cannot set in-game state to {newState} because the current state is already the same.");
             return false;
         }
 
-        if (_hud)
-        {
-            _hud.HideGameStatusContainer();
-        }
-
-        int remainingGameDuration = GameData.GameModeSo.gameDuration;
-        if (_gameTimeLeft > 0)
-        {
-            remainingGameDuration = _gameTimeLeft;
-        }
-
-        InGameState = state;
-        switch (state)
+        BytewarsLogger.Log($"In-game state changed from {InGameState} to {newState}");
+        InGameState = newState;
+        
+        // Handle in-game state changes.
+        switch (newState)
         {
             case InGameState.None:
-                _hud.gameObject.SetActive(false);
                 ResetLevel();
+#if !UNITY_SERVER
+                OnGameStateIsNone?.Invoke();
+#endif
                 break;
-
             case InGameState.Initializing:
-                if (_hud)
-                {
-                    _hud.gameObject.SetActive(false);
-                }
+                gameTimeLeft = GameData.GameModeSo.gameDuration;
                 break;
-
             case InGameState.PreGameCountdown:
-                if (_hud)
-                {
-                    _hud.gameObject.SetActive(true);
-                    _hud.SetTime(remainingGameDuration);
-                }
-
-                _serverHelper.CancelCountdown();
-                
-                if (this)
-                {
-                    _serverHelper.StartCoroutineCountdown(this, 
-                        GameData.GameModeSo.beforeGameCountdownSecond, 
-                        OnPreGameTimerUpdated);
-                }
+                // Start pre-game countdown.
+                serverHelper.CancelCountdown();
+                serverHelper.StartCoroutineCountdown(
+                    this,
+                    GameData.GameModeSo.beforeGameCountdownSecond,
+                    OnPreGameTimerUpdated);
                 break;
-
             case InGameState.Playing:
-                _hud.gameObject.SetActive(true);
-                _serverHelper.CancelCountdown();
-                _serverHelper.StartCoroutineCountdown(this, 
-                    remainingGameDuration,
+                // Continue game duration countdown.
+                serverHelper.CancelCountdown();
+                serverHelper.StartCoroutineCountdown(
+                    this,
+                    gameTimeLeft,
                     OnGameTimeUpdated);
                 break;
-
             case InGameState.ShuttingDown:
-                _hud.gameObject.SetActive(true);
-                _serverHelper.CancelCountdown();
-                _serverHelper.StartCoroutineCountdown(this, 
+                // Start server shutdown countdown.
+                serverHelper.CancelCountdown();
+                serverHelper.StartCoroutineCountdown(
+                    this, 
                     GameData.GameModeSo.beforeShutDownCountdownSecond, 
                     OnShutdownCountdownUpdate);
                 break;
-
-            case InGameState.LocalPause:
-                _hud.gameObject.SetActive(false);
-                break;
-
             case InGameState.GameOver:
-                OnGameOver.Invoke(_gameMode, _inGameMode, ConnectedPlayerStates.Values.ToList());
+                // Broadcast to update player states on connected game clients.
+                if (IsHost || IsServer)
+                {
+                    UpdatePlayerStatesClientRpc(
+                        serverHelper.ConnectedTeamStates.Values.ToArray(),
+                        serverHelper.ConnectedPlayerStates.Values.ToArray());
+                }
 
-                _serverHelper.CancelCountdown();
+                OnGameOver.Invoke(gameMode, InGameMode, ConnectedPlayerStates.Values.ToList());
 
+                // Start game over server shutdown countdown.
                 bool isShuttingDown = GameData.GameModeSo.gameOverShutdownCountdown > -1;
+                serverHelper.CancelCountdown();
                 if (!IsLocalGame() && isShuttingDown)
                 {
-                    _serverHelper.StartCoroutineCountdown(this, 
+                    serverHelper.StartCoroutineCountdown(
+                        this, 
                         GameData.GameModeSo.gameOverShutdownCountdown,
                         OnGameOverShutDownCountdown);
                 }
-
-                if (InGamePause.IsPausing())
-                {
-                    InGamePause.ToggleGamePause();
-                }
-
-                _hud.gameObject.SetActive(false);
-                _menuManager.ShowInGameMenu(AssetEnum.GameOverMenuCanvas);
-
                 break;
         }
 
-        if (state == InGameState.LocalPause)
+        UpdateInGameUI();
+
+        // Broadcast to update in-game state on connected game clients.
+        if (IsServer || IsHost)
         {
-            Time.timeScale = 0;
-        }
-        else
-        {
-            Time.timeScale = 1;
+            UpdateInGameStateClientRpc(InGameState, gameTimeLeft);
         }
 
-        if (IsLocalGame() && _inGameCamera)
-        {
-            _inGameCamera.enabled = state == InGameState.Playing;
-        }
-
-        if (IsServer)
-        {
-            UpdateInGameStateClientRpc(InGameState, remainingGameDuration);
-        }
-
-        OnGameStateChanged?.Invoke(state);
+        OnGameStateChanged?.Invoke(newState);
 
         return true;
     }
     
     [ClientRpc]
-    private void UpdateInGameStateClientRpc(InGameState inGameState, int remainingGameTime)
+    private void UpdateInGameStateClientRpc(InGameState newState, int remainingGameTime)
     {
-        if (IsHost)
+        if (IsHost) 
         {
+            BytewarsLogger.LogWarning($"[Client] Unable to set in-game state from {InGameState} to: {newState}. The player is a host, abort to handle client RPC.");
             return;
         }
-        
-        if (_hud)
+
+        BytewarsLogger.Log($"[Client] Try to set in-game state from {InGameState} to: {newState}");
+        if (InGameState == newState)
         {
-            _hud.HideGameStatusContainer();
+            BytewarsLogger.LogWarning($"[Client] Cannot set in-game state from {InGameState} to {newState} because the current state is already the same.");
+            return;
         }
-        
-        InGameState = inGameState;
-        if (inGameState == InGameState.Initializing)
+
+        BytewarsLogger.Log($"[Client] In-game state changed from {InGameState} to {newState}");
+        InGameState = newState;
+
+        gameTimeLeft = remainingGameTime;
+        UpdateInGameUI();
+    }
+
+    private void UpdateInGameUI() 
+    {
+        BytewarsLogger.Log("Received to update in-game user interface.");
+
+        // Adjust time scale when the game is paused or resumed.
+        Time.timeScale = InGameState == InGameState.LocalPause ? 0 : 1;
+
+        // Enable the in-game camera behaviors during gameplay.
+        if (inGameCamera)
         {
-            _hud.SetTime(remainingGameTime);
+            inGameCamera.enabled = InGameState == InGameState.Playing;
         }
-        
-        if (inGameState == InGameState.GameOver)
+
+        // Update HUD based on in-game state.
+        if (hud && !IsDedicatedServer)
         {
-            if (InGamePause.IsPausing())
+            // Reset game status overlay (the UI to show countdown) by hiding it first.
+            hud.HideGameStatusContainer();
+
+            switch (InGameState)
             {
-                InGamePause.ToggleGamePause();
+                // Hide HUD during non-gameplay.
+                case InGameState.None:
+                case InGameState.Initializing:
+                case InGameState.LocalPause:
+                    hud.gameObject.SetActive(false);
+                    break;
+                // Keep showing HUD during gameplay.
+                case InGameState.PreGameCountdown:
+                case InGameState.Playing:
+                case InGameState.ShuttingDown:
+                    hud.gameObject.SetActive(true);
+                    hud.SetTime(gameTimeLeft);
+                    break;
+                // Hide HUD and show game over when game is over.
+                case InGameState.GameOver:
+                    if (InGamePause.IsPausing())
+                    {
+                        InGamePause.ToggleGamePause();
+                    }
+                    hud.gameObject.SetActive(false);
+                    menuManager.ShowInGameMenu(AssetEnum.GameOverMenuCanvas);
+                    break;
             }
-            
-            _hud.gameObject.SetActive(false);
-            _menuManager.ShowInGameMenu(AssetEnum.GameOverMenuCanvas);
         }
-        
-        _inGameCamera.enabled = InGameState == InGameState.Playing;
     }
 
     private void ResetLevel()
     {
-        _gameTimeLeft = 0;
+        gameTimeLeft = 0;
 
         foreach (GameEntityAbs ge in ActiveGEs)
         {
@@ -716,37 +797,48 @@ public class GameManager : NetworkBehaviour
 
         ActiveGEs.Clear();
         Players.Clear();
-        _planets.Clear();
-        _hud.Reset();
+        planets.Clear();
+        hud.Reset();
     }
-    
-    public async void StartOnlineGame()
+
+    public void StartOnlineGame()
     {
-        _serverHelper.CancelCountdown();
-        _gameMode = GameData.GameModeSo.gameMode;
-        SetGameModeClientRpc(_gameMode);
-        
-        _menuManager.CloseMenuPanel();
-        _menuManager.ShowLoading("Starting Game...");
-        
-        AudioManager.Instance.PlaySfx("Enter_Simulate");
-        
-        const float changeSceneDuration = 1.5f;
-        CameraMovement.CancelMoveCameraLerp(_camera);
-        Vector3 powerBarVisiblePosition = _menuManager.TargetCameraPositions.First();
-        CameraMovement.MoveCameraLerp(_camera, powerBarVisiblePosition, changeSceneDuration);
-        
-        await Task.Delay(TimeSpan.FromSeconds(changeSceneDuration));
-        _menuManager.HideLoading();
-        
         if (!IsServer || !IsOwner)
         {
+            BytewarsLogger.LogWarning("Cannot start online game. Instance is not the server or host.");
+            return;
+        }
+
+        if (isGameStarted)
+        {
+            BytewarsLogger.LogWarning("Cannot start online game. Game has already started.");
             return;
         }
         
+        isGameStarted = true;
+
+        serverHelper.CancelCountdown();
+        gameMode = GameData.GameModeSo.gameMode;
+        SetGameModeClientRpc(gameMode);
+
+        OnStartingGameClientRpc();
+
+        StartCoroutine(CoroutineDelay(TravelingDelay, LoadMultiplayerScene));
+    }
+
+    IEnumerator CoroutineDelay(int delay, Action action = null)
+    {
+        MenuManager.Instance.ShowLoading("Traveling");
+        yield return new WaitForSeconds(delay);
+        action?.Invoke();
+    }
+
+    private void LoadMultiplayerScene()
+    {
         SceneEventProgressStatus status = NetworkManager.SceneManager.LoadScene(GameConstant.GameSceneName, LoadSceneMode.Single);
         if (status != SceneEventProgressStatus.Started)
         {
+            isGameStarted = false;
             BytewarsLogger.LogWarning($"Failed to load {GameConstant.GameSceneName} " +
                                       $"with a {nameof(SceneEventProgressStatus)}: {status}");
         }
@@ -760,7 +852,7 @@ public class GameManager : NetworkBehaviour
             return;
         }
         
-        _gameMode = gameMode;
+        this.gameMode = gameMode;
     }
     
     private async void DeregisterServer()
@@ -768,7 +860,7 @@ public class GameManager : NetworkBehaviour
 #if UNITY_SERVER
         OnDeregisterServer?.Invoke();
 #endif
-        await Task.Delay(150);
+        await UniTask.Delay(150);
         BytewarsLogger.Log("GameManager Application.Quit");
     }
     
@@ -783,17 +875,18 @@ public class GameManager : NetworkBehaviour
         }
         
         AudioManager.Instance.PlayGameplayBGM();
-        
-        _serverHelper.UpdatePlayerStates(teamStates, playerStates);
-        Pool ??= new ObjectPooling(_container, _gamePrefabs, _FxPrefabs);
+
+        serverHelper.UpdatePlayerStates(teamStates, playerStates);
+        Pool ??= new ObjectPooling(container, gamePrefabs, fxPrefabs);
         availablePositions = new List<Vector3>(availablePositionsP);
         
-        _clientHelper.PlaceObjectsOnClient(levelObjects, playersClientIds, Pool,
-                                           _gamePrefabDict, _planets, Players, _serverHelper, ActiveGEs);
-        
-        _menuManager.CloseMenuPanel();
-        _hud.gameObject.SetActive(true);
-        _hud.Init(teamStates, playerStates);
+        clientHelper.PlaceObjectsOnClient(levelObjects, playersClientIds, Pool,
+                                           gamePrefabDict, planets, Players, serverHelper, ActiveGEs);
+
+        menuManager.HideLoading(false);
+        menuManager.CloseMenuPanel();
+        hud.gameObject.SetActive(true);
+        hud.Init(teamStates, playerStates);
     }
     
     public static bool IsLocalGame() => !NetworkManager.Singleton.IsListening;
@@ -846,7 +939,7 @@ public class GameManager : NetworkBehaviour
             return;
         }
         
-        _hud.UpdateKillsAndScore(playerState, playerStates);
+        hud.UpdateKillsAndScore(playerState, playerStates);
     }
     
     [ClientRpc]
@@ -857,28 +950,24 @@ public class GameManager : NetworkBehaviour
             return;
         }
         
-        _hud.SetLivesValue(teamIndex, lives);
+        hud.SetLivesValue(teamIndex, lives);
     }
     
     private void UpdateInGamePlayerState(TeamState[] teamStates, PlayerState[] playerStates)
     {
-        _serverHelper.UpdatePlayerStates(teamStates, playerStates);
+        serverHelper.UpdatePlayerStates(teamStates, playerStates);
         if (SceneManager.GetActiveScene().buildIndex == GameConstant.MenuSceneBuildIndex)
         {
-            var lobby = (MatchLobbyMenu)_menuManager.ChangeToMenu(AssetEnum.MatchLobbyMenuCanvas);
+            menuManager.HideLoading(false);
+            var lobby = (MatchLobbyMenu)menuManager.ChangeToMenu(AssetEnum.MatchLobbyMenuCanvas);
             lobby.Refresh();
         }
     }
     
     [ClientRpc]
     public void UpdatePlayerStatesClientRpc(TeamState[] teamStates, PlayerState[] playerStates)
-    {
-        if (IsHost)
-        {
-            return;
-        }
-        
-        _serverHelper.UpdatePlayerStates(teamStates, playerStates);
+    {        
+        serverHelper.UpdatePlayerStates(teamStates, playerStates);
         //TODO update game clients UI
     }
 
@@ -900,7 +989,7 @@ public class GameManager : NetworkBehaviour
             player.ExplodeMissile(missileId, missileExpPos, missileExpRot);
         }
         
-        if (planetId > -1 && _planets.TryGetValue(planetId, out Planet planet))
+        if (planetId > -1 && planets.TryGetValue(planetId, out Planet planet))
         {
             planet.OnHitByMissile();
         }
@@ -925,6 +1014,13 @@ public class GameManager : NetworkBehaviour
     
     #region Countdowns and Timers
     
+    public void StartShutdownCountdown(int countdown)
+    {
+        serverHelper.StartCoroutineCountdown(this,
+            countdown, OnLobbyShutdownCountdown);
+
+    }
+    
     private void OnLobbyShutdownCountdown(int countdownSeconds)
     {
         //no player connected no need to update client UI for lobby shutdown
@@ -947,14 +1043,28 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void UpdateLobbyCountdownClientRpc(int countdown)
     {
-        _menuManager.UpdateLobbyCountdown(countdown);
+        menuManager.UpdateLobbyCountdown(countdown);
     }
-    
+
+    [ClientRpc]
+    private void OnStartingGameClientRpc()
+    {
+        menuManager.CloseMenuPanel();
+        menuManager.ShowLoading("Starting Game");
+
+        AudioManager.Instance.PlaySfx("Enter_Simulate");
+
+        CameraMovement.CancelMoveCameraLerp(mainCamera);
+        Vector3 powerBarVisiblePosition = menuManager.TargetCameraPositions.First();
+        CameraMovement.MoveCameraLerp(mainCamera, powerBarVisiblePosition, TravelingDelay);
+    }
+
     private void OnPreGameTimerUpdated(int timerSecond)
     {
-        _hud.UpdatePreGameCountdown(timerSecond);
-        bool areEnoughPlayersConnected =
-            !IsLocalGame() && NetworkManager.Singleton.ConnectedClients.Count >= MinPlayerForOnlineGame;
+        hud.UpdatePreGameCountdown(timerSecond);
+        bool areEnoughPlayersConnected = 
+            !IsLocalGame() && 
+            serverHelper.GetActiveTeamsCount() > GameData.GameModeSo.minimumTeamCountToPlay;
         
         if (timerSecond == 0)
         {
@@ -981,40 +1091,46 @@ public class GameManager : NetworkBehaviour
             return;
         }
         
-        _hud.UpdatePreGameCountdown(second);
+        hud.UpdatePreGameCountdown(second);
     }
 
-    private void OnGameTimeUpdated(int remainingTime)
+    private void OnGameTimeUpdated(int remainingGameTime)
     {
         if (InGameState != InGameState.Playing)
         {
+            BytewarsLogger.LogWarning($"Unable to handle update game time event. In-game state is not in {InGameState.Playing} state");
             return;
         }
+
+        BytewarsLogger.Log("Recieved update game time event.");
+        gameTimeLeft = remainingGameTime;
+        UpdateInGameUI();
+
+        UpdateGameTimeClientRpc(remainingGameTime);
         
-        _gameTimeLeft = remainingTime;
-        _hud.SetTime(remainingTime);
-        UpdateGameTimeClientRpc(remainingTime);
-        
-        if (remainingTime <= 0)
+        if (remainingGameTime <= 0)
         {
             SetInGameState(InGameState.GameOver);
         }
     }
     
     [ClientRpc]
-    private void UpdateGameTimeClientRpc(int remainingTimeSecond)
+    private void UpdateGameTimeClientRpc(int remainingGameTime)
     {
         if (IsHost)
         {
+            BytewarsLogger.LogWarning($"[Client] Unable to handle update game time event. The player is a host, abort to handle client RPC.");
             return;
         }
-        
-        _hud.SetTime(remainingTimeSecond);
+
+        BytewarsLogger.Log("[Client] Recieved update game time event.");
+        gameTimeLeft = remainingGameTime;
+        UpdateInGameUI();
     }
     
     private void OnGameOverShutDownCountdown(int countdownSeconds)
     {
-        _menuManager.UpdateGameOverCountdown(countdownSeconds);
+        menuManager.UpdateGameOverCountdown(countdownSeconds);
         GameOverCountdownClientRpc(countdownSeconds);
         
         bool shuttingDown = countdownSeconds <= 0;
@@ -1032,13 +1148,13 @@ public class GameManager : NetworkBehaviour
             return;
         }
         
-        _menuManager.UpdateGameOverCountdown(seconds);
+        menuManager.UpdateGameOverCountdown(seconds);
     }
     
     private void OnShutdownCountdownUpdate(int countdownSecond)
     {
         BytewarsLogger.Log("shutdown in " + countdownSecond);
-        _hud.UpdateShutdownCountdown(NotEnoughPlayer, countdownSecond);
+        hud.UpdateShutdownCountdown(NotEnoughPlayer, countdownSecond);
         
         if (IsServer)
         {
@@ -1060,7 +1176,7 @@ public class GameManager : NetworkBehaviour
             return;
         }
         
-        _hud.UpdateShutdownCountdown(NotEnoughPlayer, countdownSecond);
+        hud.UpdateShutdownCountdown(NotEnoughPlayer, countdownSecond);
         if (countdownSecond <= 0)
         {
             //TODO clear/reset level
@@ -1076,7 +1192,7 @@ public class GameManager : NetworkBehaviour
     private void OnActiveSceneChanged(Scene current, Scene next)
     {
 #if UNITY_SERVER
-        if (next.buildIndex is GameConstant.MenuSceneBuildIndex)
+        if (next.buildIndex == GameConstant.MenuSceneBuildIndex)
         {
             //TODO: ADD server shutdown
             // Debug.Log("server shutdown");
@@ -1088,13 +1204,14 @@ public class GameManager : NetworkBehaviour
         {
             case GameConstant.GameSceneBuildIndex:
                 AudioManager.Instance.PlayGameplayBGM();
-                _menuManager.CloseMenuPanel();
+                menuManager.HideLoading();
+                menuManager.CloseMenuPanel();
                 SetupGame();
                 break;
 
             case GameConstant.MenuSceneBuildIndex:
                 SetInGameState(InGameState.None);
-                _hud.gameObject.SetActive(false);
+                hud.gameObject.SetActive(false);
                 ResetLevel();
                 Pool?.ResetAll();
                 break;
@@ -1106,7 +1223,7 @@ public class GameManager : NetworkBehaviour
     {
         bool isServer = sceneEvent.ClientId.Equals(NetworkManager.ServerClientId);
         bool isGameScene = !string.IsNullOrEmpty(sceneEvent.SceneName) && sceneEvent.SceneName.Equals(GameConstant.GameSceneName);
-        
+
         BytewarsLogger.Log($"OnNetworkSceneEvent isServer:{isServer} type {sceneEvent.SceneEventType} " +
                            $"isGameScene:{isGameScene} clientId:{sceneEvent.ClientId}");
         
@@ -1120,11 +1237,11 @@ public class GameManager : NetworkBehaviour
             return;
         }
         
-        if (sceneEvent.SceneEventType is SceneEventType.LoadComplete)
+        if (sceneEvent.SceneEventType == SceneEventType.LoadComplete)
         {
             OnRejectBackfill?.Invoke();
-            _menuManager.CloseMenuPanel();
-            Pool ??= new ObjectPooling(_container, _gamePrefabs, _FxPrefabs);
+            menuManager.CloseMenuPanel();
+            Pool ??= new ObjectPooling(container, gamePrefabs, fxPrefabs);
             SetupGame();
         }
         
@@ -1139,6 +1256,19 @@ public class GameManager : NetworkBehaviour
         return connectedClients.Count == sceneEvent.ClientsThatCompleted.Count;
     }
     
+    public IEnumerator ShowTravelingLoadingCoroutine(Action action)
+    {
+        MenuManager.Instance.ShowLoading("Traveling");
+        yield return new WaitForSeconds(TravelingDelay);
+        action?.Invoke();
+    }
+
+    public static async UniTask ShowTravelingLoading()
+    {
+        MenuManager.Instance.ShowLoading("Traveling");
+        await UniTask.Delay(TimeSpan.FromSeconds(TravelingDelay));
+    }
+
     #endregion
 
     #region Network Management
@@ -1166,7 +1296,7 @@ public class GameManager : NetworkBehaviour
             sessionId = null
         };
 
-        reconnect.ConnectAsClient(_unityTransport, address, port, initialData);
+        reconnect.ConnectAsClient(unityTransport, address, port, initialData);
     }
     
     public void StartAsHost(string address, ushort port, InGameMode inGameMode, string serverSessionId)
@@ -1174,7 +1304,7 @@ public class GameManager : NetworkBehaviour
         
         var initialData = new InitialConnectionData()
             { inGameMode = inGameMode, serverSessionId = serverSessionId };
-        reconnect.StartAsHost(_unityTransport, address, port, initialData);
+        reconnect.StartAsHost(unityTransport, address, port, initialData);
         NetworkManager.Singleton.SceneManager.OnSceneEvent += OnNetworkSceneEvent;
     }
     
@@ -1187,20 +1317,21 @@ public class GameManager : NetworkBehaviour
     /// <param name="isInGameScene"></param>
     [ClientRpc]
     public void SendConnectedPlayerStateClientRpc(TeamState[] teamStates, PlayerState[] playerStates,
-                                                  InGameMode inGameMode, bool isInGameScene)
+                                                  InGameMode inGameMode, ServerType serverType, bool isInGameScene)
     {
         //client side, because the previous playerState only exists in server, clientrpc is called on client
         BytewarsLogger.Log($"update player state lobby playerStates: {JsonUtility.ToJson(playerStates)} " +
                            $"teamStates: {JsonUtility.ToJson(teamStates)}");
-        _serverHelper.UpdatePlayerStates(teamStates, playerStates);
-        _inGameMode = inGameMode;
+        serverHelper.UpdatePlayerStates(teamStates, playerStates);
+        InGameMode = inGameMode;
         GameData.GameModeSo = availableInGameMode[(int)inGameMode];
-        
+        GameData.ServerType = serverType;
+
         if (!isInGameScene)
         {
-            var lobby = (MatchLobbyMenu)_menuManager.ChangeToMenu(AssetEnum.MatchLobbyMenuCanvas);
+            menuManager.HideLoading(false);
+            var lobby = (MatchLobbyMenu)menuManager.ChangeToMenu(AssetEnum.MatchLobbyMenuCanvas);
             lobby.Refresh();
-            _menuManager.HideLoading(false);
         }
     }
     
@@ -1212,7 +1343,7 @@ public class GameManager : NetworkBehaviour
     
     public void StartAsClient(string address, ushort port, InitialConnectionData initialConnectionData)
     {
-        reconnect.ConnectAsClient(_unityTransport, address, port, initialConnectionData);
+        reconnect.ConnectAsClient(unityTransport, address, port, initialConnectionData);
     }
 
     #endregion

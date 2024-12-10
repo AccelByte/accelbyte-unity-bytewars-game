@@ -2,7 +2,7 @@
 echo Enter linked project root folder name:
 set /P game_dir=
 mkdir ..\%game_dir%
-mklink /D ..\%game_dir%\Assets %cd%\Assets
-mklink /D ..\%game_dir%\Packages %cd%\Packages
-mklink /D ..\%game_dir%\local-packages %cd%\local-packages
-mklink /D ..\%game_dir%\ProjectSettings %cd%\ProjectSettings
+mklink /J ..\%game_dir%\Assets %cd%\Assets
+mklink /J ..\%game_dir%\Packages %cd%\Packages
+mklink /J ..\%game_dir%\local-packages %cd%\local-packages
+mklink /J ..\%game_dir%\ProjectSettings %cd%\ProjectSettings

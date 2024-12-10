@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c946b292dbcfa2418ef1a2b2e60b8b7, type: 3}
+  m_Name: ManagingFriendsAssetConfig
+  m_EditorClassIdentifier: 
+  defaultMenuUIPrefab: {fileID: 2562678726086715068, guid: c3749cb1368adc04ca7dca08d24f2c0f,
+    type: 3}
+  defaultAdditionalMenuUIPrefabs: []
+  defaultModuleScript: {fileID: 11500000, guid: 785f179643042d54391a7e014a32c7fe,
+    type: 3}
+  type: 12
+  isActive: 1
+  additionalScripts: 0
+  additionalPrefab: 0
+  defaultHelperScripts: []
+  starterHelperScripts: []
+  starterScript: {fileID: 11500000, guid: bc2c8a7b35afd6941afbac4981b83a38, type: 3}
+  starterMenuUIPrefab: {fileID: 2562678726086715068, guid: c3749cb1368adc04ca7dca08d24f2c0f,
+    type: 3}
+  starterAdditionalMenuUIPrefabs: []
+  isStarterActive: 0
+  moduleDependencies:
+  - {fileID: 11400000, guid: b4c868ff7e72cc840963d5a37178f14d, type: 2}
+  - {fileID: 11400000, guid: 04ca20375bb050249b26b1082a299a25, type: 2}
