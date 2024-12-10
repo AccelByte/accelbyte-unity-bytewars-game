@@ -46,13 +46,12 @@ public class Missile : GameEntityAbs
     private Color missileColor;
     private State missileState = State.ClearShip;
     
-    public event Action<ulong> OnMissileDestroyed;
+    public event Action<ulong /*owningPlayerNetId*/, int /*missileId*/> OnMissileDestroyed;
 
     private enum State
     {
         ClearShip,
-        Alive,
-        FlaggedForDestruction
+        Alive
     }
 
     private void Start()
@@ -164,11 +163,7 @@ public class Missile : GameEntityAbs
             OnDestroyMissile(transform.position, transform.rotation);
         }
 
-        if (missileState == State.FlaggedForDestruction)
-        {
-            OnDestroyMissile(transform.position, transform.rotation);
-        }
-        else if (timeAlive > 1.0f)
+        if (timeAlive > 1.0f)
         {
             CheckSkimmingObjectScore();
             CheckNearHitPlayer();
@@ -246,7 +241,7 @@ public class Missile : GameEntityAbs
                 transform.position,
                 transform.rotation);
 
-            missileState = State.FlaggedForDestruction;
+            OnDestroyMissile(transform.position, transform.rotation);
         }
     }
 
@@ -283,7 +278,7 @@ public class Missile : GameEntityAbs
 #if !UNITY_SERVER
         ShowMissileExplosion(pos, rot, missileColor);
 #endif
-        OnMissileDestroyed?.Invoke(owningPlayerState.clientNetworkId);
+        OnMissileDestroyed?.Invoke(owningPlayerState.clientNetworkId, id);
         Reset();
     }
 

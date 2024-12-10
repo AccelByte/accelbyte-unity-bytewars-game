@@ -189,12 +189,12 @@ public class GameManager : NetworkBehaviour
     
     private void SetupOfflineGame()
     {
-        var states = InGameFactory.CreateLocalGameState(GameData.GameModeSo);
+        InGameStateResult inGameState = InGameFactory.CreateLocalGameState(GameData.GameModeSo);
+        serverHelper.SetTeamAndPlayerState(inGameState);
         
-        serverHelper.SetTeamAndPlayerState(states);
+        CreateLevelAndInitializeHud(inGameState.TeamStates, inGameState.PlayerStates, out _);
         
-        CreateLevelAndInitializeHud(states.m_teamStates, states.m_playerStates, out _);
-        
+        // Disable player inputs except the main player in the single player mode.
         bool isSinglePlayer = gameMode == GameModeEnum.SinglePlayer;
         if (isSinglePlayer && Players.TryGetValue(1, out Player player))
         {
@@ -211,37 +211,32 @@ public class GameManager : NetworkBehaviour
             return;
         }
         
-        if (hud != null)
-        {
-            hud.gameObject.SetActive(true);
-            hud.Init(serverHelper.ConnectedTeamStates.Values.ToArray(),
-                      serverHelper.ConnectedPlayerStates.Values.ToArray());
-        }
+        CreateLevelAndInitializeHud(
+            serverHelper.ConnectedTeamStates,
+            serverHelper.ConnectedPlayerStates,
+            out CreateLevelResult result);
         
-        CreateLevelAndInitializeHud(serverHelper.ConnectedTeamStates,
-                                    serverHelper.ConnectedPlayerStates,
-                                    out CreateLevelResult result);
-        
-        PlaceObjectsClientRpc(result.LevelObjects, Players.Keys.ToArray(),
-                              result.AvailablePositions.ToArray(),
-                              serverHelper.ConnectedTeamStates.Values.ToArray(),
-                              serverHelper.ConnectedPlayerStates.Values.ToArray());
+        PlaceObjectsClientRpc(
+            result.LevelObjects,
+            Players.Keys.ToArray(),
+            result.AvailablePositions.ToArray(),
+            serverHelper.ConnectedTeamStates.Values.ToArray(),
+            serverHelper.ConnectedPlayerStates.Values.ToArray());
     }
     
-    private void CreateLevelAndInitializeHud(Dictionary<int, TeamState> teamStates,
-                                             Dictionary<ulong, PlayerState> playerStates,
-                                             out CreateLevelResult result)
+    private void CreateLevelAndInitializeHud(
+        Dictionary<int, TeamState> teamStates,
+        Dictionary<ulong, PlayerState> playerStates,
+        out CreateLevelResult result)
     {
         result = InGameFactory.CreateLevel(GameData.GameModeSo, ActiveGEs, Players, Pool, teamStates, playerStates);
         availablePositions = result.AvailablePositions;
         
-        if (hud == null)
+        if (hud != null)
         {
-            return;
+            hud.gameObject.SetActive(true);
+            hud.Init(teamStates.Values.ToArray(), playerStates.Values.ToArray());
         }
-        
-        hud.gameObject.SetActive(true);
-        hud.Init(teamStates.Values.ToArray(), playerStates.Values.ToArray());
     }
     
     public void ResetCache()
@@ -585,8 +580,7 @@ public class GameManager : NetworkBehaviour
 
     public void OnObjectHit(Player player, Missile missile)
     {
-        CollisionHelper.OnObjectHit(player, missile, Players, serverHelper,
-            hud, this, gameMode, availablePositions);
+        CollisionHelper.OnObjectHit(player, missile, Players, serverHelper, hud, gameMode, availablePositions);
 
         // Broadcast on-player die event.
         OnPlayerDie?.Invoke(player.PlayerState, missile.GetOwningPlayerState());
@@ -865,8 +859,12 @@ public class GameManager : NetworkBehaviour
     }
     
     [ClientRpc]
-    private void PlaceObjectsClientRpc(LevelObject[] levelObjects, ulong[] playersClientIds,
-                                       Vector3[] availablePositionsP, TeamState[] teamStates, PlayerState[] playerStates)
+    private void PlaceObjectsClientRpc(
+        LevelObject[] levelObjects, 
+        ulong[] playersClientIds,
+        Vector3[] availablePositions, 
+        TeamState[] teamStates, 
+        PlayerState[] playerStates)
     {
         BytewarsLogger.Log($"PlaceObjectsClientRpc IsLocalPlayer:{IsLocalPlayer} IsClient:{IsClient} IsHost:{IsHost}");
         if (IsHost)
@@ -878,13 +876,21 @@ public class GameManager : NetworkBehaviour
 
         serverHelper.UpdatePlayerStates(teamStates, playerStates);
         Pool ??= new ObjectPooling(container, gamePrefabs, fxPrefabs);
-        availablePositions = new List<Vector3>(availablePositionsP);
+        this.availablePositions = new List<Vector3>(availablePositions);
         
-        clientHelper.PlaceObjectsOnClient(levelObjects, playersClientIds, Pool,
-                                           gamePrefabDict, planets, Players, serverHelper, ActiveGEs);
+        clientHelper.PlaceObjectsOnClient(
+            levelObjects, 
+            playersClientIds, 
+            Pool,
+            gamePrefabDict,
+            planets,
+            Players,
+            serverHelper, 
+            ActiveGEs);
 
         menuManager.HideLoading(false);
         menuManager.CloseMenuPanel();
+
         hud.gameObject.SetActive(true);
         hud.Init(teamStates, playerStates);
     }
@@ -896,8 +902,12 @@ public class GameManager : NetworkBehaviour
     #region Player Management
     
     [ClientRpc]
-    public void RepositionPlayerClientRpc(ulong clientNetworkId, Vector3 position,
-                                          int maxInFlightMissile, Vector4 teamColor, Quaternion rotation)
+    public void RepositionPlayerClientRpc(
+        ulong clientNetworkId,
+        Vector3 position,
+        int maxInFlightMissile,
+        Vector4 teamColor,
+        Quaternion rotation)
     {
         if (IsHost)
         {
@@ -909,7 +919,6 @@ public class GameManager : NetworkBehaviour
             return;
         }
         
-        player.Reset();
         player.transform.rotation = rotation;
         player.PlayerState.position = position;
         player.Init(maxInFlightMissile, teamColor);

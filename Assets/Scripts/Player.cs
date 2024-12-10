@@ -30,20 +30,17 @@ public class Player : GameEntityAbs
 
     private int id = -1;
     private int maxMissilesInFlight = 2;
-    private int firedMissileInt = 0;
 
     private float normalisedRotateSpeed = 0.0f;
     private float normalisedPowerChangeSpeed = 0.0f;
     private float missileTimer = 0.0f;
 
-    private bool canFireMissile = true;
-    private bool hasActiveMissile = false;
     private bool isShowPowerBarUI = false;
 
     private PowerBarUI powerBarUI;
     private PlayerState playerState;
     private Color playerColor;
-    private readonly Dictionary<int, Missile> firedMissiles = new();
+    private Dictionary<int, Missile> firedMissiles = new();
 
     public float FirePowerLevel { get; private set; } = 0.5f;
     public PlayerState PlayerState => playerState;
@@ -92,19 +89,16 @@ public class Player : GameEntityAbs
             ChangePowerLevel(normalisedPowerChangeSpeed);
         }
 
-        if (!hasActiveMissile)
+        if (!IsMaxMissilesInFlightReached() && missileTimer > 0.0f)
         {
-            missileTimer += Time.deltaTime;
-            if (missileTimer >= missileCooldown)
-            {
-                canFireMissile = true;
-                missileTimer = 0.0f;
-            }
+            missileTimer -= Time.deltaTime;
         }
     }
 
-    public void SetPlayerState(PlayerState playerState, 
-        int maxMissilesInFlight, Color teamColor)
+    public void SetPlayerState(
+        PlayerState playerState, 
+        int maxMissilesInFlight, 
+        Color teamColor)
     {
         this.playerState = playerState;
         gameObject.name = $"{InGameFactory.PlayerInstancePrefix}Player{this.playerState.playerIndex + 1}";
@@ -114,25 +108,24 @@ public class Player : GameEntityAbs
 
     public void Init(int maxMissilesInFlight, Color color)
     {
-        this.playerColor = color;
-        this.maxMissilesInFlight = maxMissilesInFlight;
+        Reset();
 
+        // Initialize properties.
+        powerBarUI ??= Instantiate(powerBarUIPrefab, transform.position, Quaternion.identity, transform);
+        playerColor = color;
+        this.maxMissilesInFlight = maxMissilesInFlight;
         playerInput.enabled = true;
         transform.position = playerState.position;
 
-        if (!powerBarUI)
-        {
-            powerBarUI = Instantiate(powerBarUIPrefab, transform.position, Quaternion.identity, transform);
-        }
+        // Display ship.
+        SetShipColour(color);
+        gameObject.SetActive(true);
 
+        // Display powerbar.
         powerBarUI.Init();
         powerBarUI.SetPosition(transform.position);
         powerBarUI.SetPercentageFraction(FirePowerLevel, false);
         isShowPowerBarUI = IsShowPowerBarUI();
-
-        SetShipColour(color);
-        firedMissileInt = 0;
-        gameObject.SetActive(true);
     }
 
     private bool IsShowPowerBarUI()
@@ -154,40 +147,35 @@ public class Player : GameEntityAbs
         playerState.killCount++;
     }
 
-    public MissileFireState LocalFireMissile()
+    public MissileFireState FireLocalMissile()
     {
-        if (!canFireMissile)
+        // Abort if shooting missile is in cooldown.
+        if (missileTimer > 0.0f)
         {
+            BytewarsLogger.Log("Unable to shoot a new missile. Shooting missile is in cooldown.");
             return null;
         }
 
-        canFireMissile = false;
-        hasActiveMissile = true;
-
-        List<KeyValuePair<int, Missile>> deactivatedMissiles = firedMissiles
-            .Where(kvp => !kvp.Value.gameObject.activeSelf).ToList();
-
-        foreach (KeyValuePair<int, Missile> kvp in deactivatedMissiles)
+        // Abort if max num of fired missiles already reached.
+        if (IsMaxMissilesInFlightReached())
         {
-            firedMissiles.Remove(kvp.Key);
-        }
-
-        if (firedMissileInt >= maxMissilesInFlight)
-        {
+            BytewarsLogger.Log($"Unable to shoot a new missile. Maximum active missile of {maxMissilesInFlight} already fired.");
             return null;
         }
 
         Vector3 missileSpawnPosition = missileSpawnPos.transform.position;
-        Missile missile = GameManager.Instance.Pool.Get(missilePrefab);
         Quaternion rotation = transform.rotation;
         Vector3 velocity = transform.up.normalized * (minMissileSpeed + (maxMissileSpeed - minMissileSpeed) * FirePowerLevel);
 
-        missile.Init(playerState, missileSpawnPosition, rotation, velocity, playerColor);
+        // Fire a new missile.
+        Missile missile = GameManager.Instance.Pool.Get(missilePrefab);
         missile.OnMissileDestroyed -= OnMissileDestroyed;
-
         missile.OnMissileDestroyed += OnMissileDestroyed;
+        missile.Init(playerState, missileSpawnPosition, rotation, velocity, playerColor);
         firedMissiles.Add(missile.GetId(), missile);
-        firedMissileInt++;
+        
+        // Initialize shoot missile cooldown.
+        missileTimer = missileCooldown;
 
 #if !UNITY_SERVER
         AddMissileTrail(missile.gameObject, missileSpawnPosition);
@@ -205,12 +193,9 @@ public class Player : GameEntityAbs
     
     public void FireMissileClient(MissileFireState missileFireState, PlayerState playerState)
     {
-        Missile missile = GameManager.Instance.Pool.Get(missilePrefab) as Missile;
-
+        Missile missile = GameManager.Instance.Pool.Get(missilePrefab);
         missile.SetId(missileFireState.id);
-        missile.Init(playerState, missileFireState.spawnPosition, 
-            missileFireState.rotation, missileFireState.velocity, missileFireState.color);
-
+        missile.Init(playerState, missileFireState.spawnPosition, missileFireState.rotation, missileFireState.velocity, missileFireState.color);
         firedMissiles.TryAdd(missile.GetId(), missile);
 
         AddMissileTrail(missile.gameObject, missileFireState.spawnPosition);
@@ -315,7 +300,7 @@ public class Player : GameEntityAbs
     {
         if (GameManager.Instance.InGameState == InGameState.Playing)
         {
-            LocalFireMissile();
+            FireLocalMissile();
         }
     }
 
@@ -355,8 +340,7 @@ public class Player : GameEntityAbs
         firedMissiles.Values.ToList().ForEach(missile => missile.Reset());
         firedMissiles.Clear();
         gameObject.SetActive(false);
-        hasActiveMissile = false;
-        canFireMissile = true;
+        missileTimer = 0.0f;
     }
 
     public override void SetId(int id)
@@ -377,8 +361,7 @@ public class Player : GameEntityAbs
         }
     }
 
-    public void SyncMissile(int missileId, Vector3 velocity,
-        Vector3 position, Quaternion rotation)
+    public void SyncMissile(int missileId, Vector3 velocity, Vector3 position, Quaternion rotation)
     {
         if (firedMissiles.TryGetValue(missileId, out var missile))
         {
@@ -418,13 +401,13 @@ public class Player : GameEntityAbs
         }
     }
 
-    private void OnMissileDestroyed(ulong owningPlayerNetworkClientId)
+    private void OnMissileDestroyed(ulong owningPlayerNetworkClientId, int missileId)
     {
-        hasActiveMissile = false;
+        firedMissiles.Remove(missileId);
+    }
 
-        if (playerState.clientNetworkId==owningPlayerNetworkClientId)
-        {
-            firedMissileInt--;
-        }
+    private bool IsMaxMissilesInFlightReached()
+    {
+        return firedMissiles.Where(kvp => kvp.Value.gameObject.activeSelf).ToList().Count >= maxMissilesInFlight;
     }
 }

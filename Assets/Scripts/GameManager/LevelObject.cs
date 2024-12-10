@@ -1,19 +1,22 @@
-using System.Collections;
-using System.Collections.Generic;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using Unity.Netcode;
 using UnityEngine;
 
 public class LevelObject : INetworkSerializable
 {
-    public string m_prefabName;
-    public Vector3 m_position;
-    public Quaternion m_rotation;
-    public int ID;
+    public string PrefabName = string.Empty;
+    public Vector3 Position = Vector3.zero;
+    public Quaternion Rotation = Quaternion.identity;
+    public int ID = 0;
+
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
-        serializer.SerializeValue(ref m_prefabName);
-        serializer.SerializeValue(ref m_position);
-        serializer.SerializeValue(ref m_rotation);
+        serializer.SerializeValue(ref PrefabName);
+        serializer.SerializeValue(ref Position);
+        serializer.SerializeValue(ref Rotation);
         serializer.SerializeValue(ref ID);
     }
 }

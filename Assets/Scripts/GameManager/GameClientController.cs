@@ -167,25 +167,20 @@ public class GameClientController : NetworkBehaviour
     [ServerRpc]
     private void FireMissileServerRpc(ulong clientNetworkId)
     {
-        FireMissile(clientNetworkId);
-    }
-    
-    private void FireMissile(ulong clientNetworkId)
-    {
-        var game = GameManager.Instance;
-        if (game.InGameState is not InGameState.Playing)
+        if (GameManager.Instance.InGameState is not InGameState.Playing)
         {
             return;
         }
 
-        if (!game.Players.TryGetValue(clientNetworkId, out Player player))
+        if (!GameManager.Instance.Players.TryGetValue(clientNetworkId, out Player player))
         {
+            BytewarsLogger.LogWarning($"[Server] Unable to fire missile. Player with NetID {clientNetworkId} is not found.");
             return;
         }
 
         if (IsAlive(player))
         {
-            var missileState = player.LocalFireMissile();
+            MissileFireState missileState = player.FireLocalMissile();
             if (missileState != null && IsServer)
             {
                 FireMissileClientRpc(clientNetworkId, missileState);
@@ -201,10 +196,14 @@ public class GameClientController : NetworkBehaviour
             return;
         }
 
-        if (GameManager.Instance.Players.TryGetValue(clientNetworkId, out var player)
-            && GameManager.Instance.ConnectedPlayerStates.TryGetValue(clientNetworkId, out var playerState))
+        if (GameManager.Instance.Players.TryGetValue(clientNetworkId, out Player player) && 
+            GameManager.Instance.ConnectedPlayerStates.TryGetValue(clientNetworkId, out var playerState))
         {
             player.FireMissileClient(missileFireState, playerState);
+        }
+        else 
+        {
+            BytewarsLogger.LogWarning($"[Client] Unable to fire missile. Player with NetID {clientNetworkId} is not found.");
         }
     }
 

@@ -9,9 +9,13 @@ using UnityEngine;
 
 public class CollisionHelper 
 {
-    public static void OnObjectHit(Player player, Missile missile,
-        Dictionary<ulong, Player> players, ServerHelper serverHelper,
-        InGameHUD hud, GameManager gameManager, GameModeEnum gameMode, 
+    public static void OnObjectHit(
+        Player player, 
+        Missile missile,
+        Dictionary<ulong, Player> players, 
+        ServerHelper serverHelper,
+        InGameHUD hud,
+        GameModeEnum gameMode, 
         List<Vector3> availablePositions)
     {
         PlayerState owningPlayerState = missile.GetOwningPlayerState();
@@ -27,7 +31,7 @@ public class CollisionHelper
 
             PlayerState[] playerStates = serverHelper.ConnectedPlayerStates.Values.ToArray();
             hud.UpdateKillsAndScore(owningPlayerState, playerStates);
-            gameManager.UpdateScoreClientRpc(owningPlayerState, playerStates);
+            GameManager.Instance.UpdateScoreClientRpc(owningPlayerState, playerStates);
         }
 
         player.OnHitByMissile();
@@ -36,14 +40,15 @@ public class CollisionHelper
         int teamIndex = player.PlayerState.teamIndex;
         int affectedTeamLive = serverHelper.GetTeamLive(teamIndex);
         hud.SetLivesValue(teamIndex, affectedTeamLive);
-        gameManager.UpdateLiveClientRpc(teamIndex, affectedTeamLive);
+        GameManager.Instance.UpdateLiveClientRpc(teamIndex, affectedTeamLive);
         
+        // Check if player is totally dead.
         if(player.PlayerState.lives <= 0)
         {
             BytewarsLogger.Log($"Player {player.PlayerState.playerId} is dead.");
 
             // Remove player from world and reset attributes.
-            gameManager.ActiveGEs.Remove(player);
+            GameManager.Instance.ActiveGEs.Remove(player);
             if (gameMode is GameModeEnum.LocalMultiplayer or GameModeEnum.SinglePlayer)
             {
                 BytewarsLogger.Log($"Reset local player {player.PlayerState.playerId} attribute.");
@@ -59,49 +64,16 @@ public class CollisionHelper
             else if (NetworkManager.Singleton.IsServer || NetworkManager.Singleton.IsHost)
             {
                 BytewarsLogger.Log($"Reset remote player {player.PlayerState.playerId} attribute.");
-                gameManager.ResetPlayerClientRpc(player.PlayerState.clientNetworkId);
+                GameManager.Instance.ResetPlayerClientRpc(player.PlayerState.clientNetworkId);
                 player.Reset();
             }
         }
+        // Respawn the player if it still has lives.
         else
         {
-            BytewarsLogger.Log($"Player {player.PlayerState.playerId} is dead. Remaining lives: {player.PlayerState.lives}. Respawning the player.");
-
-            // Respawn player.
-            bool playerPlaced = false;
-            Vector3 playerUnusedPosition = player.transform.position;
-            for (int i = 0; i < GameData.GameModeSo.numRetriesToPlacePlayer; i++)
-            {
-                int randomIndex = Random.Range(0, availablePositions.Count);
-                Vector3 randomPosition = availablePositions[randomIndex];
-                availablePositions.RemoveAt(randomIndex);
-
-                if (!GameUtility.HasLineOfSightToOtherShip(gameManager.ActiveGEs, randomPosition, players))
-                {
-                    Color teamColor = serverHelper.ConnectedTeamStates[player.PlayerState.teamIndex].teamColour;
-                    player.PlayerState.position = randomPosition;
-                    player.Init(GameData.GameModeSo.maxInFlightMissilesPerPlayer, teamColor);
-                    gameManager.RepositionPlayerClientRpc(
-                        player.PlayerState.clientNetworkId, 
-                        randomPosition, 
-                        GameData.GameModeSo.maxInFlightMissilesPerPlayer, 
-                        teamColor, 
-                        player.transform.rotation);
-                    playerPlaced = true;
-
-                    BytewarsLogger.Log($"Player {player.PlayerState.playerId} is respawned on the coord: {player.PlayerState.position}.");
-                }
-
-                if(playerPlaced) 
-                {
-                    break;
-                }
-            }
-
-            // Re-add unused positions.
-            availablePositions.Add(playerUnusedPosition);
+            InGameFactory.RespawnLocalPlayer(player, GameData.GameModeSo, GameManager.Instance.ActiveGEs, players, availablePositions);
         }
 
-        gameManager.CheckForGameOverCondition();
+        GameManager.Instance.CheckForGameOverCondition();
     }
 }
