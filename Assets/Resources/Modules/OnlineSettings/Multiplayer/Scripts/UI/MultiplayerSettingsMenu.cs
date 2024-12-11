@@ -9,6 +9,7 @@ public class MultiplayerSettingsMenu : MenuCanvas
 {
     [Header("Menu Components")]
     [SerializeField] private Button regionPreferencesButton;
+    [SerializeField] private Button crossPlayPreferencesButton;
     [SerializeField] private Button backButton;
 
     public override GameObject GetFirstButton()
@@ -26,6 +27,10 @@ public class MultiplayerSettingsMenu : MenuCanvas
         regionPreferencesButton.onClick.AddListener((() =>
         {
             MenuManager.Instance.ChangeToMenu(AssetEnum.RegionPreferencesMenu);
+        }));
+        crossPlayPreferencesButton.onClick.AddListener((() =>
+        {
+            MenuManager.Instance.ChangeToMenu(AssetEnum.CrossPlayPreferencesMenu);
         }));
         backButton.onClick.AddListener(OnBackButtonClicked);
     }

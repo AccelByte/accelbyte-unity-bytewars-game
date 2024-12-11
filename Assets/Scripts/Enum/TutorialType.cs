@@ -29,5 +29,6 @@ public enum TutorialType
     Analytics = 200,
     OnlineSettings = 201,
     MultiplayerSettings = 202,
-    RegionPreferences = 203
+    RegionPreferences = 203,
+    CrossplayPreferences = 204
 }

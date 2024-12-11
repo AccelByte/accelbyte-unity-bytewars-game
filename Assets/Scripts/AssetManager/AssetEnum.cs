@@ -21,6 +21,8 @@ public enum AssetEnum
 	CreateMatchSessionP2PHandler,
 	CreateMatchSessionP2PHandler_Starter,
 	CreditsMenuCanvas,
+	CrossplayPreferencesAssetConfig,
+	CrossPlayPreferencesMenu,
 	EliminationMenuCanvas,
 	emails,
 	FindFriendsEntryComponent,
