@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 public static class TutorialModuleUtil
@@ -11,16 +12,20 @@ public static class TutorialModuleUtil
 
     public static bool IsAccelbyteSDKInstalled()
     {
-        var typ = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
-            from type in assembly.GetTypes()
-            where type.Name == "AccelBytePlugin"
-            select type);
-        int classCount = typ.Count();
-        if (classCount == 1)
+        List<string> types = (from assembly in AppDomain.CurrentDomain.GetAssemblies() from type in assembly.GetTypes() where type.Name.Contains("AccelByte") select type.Name).ToList();
+        bool isSDKInstalled = types.Select(x => x.Contains("SDK", StringComparison.OrdinalIgnoreCase)).Count() > 0;
+        bool isNetworkPluginInstalled = types.Select(x => x.Contains("Network", StringComparison.OrdinalIgnoreCase)).Count() > 0;
+
+        if (!isSDKInstalled) 
         {
-            return true;
+            BytewarsLogger.LogWarning("AccelByte SDK is not installed.");
         }
-        return false;
+        if (!isNetworkPluginInstalled) 
+        {
+            BytewarsLogger.LogWarning("AccelByte Networking is not installed.");
+        }
+
+        return isSDKInstalled && isNetworkPluginInstalled;
     }
 
     public static string GetLocalTimeOffsetFromUTC()
