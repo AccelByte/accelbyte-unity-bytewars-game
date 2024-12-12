@@ -67,7 +67,11 @@ public class GameManager : NetworkBehaviour
     private MenuManager menuManager;
     private int gameTimeLeft;
 
-    public static readonly int TravelingDelay = 1;
+    private readonly int TravelingDelay = 1;
+    private readonly int TravelingTimeOut = 60;
+    private readonly string TravelingMessage = "Traveling";
+    private readonly string StartingGameMessage = "Starting Game";
+
     private bool isGameStarted = false;
 
     public bool IsDedicatedServer { get { return IsServer && !IsHost && !IsClient; } }
@@ -269,7 +273,7 @@ public class GameManager : NetworkBehaviour
         {
             ResetCache();
         }
-        
+
         reconnect.OnClientStopped(isHostStopped, InGameState, serverHelper,
             clientHelper.ClientNetworkId, InGameMode);
     }
@@ -535,7 +539,7 @@ public class GameManager : NetworkBehaviour
         InGameMode = GetEnumFromGameMode(gameModeSo);
 
         AudioManager.Instance.PlaySfx("Enter_Simulate");
-        StartCoroutine(ShowTravelingLoadingCoroutine(LoadScene));
+        ShowTravelingLoading(LoadScene);
     }
 
     public void LoadScene()
@@ -816,15 +820,7 @@ public class GameManager : NetworkBehaviour
         SetGameModeClientRpc(gameMode);
 
         OnStartingGameClientRpc();
-
-        StartCoroutine(CoroutineDelay(TravelingDelay, LoadMultiplayerScene));
-    }
-
-    IEnumerator CoroutineDelay(int delay, Action action = null)
-    {
-        MenuManager.Instance.ShowLoading("Traveling");
-        yield return new WaitForSeconds(delay);
-        action?.Invoke();
+        ShowTravelingLoading(LoadMultiplayerScene, StartingGameMessage);
     }
 
     private void LoadMultiplayerScene()
@@ -1058,8 +1054,9 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void OnStartingGameClientRpc()
     {
+        // Show starting game loading with time out countdown.
         menuManager.CloseMenuPanel();
-        menuManager.ShowLoading("Starting Game");
+        ShowTravelingLoading(null, StartingGameMessage);
 
         AudioManager.Instance.PlaySfx("Enter_Simulate");
 
@@ -1265,17 +1262,40 @@ public class GameManager : NetworkBehaviour
         return connectedClients.Count == sceneEvent.ClientsThatCompleted.Count;
     }
     
-    public IEnumerator ShowTravelingLoadingCoroutine(Action action)
+    public void ShowTravelingLoading(Action onComplete, string loadingMessage = "")
     {
-        MenuManager.Instance.ShowLoading("Traveling");
-        yield return new WaitForSeconds(TravelingDelay);
-        action?.Invoke();
+        if (string.IsNullOrEmpty(loadingMessage)) 
+        {
+            loadingMessage = TravelingMessage;
+        }
+
+        Coroutine travelingCoroutine = StartCoroutine(OnShowTravelingLoading(onComplete));
+
+        // Show traveling loading with time out countdown.
+        MenuManager.Instance.ShowLoading(
+            loadingMessage,
+            new LoadingTimeoutInfo()
+            {
+                Info = "Time out in ",
+                TimeoutReachedError = "Failed to travel to the the server or host. Connection time out.",
+                TimeoutSec = TravelingTimeOut
+            },
+            () =>
+            {
+                if (travelingCoroutine != null)
+                {
+                    StopCoroutine(travelingCoroutine);
+                }
+
+                NetworkManager.Singleton.Shutdown();
+            },
+            false);
     }
 
-    public static async UniTask ShowTravelingLoading()
+    private IEnumerator OnShowTravelingLoading(Action onComplete) 
     {
-        MenuManager.Instance.ShowLoading("Traveling");
-        await UniTask.Delay(TimeSpan.FromSeconds(TravelingDelay));
+        yield return new WaitForSeconds(TravelingDelay);
+        onComplete?.Invoke();
     }
 
     #endregion

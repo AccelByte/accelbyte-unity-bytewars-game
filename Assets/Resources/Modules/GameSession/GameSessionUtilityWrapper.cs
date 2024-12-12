@@ -73,14 +73,7 @@ public class GameSessionUtilityWrapper : SessionEssentialsWrapper
             return;
         }
 
-        StartCoroutine(ShowTravelingLoadingCoroutine(() => StartClient(sessionV2Game, gameMode)));
-    }
-
-    public IEnumerator ShowTravelingLoadingCoroutine(Action action)
-    {
-        MenuManager.Instance.ShowLoading("Traveling");
-        yield return new WaitForSeconds(1);
-        action?.Invoke();
+        GameManager.Instance.ShowTravelingLoading(() => StartClient(sessionV2Game, gameMode));
     }
 
     private void StartClient(SessionV2GameSession sessionV2Game, InGameMode gameMode)

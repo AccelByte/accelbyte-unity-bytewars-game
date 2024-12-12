@@ -49,6 +49,7 @@ public class MenuManager : MonoBehaviour
     
     private EventSystem eventSystem;
     private MenuCanvas currentMainMenu;
+    private MenuCanvas currentPromptMenu;
     private MatchLobbyMenu matchLobby;
     private GameOverMenuCanvas gameOverCanvas;
 
@@ -65,7 +66,7 @@ public class MenuManager : MonoBehaviour
         GameObject menuManagerGameObject = new("MenuManager");
         Instance = menuManagerGameObject.AddComponent<MenuManager>();
     }
-    
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -176,11 +177,12 @@ public class MenuManager : MonoBehaviour
         }
         
         MenuCanvas targetMenu = menusDictionary[assetEnum];
+        bool isPromptActive = currentPromptMenu != null && currentPromptMenu.gameObject.activeInHierarchy;
         if (!targetMenu.gameObject.activeSelf)
         {
-            targetMenu.gameObject.SetActive(true);
+            targetMenu.gameObject.SetActive(!isPromptActive);
         }
-        
+
         currentMainMenu = targetMenu;
 #if !UNITY_WEBGL
         eventSystem.SetSelectedGameObject(targetMenu.GetFirstButton());
@@ -546,6 +548,8 @@ public class MenuManager : MonoBehaviour
         }
         
         currentMainMenu.gameObject.SetActive(false);
+        currentPromptMenu = loadingMenuCanvas;
+
         loadingMenuCanvas.gameObject.SetActive(true);
         loadingMenuCanvas.Show(
             info,
@@ -574,6 +578,7 @@ public class MenuManager : MonoBehaviour
     {
         HideAdditionalInfo();
         menusDictionary[AssetEnum.LoadingMenuCanvas].gameObject.SetActive(false);
+        currentPromptMenu = null;
 
         if (IsMainMenuScene())
         {
@@ -630,6 +635,7 @@ public class MenuManager : MonoBehaviour
     {
         currentMainMenu.gameObject.SetActive(false);
         InfoMenuCanvas menu = menusDictionary[AssetEnum.InfoMenuCanvas] as InfoMenuCanvas;
+        currentPromptMenu = menu;
 
         if (menu != null)
         {
@@ -639,6 +645,7 @@ public class MenuManager : MonoBehaviour
 
     public void HideInfo()
     {
+        currentPromptMenu = null;
         menusDictionary[AssetEnum.InfoMenuCanvas].gameObject.SetActive(false);
         currentMainMenu.gameObject.SetActive(true);
     }

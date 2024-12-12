@@ -25,30 +25,35 @@ public class P2PHelper
         transportManager.Initialize(apiClient);
     }
 
-    public static async void StartAsHost(InGameMode gameMode, string matchSessionId)
+    public static void StartAsHost(InGameMode gameMode, string matchSessionId)
     {
-        await GameManager.ShowTravelingLoading();
+        GameManager.Instance.ShowTravelingLoading(() => 
+        {
+            BytewarsLogger.Log($"Start P2P Host");
 
-        GameManager.Instance.ResetCache();
-        GameData.ServerType = ServerType.OnlinePeer2Peer;
+            GameManager.Instance.ResetCache();
+            GameData.ServerType = ServerType.OnlinePeer2Peer;
 
-        SetP2PNetworkTransport(gameMode, matchSessionId);
-        networkManager.StartHost();
-        BytewarsLogger.Log($"Start P2P Host");
-        GameManager.StartListenNetworkSceneEvent();
+            SetP2PNetworkTransport(gameMode, matchSessionId);
+            networkManager.StartHost();
+
+            GameManager.StartListenNetworkSceneEvent();
+        });
     }
 
-    public static async void StartAsP2PClient(string hostUserId, InGameMode gameMode, string matchSessionId)
+    public static void StartAsP2PClient(string hostUserId, InGameMode gameMode, string matchSessionId)
     {
-        await GameManager.ShowTravelingLoading();
+        GameManager.Instance.ShowTravelingLoading(() =>
+        {
+            BytewarsLogger.Log($"Start P2P Client hostUserId: {hostUserId}");
 
-        GameManager.Instance.ResetCache();
-        GameData.ServerType = ServerType.OnlinePeer2Peer;
+            GameManager.Instance.ResetCache();
+            GameData.ServerType = ServerType.OnlinePeer2Peer;
 
-        SetP2PNetworkTransport(gameMode, matchSessionId);
-        transportManager.SetTargetHostUserId(hostUserId);
-        networkManager.StartClient();
-        BytewarsLogger.Log($"Start P2P Client hostUserId: {hostUserId}");
+            SetP2PNetworkTransport(gameMode, matchSessionId);
+            transportManager.SetTargetHostUserId(hostUserId);
+            networkManager.StartClient();
+        });
     }
 
     private static void SetP2PNetworkTransport(InGameMode gameMode, string matchSessionId)
