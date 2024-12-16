@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 public class InGameFactory
@@ -11,7 +12,7 @@ public class InGameFactory
     public const char PlayerInstancePrefix = 's';
     public const char PlanetInstancePrefix = 'P';
 
-    public static CreateLevelResult CreateLevel(
+    public static LevelCreationResult CreateLevel(
         GameModeSO gameModeSo,
         List<GameEntityAbs> instantiatedGEs,
         Dictionary<ulong, Player> instantiatedShips,
@@ -73,10 +74,10 @@ public class InGameFactory
             playerStates);
 
         // Return level.
-        return new CreateLevelResult()
+        return new LevelCreationResult()
         {
             LevelObjects = levelObjects.ToArray(),
-            AvailablePositions = availablePositions
+            AvailablePositions = availablePositions.ToArray()
         };
     }
 
@@ -287,8 +288,15 @@ public class InGameStateResult
     public Dictionary<ulong, PlayerState> PlayerStates = new Dictionary<ulong, PlayerState>();
 }
 
-public class CreateLevelResult
+[System.Serializable]
+public class LevelCreationResult : INetworkSerializable
 {
     public LevelObject[] LevelObjects;
-    public List<Vector3> AvailablePositions = new List<Vector3>();
+    public Vector3[] AvailablePositions;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref LevelObjects);
+        serializer.SerializeValue(ref AvailablePositions);
+    }
 }

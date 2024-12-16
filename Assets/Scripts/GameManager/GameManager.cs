@@ -108,17 +108,22 @@ public class GameManager : NetworkBehaviour
             gamePrefabDict.Add(gamePrefab.name, gamePrefab);
         }
 
+        NetworkManager.Singleton.ConnectionApprovalCallback += ConnectionApprovalCallback;
+        NetworkManager.Singleton.OnClientStarted += OnClientStarted;
+        NetworkManager.Singleton.OnClientStopped += OnClientStopped;
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-        NetworkManager.Singleton.ConnectionApprovalCallback += ConnectionApprovalCallback;
-        NetworkManager.Singleton.OnClientStopped += OnClientStopped;
+
+        NetworkManager.Singleton.OnServerStarted += OnServerStarted;
         NetworkManager.Singleton.OnServerStopped += OnServerStopped;
+        NetworkManager.Singleton.LogLevel = LogLevel.Developer;
 
         SceneManager.activeSceneChanged += OnActiveSceneChanged;
 
         if (unityTransport == null)
         {
             unityTransport = (UnityTransport)NetworkManager.Singleton.NetworkConfig.NetworkTransport;
+            unityTransport.OnTransportEvent += OnTransportEvent;
         }
 
 #if UNITY_SERVER
@@ -218,12 +223,10 @@ public class GameManager : NetworkBehaviour
         CreateLevelAndInitializeHud(
             serverHelper.ConnectedTeamStates,
             serverHelper.ConnectedPlayerStates,
-            out CreateLevelResult result);
+            out LevelCreationResult result);
         
         PlaceObjectsClientRpc(
-            result.LevelObjects,
-            Players.Keys.ToArray(),
-            result.AvailablePositions.ToArray(),
+            result,
             serverHelper.ConnectedTeamStates.Values.ToArray(),
             serverHelper.ConnectedPlayerStates.Values.ToArray());
     }
@@ -231,10 +234,10 @@ public class GameManager : NetworkBehaviour
     private void CreateLevelAndInitializeHud(
         Dictionary<int, TeamState> teamStates,
         Dictionary<ulong, PlayerState> playerStates,
-        out CreateLevelResult result)
+        out LevelCreationResult result)
     {
         result = InGameFactory.CreateLevel(GameData.GameModeSo, ActiveGEs, Players, Pool, teamStates, playerStates);
-        availablePositions = result.AvailablePositions;
+        availablePositions = result.AvailablePositions.ToList();
         
         if (hud != null)
         {
@@ -253,22 +256,35 @@ public class GameManager : NetworkBehaviour
     }
 
     #endregion
-    
+
     #region Connection Management
+
+    private void OnServerStarted()
+    {
+        BytewarsLogger.Log("Server started.");
+    }
 
     private void OnServerStopped(bool isHostStopped)
     {
+        BytewarsLogger.Log($"Server stopped. Is host: {isHostStopped}");
+
         if (isHostStopped)
         {
-            BytewarsLogger.Log("Hosting server has stopped");
             InGameMode = InGameMode.None;
         }
 
         ResetCache();
     }
 
+    private void OnClientStarted()
+    {
+        BytewarsLogger.Log("Client started.");
+    }
+
     private void OnClientStopped(bool isHostStopped)
     {
+        BytewarsLogger.Log($"Client stopped. Is host {isHostStopped}");
+
         if (isHostStopped) 
         {
             ResetCache();
@@ -305,8 +321,12 @@ public class GameManager : NetworkBehaviour
     /// <param name="clientNetworkId"></param>
     private void OnClientConnected(ulong clientNetworkId)
     {
-        reconnect.OnClientConnected(clientNetworkId, IsOwner, IsServer, IsClient, IsHost, serverHelper,
-                                    InGameMode, connectedClients, InGameState, GameData.ServerType, Players, gameTimeLeft, clientHelper);
+        BytewarsLogger.Log($"Client is connected. Client id: {clientNetworkId}");
+
+        reconnect.OnClientConnected(
+            clientNetworkId, IsOwner, IsServer, IsClient, IsHost, serverHelper,
+            InGameMode, connectedClients, InGameState, GameData.ServerType, 
+            Players, gameTimeLeft, clientHelper);
     }
 
     private void OnClientDisconnected(ulong clientNetworkId)
@@ -321,8 +341,9 @@ public class GameManager : NetworkBehaviour
             reason = NetworkManager.Singleton.DisconnectReason;
         }
 
-        BytewarsLogger.Log($"OnClientDisconnected client id {clientNetworkId} disconnected reason:{reason} " +
-                  $"active entity count:{ActiveGEs.Count} IsServer:{IsServer}");
+        BytewarsLogger.Log(
+            $"Client disconnected. Client id: {clientNetworkId}. " +
+            $"Reject reason:{reason}. Active entity count: {ActiveGEs.Count}. Is server:{IsServer}");
 
         if (isInMenuScene)
         {
@@ -417,13 +438,21 @@ public class GameManager : NetworkBehaviour
     /// </summary>
     /// <param name="request">client information</param>
     /// <param name="response">set whether the client is allowed to connect or not</param>
-    private async void ConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request,
-                                                  NetworkManager.ConnectionApprovalResponse response)
+    private async void ConnectionApprovalCallback(
+        NetworkManager.ConnectionApprovalRequest request,
+        NetworkManager.ConnectionApprovalResponse response)
     {
-        ConnectionApprovalResult result = await connectionHelper.ConnectionApproval(request, response, IsServer,
-                                              InGameState, availableInGameMode, InGameMode, serverHelper);
+        ConnectionApprovalResult result = await connectionHelper.ConnectionApproval(
+            request, response, IsServer,
+            InGameState, availableInGameMode, InGameMode, serverHelper);
+
+        BytewarsLogger.Log(
+            $"Client connection approval callback. " +
+            $"Client id: {request.ClientNetworkId}. Is approved: {response.Approved}. Rejected message: {response.Reason}.");
+
         if (result == null)
         {
+            BytewarsLogger.Log("Failed to handle connection approval result. The result is null.");
             return;
         }
         
@@ -441,10 +470,13 @@ public class GameManager : NetworkBehaviour
     
     public void RemoveConnectedClient(ulong clientNetworkId, bool isInGameScene, bool isResetMissile = true)
     {
+        BytewarsLogger.LogWarning($"Remove connected client. Client id: {clientNetworkId} is not found.");
+
         connectedClients.Remove(clientNetworkId);
 
         if (!Players.TryGetValue(clientNetworkId, out Player player) && isInGameScene)
         {
+            BytewarsLogger.LogWarning($"Unable to remove connected client. Player with client id {clientNetworkId} is not found.");
             return;
         }
 
@@ -468,14 +500,20 @@ public class GameManager : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void RemoveConnectedClientRpc(ulong clientNetworkId, TeamState[] teamStates,
-        PlayerState[] playerStates, bool isResetMissile)
+    private void RemoveConnectedClientRpc(
+        ulong clientNetworkId, 
+        TeamState[] teamStates,
+        PlayerState[] playerStates, 
+        bool isResetMissile)
     {
+        BytewarsLogger.Log($"[Client] Remove connected client. Client id: {clientNetworkId}. Is host: {IsHost}");
+
         UpdateInGamePlayerState(teamStates, playerStates);
         connectedClients.Remove(clientNetworkId);
 
         if (!Players.Remove(clientNetworkId, out Player player))
         {
+            BytewarsLogger.LogWarning($"[Client] Unable to remove client. Player with client id {clientNetworkId} is not found");
             return;
         }
 
@@ -508,15 +546,35 @@ public class GameManager : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void ReAddReconnectedPlayerClientRpc(ulong clientNetworkId, int[] firedMissilesId,
-        TeamState[] teamStates, PlayerState[] playerStates)
+    public void ReAddReconnectedPlayerClientRpc(
+        ulong clientNetworkId, 
+        int[] firedMissilesId,
+        TeamState[] teamStates, 
+        PlayerState[] playerStates)
     {
+        BytewarsLogger.Log($"[Client] Re-add reconnected player. Client id: {clientNetworkId}. Is host: {IsHost}");
+
         if (IsHost)
         {
             return;
         }
 
         ReAddReconnectedPlayerOnClient(clientNetworkId, firedMissilesId, teamStates, playerStates);
+    }
+
+    public void OnTransportEvent(NetworkEvent networkEvent, ulong clientNetworkId, ArraySegment<byte> payload, float receiveTime)
+    {
+        BytewarsLogger.Log($"Received packet. Client id: {clientNetworkId}. Packet count: {payload.Count}. Event type: {networkEvent}. Received time: {receiveTime}");
+
+        // Received event data, but the packet data is empty. This mean the data is corrupted.
+        if (networkEvent == NetworkEvent.Data && payload.Count <= 0) 
+        {
+            BytewarsLogger.Log(
+                $"Received corrupted package. Shutting down client. " +
+                $"Client id: {clientNetworkId}. Received time: {receiveTime}. Event type: {networkEvent}.");
+
+            NetworkManager.Singleton.DisconnectClient(clientNetworkId, "Network package corrupted. Connection time out.");
+        }
     }
 
     #endregion
@@ -584,6 +642,10 @@ public class GameManager : NetworkBehaviour
 
     public void OnObjectHit(Player player, Missile missile)
     {
+        BytewarsLogger.Log(
+            $"On object hit player. Client id: {player.PlayerState.clientNetworkId}. " +
+            $"Missile owner: {missile.GetOwningPlayerState().clientNetworkId}");
+
         CollisionHelper.OnObjectHit(player, missile, Players, serverHelper, hud, gameMode, availablePositions);
 
         // Broadcast on-player die event.
@@ -600,6 +662,10 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void OnPlayerDieClientRpc(PlayerState deathPlayer, PlayerState killer)
     {
+        BytewarsLogger.Log(
+            $"[Client] On player die event. Victim client id: {deathPlayer.clientNetworkId}. " +
+            $"Killer client id: {killer.clientNetworkId}. Is host: {IsHost}");
+
         if (!IsHost)
         {
             OnPlayerDie?.Invoke(deathPlayer, killer);
@@ -837,6 +903,8 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void SetGameModeClientRpc(GameModeEnum gameMode)
     {
+        BytewarsLogger.Log($"[Client] Set game mode to {gameMode}. Is host: {IsHost}");
+
         if (IsHost)
         {
             return;
@@ -856,13 +924,12 @@ public class GameManager : NetworkBehaviour
     
     [ClientRpc]
     private void PlaceObjectsClientRpc(
-        LevelObject[] levelObjects, 
-        ulong[] playersClientIds,
-        Vector3[] availablePositions, 
+        LevelCreationResult levelResult,
         TeamState[] teamStates, 
         PlayerState[] playerStates)
     {
-        BytewarsLogger.Log($"PlaceObjectsClientRpc IsLocalPlayer:{IsLocalPlayer} IsClient:{IsClient} IsHost:{IsHost}");
+        BytewarsLogger.Log($"[Client] Place level objects. Is local player: {IsLocalPlayer}. Is client: {IsClient}. Is host: {IsHost}");
+
         if (IsHost)
         {
             return;
@@ -872,11 +939,11 @@ public class GameManager : NetworkBehaviour
 
         serverHelper.UpdatePlayerStates(teamStates, playerStates);
         Pool ??= new ObjectPooling(container, gamePrefabs, fxPrefabs);
-        this.availablePositions = new List<Vector3>(availablePositions);
+        availablePositions = new List<Vector3>(levelResult.AvailablePositions);
         
         clientHelper.PlaceObjectsOnClient(
-            levelObjects, 
-            playersClientIds, 
+            levelResult.LevelObjects, 
+            playerStates.Select(x => x.clientNetworkId).ToArray(), 
             Pool,
             gamePrefabDict,
             planets,
@@ -905,6 +972,8 @@ public class GameManager : NetworkBehaviour
         Vector4 teamColor,
         Quaternion rotation)
     {
+        BytewarsLogger.Log($"[Client] Reposition player to {position}. Client id {clientNetworkId}. Is host: {IsHost}");
+
         if (IsHost)
         {
             return;
@@ -912,6 +981,7 @@ public class GameManager : NetworkBehaviour
         
         if (!Players.TryGetValue(clientNetworkId, out Player player))
         {
+            BytewarsLogger.LogWarning($"[Client] Unable to reposition player. Player with client id {clientNetworkId} is not found");
             return;
         }
         
@@ -923,6 +993,8 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     public void ResetPlayerClientRpc(ulong clientNetworkId)
     {
+        BytewarsLogger.Log($"[Client] Reset player attributes. Client id: {clientNetworkId}. Is host: {IsHost}");
+
         if (IsHost)
         {
             return;
@@ -930,6 +1002,7 @@ public class GameManager : NetworkBehaviour
         
         if (!Players.TryGetValue(clientNetworkId, out Player player))
         {
+            BytewarsLogger.LogWarning($"[Client] Unable to reset player attributes. Player with client id {clientNetworkId} is not found.");
             return;
         }
         
@@ -939,6 +1012,8 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     public void UpdateScoreClientRpc(PlayerState playerState, PlayerState[] playerStates)
     {
+        BytewarsLogger.LogWarning($"[Client] Update score. Is host: {IsHost}");
+
         if (IsHost)
         {
             return;
@@ -950,6 +1025,8 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     public void UpdateLiveClientRpc(int teamIndex, int lives)
     {
+        BytewarsLogger.LogWarning($"[Client] Update lives. Team index: {teamIndex}. Lives: {lives}. Is host: {IsHost}");
+
         if (IsHost)
         {
             return;
@@ -960,6 +1037,10 @@ public class GameManager : NetworkBehaviour
     
     private void UpdateInGamePlayerState(TeamState[] teamStates, PlayerState[] playerStates)
     {
+        BytewarsLogger.Log(
+            $"Update in-game player states. " +
+            $"Player states: {JsonUtility.ToJson(playerStates)}. Team states: {JsonUtility.ToJson(playerStates)}");
+        
         serverHelper.UpdatePlayerStates(teamStates, playerStates);
         if (SceneManager.GetActiveScene().buildIndex == GameConstant.MenuSceneBuildIndex)
         {
@@ -971,9 +1052,12 @@ public class GameManager : NetworkBehaviour
     
     [ClientRpc]
     public void UpdatePlayerStatesClientRpc(TeamState[] teamStates, PlayerState[] playerStates)
-    {        
+    {
+        BytewarsLogger.LogWarning(
+            $"[Client] Update player states. Is host: {IsHost}. " +
+            $"Team states: {JsonUtility.ToJson(teamStates)}. Player states: {JsonUtility.ToJson(playerStates)}");
+
         serverHelper.UpdatePlayerStates(teamStates, playerStates);
-        //TODO update game clients UI
     }
 
     #endregion
@@ -984,6 +1068,8 @@ public class GameManager : NetworkBehaviour
     public void MissileHitClientRpc(ulong playerClientNetworkId, int missileId, int planetId, 
                                     Vector3 missileExpPos, Quaternion missileExpRot)
     {
+        BytewarsLogger.Log($"[Client] Missile hit client. Client id: {playerClientNetworkId}. Is host: {IsHost}");
+
         if (IsHost)
         {
             return;
@@ -993,26 +1079,41 @@ public class GameManager : NetworkBehaviour
         {
             player.ExplodeMissile(missileId, missileExpPos, missileExpRot);
         }
+        else 
+        {
+            BytewarsLogger.LogWarning($"[Client] Unable to explode player missile. Player with client id {playerClientNetworkId} is not found.");
+        }
         
-        if (planetId > -1 && planets.TryGetValue(planetId, out Planet planet))
+        if (planetId >= 0 && planets.TryGetValue(planetId, out Planet planet))
         {
             planet.OnHitByMissile();
+        }
+        else 
+        {
+            BytewarsLogger.LogWarning($"[Client] Unable to handle on-missile hit planet event. Planet with id {planetId} is not found.");
         }
     }
     
     [ClientRpc]
-    public void MissileSyncClientRpc(ulong playerClientNetworkId, int missileId, Vector3 velocity,
-                                     Vector3 position, Quaternion rotation)
+    public void MissileSyncClientRpc(
+        ulong playerClientNetworkId,
+        int missileId,
+        Vector3 velocity,
+        Vector3 position,
+        Quaternion rotation)
     {
+        BytewarsLogger.Log($"[Client] Missile sync. Client id: {playerClientNetworkId}. Is host: {IsHost}");
+
         if (IsHost)
         {
             return;
         }
         
-        if (Players.TryGetValue(playerClientNetworkId, out Player player))
+        if (!Players.TryGetValue(playerClientNetworkId, out Player player)) 
         {
-            player.SyncMissile(missileId, velocity, position, rotation);
+            BytewarsLogger.LogWarning($"[Client] Unable to sync player missile. Player with client id {playerClientNetworkId} is not found.");
         }
+        player.SyncMissile(missileId, velocity, position, rotation);
     }
 
     #endregion
@@ -1021,15 +1122,16 @@ public class GameManager : NetworkBehaviour
     
     public void StartShutdownCountdown(int countdown)
     {
+        BytewarsLogger.Log($"Start shutdown countdown: {countdown}s");
+
         serverHelper.StartCoroutineCountdown(this,
             countdown, OnLobbyShutdownCountdown);
-
     }
     
     private void OnLobbyShutdownCountdown(int countdownSeconds)
     {
         //no player connected no need to update client UI for lobby shutdown
-        BytewarsLogger.Log($"OnLobbyShutdownCountdown countdown:{countdownSeconds}");
+        BytewarsLogger.Log($"Update lobby shutdown countdown: {countdownSeconds}s");
         if (countdownSeconds <= 0)
         {
             StartCoroutine(reconnect.ShutdownServer(DeregisterServer));
@@ -1038,6 +1140,8 @@ public class GameManager : NetworkBehaviour
     
     public void OnLobbyCountdownServerUpdated(int countdown)
     {
+        BytewarsLogger.Log($"Update lobby countdown: {countdown}s");
+
         UpdateLobbyCountdownClientRpc(countdown);
         if (countdown <= 0)
         {
@@ -1048,13 +1152,15 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void UpdateLobbyCountdownClientRpc(int countdown)
     {
+        BytewarsLogger.Log($"[Client] Update lobby countdown: {countdown}s. Client id: {NetworkManager.Singleton.LocalClientId}. Is host: {IsHost}");
         menuManager.UpdateLobbyCountdown(countdown);
     }
 
     [ClientRpc]
     private void OnStartingGameClientRpc()
     {
-        // Show starting game loading with time out countdown.
+        BytewarsLogger.Log($"[Client] Starting game. Client id: {NetworkManager.Singleton.LocalClientId}. Is host: {IsHost}");
+
         menuManager.CloseMenuPanel();
         ShowTravelingLoading(null, StartingGameMessage);
 
@@ -1067,6 +1173,8 @@ public class GameManager : NetworkBehaviour
 
     private void OnPreGameTimerUpdated(int timerSecond)
     {
+        BytewarsLogger.Log($"Update pre-game countdown: {timerSecond}s");
+
         hud.UpdatePreGameCountdown(timerSecond);
         bool areEnoughPlayersConnected = 
             !IsLocalGame() && 
@@ -1092,6 +1200,8 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void UpdatePreGameCountdownClientRpc(int second)
     {
+        BytewarsLogger.Log($"[Client] Update pre-game countdown: {second}s. Client id: {NetworkManager.Singleton.LocalClientId}. Is host: {IsHost}");
+
         if (IsHost)
         {
             return;
@@ -1102,13 +1212,14 @@ public class GameManager : NetworkBehaviour
 
     private void OnGameTimeUpdated(int remainingGameTime)
     {
+        BytewarsLogger.Log($"Update game time: {remainingGameTime}s");
+
         if (InGameState != InGameState.Playing)
         {
             BytewarsLogger.LogWarning($"Unable to handle update game time event. In-game state is not in {InGameState.Playing} state");
             return;
         }
 
-        BytewarsLogger.Log("Recieved update game time event.");
         gameTimeLeft = remainingGameTime;
         UpdateInGameUI();
 
@@ -1123,19 +1234,22 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void UpdateGameTimeClientRpc(int remainingGameTime)
     {
+        BytewarsLogger.Log($"[Client] Update game time: {remainingGameTime}s");
+
         if (IsHost)
         {
             BytewarsLogger.LogWarning($"[Client] Unable to handle update game time event. The player is a host, abort to handle client RPC.");
             return;
         }
 
-        BytewarsLogger.Log("[Client] Recieved update game time event.");
         gameTimeLeft = remainingGameTime;
         UpdateInGameUI();
     }
     
     private void OnGameOverShutDownCountdown(int countdownSeconds)
     {
+        BytewarsLogger.Log($"Update game over shutdown countdown: {countdownSeconds}");
+
         menuManager.UpdateGameOverCountdown(countdownSeconds);
         GameOverCountdownClientRpc(countdownSeconds);
         
@@ -1149,6 +1263,8 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void GameOverCountdownClientRpc(int seconds)
     {
+        BytewarsLogger.Log($"[Client] Update game over countdown: {seconds}s. Client id: {NetworkManager.Singleton.LocalClientId}. Is host: {IsHost}");
+
         if (IsHost)
         {
             return;
@@ -1159,7 +1275,8 @@ public class GameManager : NetworkBehaviour
     
     private void OnShutdownCountdownUpdate(int countdownSecond)
     {
-        BytewarsLogger.Log("shutdown in " + countdownSecond);
+        BytewarsLogger.Log($"Update shutdown countdown: {countdownSecond}s");
+
         hud.UpdateShutdownCountdown(NotEnoughPlayer, countdownSecond);
         
         if (IsServer)
@@ -1177,6 +1294,8 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void ShutdownClientRpc(int countdownSecond)
     {
+        BytewarsLogger.Log($"[Client] Update shutdown countdown: {countdownSecond}s. Client id: {NetworkManager.Singleton.LocalClientId}. Is host: {IsHost}");
+
         if (IsHost)
         {
             return;
@@ -1185,8 +1304,6 @@ public class GameManager : NetworkBehaviour
         hud.UpdateShutdownCountdown(NotEnoughPlayer, countdownSecond);
         if (countdownSecond <= 0)
         {
-            //TODO clear/reset level
-            //kick player using NetworkManager.Singleton.Shutdown();
             StartCoroutine(QuitToMainMenu());
         }
     }
@@ -1197,6 +1314,8 @@ public class GameManager : NetworkBehaviour
     
     private void OnActiveSceneChanged(Scene current, Scene next)
     {
+        BytewarsLogger.Log($"Active scene changed. Current scene: {current.name}. Next scene: {next.name}");
+
 #if UNITY_SERVER
         if (next.buildIndex == GameConstant.MenuSceneBuildIndex)
         {
@@ -1310,6 +1429,8 @@ public class GameManager : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        BytewarsLogger.Log($"On-network object spawn. Object id: {NetworkObjectId}");
+
         if (IsOwner && !IsServer)
         {
             ClientConnectedServerRpc(NetworkObjectId);
@@ -1345,12 +1466,17 @@ public class GameManager : NetworkBehaviour
     /// <param name="inGameMode"></param>
     /// <param name="isInGameScene"></param>
     [ClientRpc]
-    public void SendConnectedPlayerStateClientRpc(TeamState[] teamStates, PlayerState[] playerStates,
-                                                  InGameMode inGameMode, ServerType serverType, bool isInGameScene)
+    public void SendConnectedPlayerStateClientRpc(
+        TeamState[] teamStates, 
+        PlayerState[] playerStates,
+        InGameMode inGameMode,
+        ServerType serverType,
+        bool isInGameScene)
     {
-        //client side, because the previous playerState only exists in server, clientrpc is called on client
-        BytewarsLogger.Log($"update player state lobby playerStates: {JsonUtility.ToJson(playerStates)} " +
-                           $"teamStates: {JsonUtility.ToJson(teamStates)}");
+        BytewarsLogger.Log(
+            $"[Client] Send connected player state. Is host: {IsHost}. " +
+            $"Player states: {JsonUtility.ToJson(playerStates)}. Team states: {JsonUtility.ToJson(teamStates)}");
+
         serverHelper.UpdatePlayerStates(teamStates, playerStates);
         InGameMode = inGameMode;
         GameData.GameModeSo = availableInGameMode[(int)inGameMode];

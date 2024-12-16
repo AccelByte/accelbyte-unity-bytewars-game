@@ -3,10 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using AccelByte.Core;
-using System;
-using System.Threading.Tasks;
 using Unity.Netcode;
-using UnityEngine;
 
 public class P2PHelper
 {
@@ -23,6 +20,8 @@ public class P2PHelper
         transportManager = networkManager.gameObject.AddComponent<AccelByteNetworkTransportManager>();
         ApiClient apiClient = AccelByteSDK.GetClientRegistry().GetApi();
         transportManager.Initialize(apiClient);
+
+        transportManager.OnTransportEvent += GameManager.Instance.OnTransportEvent;
     }
 
     public static void StartAsHost(InGameMode gameMode, string matchSessionId)
