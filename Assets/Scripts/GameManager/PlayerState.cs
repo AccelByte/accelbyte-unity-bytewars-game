@@ -26,6 +26,13 @@ public class PlayerState : INetworkSerializable
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
+        // Make sure there is no null attributes.
+        playerName = string.IsNullOrEmpty(playerName) ? string.Empty : playerName;
+        sessionId = string.IsNullOrEmpty(sessionId) ? string.Empty : sessionId;
+        playerId = string.IsNullOrEmpty(playerId) ? string.Empty : playerId;
+        avatarUrl = string.IsNullOrEmpty(avatarUrl) ? string.Empty : avatarUrl;
+        platformId = string.IsNullOrEmpty(platformId) ? string.Empty : platformId;
+
         serializer.SerializeValue(ref playerName);
         serializer.SerializeValue(ref playerIndex);
         serializer.SerializeValue(ref numMissilesFired);

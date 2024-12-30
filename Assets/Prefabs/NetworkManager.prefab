@@ -10,8 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 2449408307448749106}
   - component: {fileID: 2449408307448749069}
-  - component: {fileID: 2449408307448749068}
   - component: {fileID: 2449408307448749107}
+  - component: {fileID: 5611956972451546610}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -26,6 +26,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2449408307448749071}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -33,7 +34,6 @@ Transform:
   m_Children:
   - {fileID: 2449408307580141109}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2449408307448749069
 MonoBehaviour:
@@ -49,7 +49,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   NetworkConfig:
     ProtocolVersion: 0
-    NetworkTransport: {fileID: 2449408307448749068}
+    NetworkTransport: {fileID: 5611956972451546610}
     PlayerPrefab: {fileID: 3985615991387723166, guid: 37707021d2a00e143b78611cd1ce4bc4,
       type: 3}
     Prefabs:
@@ -71,34 +71,7 @@ MonoBehaviour:
     EnableNetworkLogs: 1
     OldPrefabList: []
   RunInBackground: 1
-  LogLevel: 0
---- !u!114 &2449408307448749068
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2449408307448749071}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6960e84d07fb87f47956e7a81d71c4e6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_ProtocolType: 0
-  m_MaxPacketQueueSize: 128
-  m_MaxPayloadSize: 6144
-  m_HeartbeatTimeoutMS: 500
-  m_ConnectTimeoutMS: 1000
-  m_MaxConnectAttempts: 60
-  m_DisconnectTimeoutMS: 30000
-  ConnectionData:
-    Address: 127.0.0.1
-    Port: 7778
-    ServerListenAddress: 127.0.0.1
-  DebugSimulator:
-    PacketDelayMS: 0
-    PacketJitterMS: 0
-    PacketDropRate: 0
+  LogLevel: 1
 --- !u!114 &2449408307448749107
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -111,6 +84,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: efabd5ea2839d2745a1fd686b186ae8d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &5611956972451546610
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2449408307448749071}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54618226c9df54608af7731199ed5f0b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ConnectAddress: 127.0.0.1
+  Path: /netcode
+  Port: 7777
+  SecureConnection: 0
+  AllowForwardedRequest: 0
+  CertificateBase64String: 
 --- !u!1 &2449408307580141108
 GameObject:
   m_ObjectHideFlags: 0
@@ -135,13 +126,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2449408307580141108}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2449408307448749106}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2449408307580141114
 MonoBehaviour:

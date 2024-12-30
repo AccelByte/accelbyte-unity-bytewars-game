@@ -10,6 +10,12 @@ public static class TutorialModuleUtil
 {
     private static bool? overrideDedicatedServerVersion = null;
 
+    public struct Proxy 
+    {
+        public string Url;
+        public string Path;
+    }
+
     public static bool IsAccelbyteSDKInstalled()
     {
         List<string> types = (from assembly in AppDomain.CurrentDomain.GetAssemblies() from type in assembly.GetTypes() where type.Name.Contains("AccelByte") select type.Name).ToList();
@@ -89,5 +95,36 @@ public static class TutorialModuleUtil
         }
 
         return overrideDedicatedServerVersion.Value;
+    }
+
+    public static Proxy GetProxy()
+    {
+        const string proxyUrlParam = "-ProxyUrl=";
+        const string proxyPathParam = "-ProxyPath=";
+
+        // Get from launch parameter first.
+        string proxyUrl = GetLaunchParamValue(proxyUrlParam);
+        string proxyPath = GetLaunchParamValue(proxyPathParam);
+
+        // Get from config file if laucnh params are empty.
+        if (ConfigurationReader.Config != null) 
+        {
+            if (string.IsNullOrEmpty(proxyUrl)) 
+            {
+                proxyUrl = ConfigurationReader.Config.multiplayerDSConfiguration.proxyUrl;
+            }
+            if (string.IsNullOrEmpty(proxyPath)) 
+            {
+                proxyPath = ConfigurationReader.Config.multiplayerDSConfiguration.proxyPath;
+            }
+        }
+        
+        BytewarsLogger.Log($"Proxy Url is set to {proxyUrl} and its path is set to {proxyPath}");
+
+        return new Proxy
+        {
+            Url = proxyUrl,
+            Path = proxyPath
+        };
     }
 }

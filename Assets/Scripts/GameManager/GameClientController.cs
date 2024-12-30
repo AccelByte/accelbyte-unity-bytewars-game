@@ -274,9 +274,14 @@ public class GameClientController : NetworkBehaviour
             playerState.playerName = clientPlayerState.playerName;
             playerState.playerId = clientPlayerState.playerId;
 
-            gameManager.UpdatePlayerStatesClientRpc(
-                gameManager.ConnectedTeamStates.Values.ToArray(),
-                gameManager.ConnectedPlayerStates.Values.ToArray());
+            // This function is called on network object spawn.
+            // Thus, only broadcast the player state changes if the request was from client.
+            if (NetworkManager.Singleton.IsServer && NetworkManager.Singleton.LocalClientId != clientNetworkId) 
+            {
+                gameManager.UpdatePlayerStatesClientRpc(
+                    gameManager.ConnectedTeamStates.Values.ToArray(),
+                    gameManager.ConnectedPlayerStates.Values.ToArray());
+            }
         }
     }
     

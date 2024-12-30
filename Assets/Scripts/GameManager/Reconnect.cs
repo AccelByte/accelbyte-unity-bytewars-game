@@ -1,24 +1,29 @@
-﻿using System;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
+using Netcode.Transports.WebSocket;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class Reconnect : MonoBehaviour
 {
-    public void ConnectAsClient(UnityTransport unityTransport, string address, ushort port,
+    public void ConnectAsClient(
+        WebSocketTransport networkTransport, 
+        string address, 
+        ushort port,
         InitialConnectionData initialConnectionData)
     {
-        if (unityTransport)
+        if (networkTransport)
         {
-            SetNetworkManagerData(unityTransport, address, port, initialConnectionData);
+            BytewarsLogger.Log($"Starting client to connect to {address}:{port}");
+            SetNetworkManagerData(networkTransport, address, port, initialConnectionData);
             NetworkManager.Singleton.StartClient();
-            BytewarsLogger.Log($"start as client connect to {address}:{port}");
-            //after called StartClient() NetworkManager will call OnClientConnected if the client connected to server successfully
-            //TODO set error connect to server callback
         }
         else
         {
@@ -26,23 +31,56 @@ public class Reconnect : MonoBehaviour
         }
     }
 
-    private void SetNetworkManagerData(UnityTransport unityTransport, string address, ushort port,
+    private void SetNetworkManagerData(
+        WebSocketTransport networkTransport, 
+        string address, 
+        ushort port,
         InitialConnectionData initialConnectionData)
     {
-        unityTransport.ConnectionData.Address = address;
-        unityTransport.ConnectionData.Port = port;
-        unityTransport.MaxConnectAttempts = GameConstant.MaxConnectAttemptsSec;
-        var connectionData = GameUtility.ToByteArray(initialConnectionData);
-        NetworkManager.Singleton.NetworkConfig.ConnectionData = connectionData;
-        NetworkManager.Singleton.NetworkConfig.NetworkTransport = unityTransport;
-    }
-    public void StartAsHost(UnityTransport unityTransport, string address, ushort port,
-        InitialConnectionData initialConnectionData)
-    {
-        if (unityTransport)
+        if (!networkTransport) 
         {
-            unityTransport.ConnectionData.ServerListenAddress = "0.0.0.0";
-            SetNetworkManagerData(unityTransport, address, port, initialConnectionData);
+            BytewarsLogger.LogWarning("Failed to set network manager data. Network transport is null.");
+            return;
+        }
+
+        // Enable secure websocket connection (WSS) and proxy only for packaged WebGL build.
+        bool isRequireSecureConnection = false;
+#if (UNITY_WEBGL && !UNITY_EDITOR)
+        isRequireSecureConnection = true;
+#endif
+
+        TutorialModuleUtil.Proxy proxy = TutorialModuleUtil.GetProxy();
+        string proxyUrl = proxy.Url;
+        string proxyPath = proxy.Path.Replace("{server_ip}", address).Replace("{server_port}", port.ToString());
+
+        // If require secure connection but the proxy is empty, abort to use secure connection.
+        if (isRequireSecureConnection && (string.IsNullOrEmpty(proxyUrl) || string.IsNullOrEmpty(proxyPath))) 
+        {
+            BytewarsLogger.LogWarning("Failed to enable secure WebSocket connection (WSS). The proxy setting is empty.");
+            isRequireSecureConnection = false;
+        }
+
+        networkTransport.ConnectAddress = isRequireSecureConnection ? proxyUrl : address;
+        networkTransport.Path = isRequireSecureConnection ? proxyPath : "/";
+        networkTransport.Port = isRequireSecureConnection ? (ushort)443 : port;
+        networkTransport.SecureConnection = isRequireSecureConnection;
+        networkTransport.AllowForwardedRequest = true;
+        networkTransport.CertificateBase64String = string.Empty;
+        
+        byte[] connectionData = GameUtility.ToByteArray(initialConnectionData);
+        NetworkManager.Singleton.NetworkConfig.ConnectionData = connectionData;
+        NetworkManager.Singleton.NetworkConfig.NetworkTransport = networkTransport;
+    }
+
+    public void StartAsHost(
+        WebSocketTransport networkTransport, 
+        string address, 
+        ushort port,
+        InitialConnectionData initialConnectionData)
+    {
+        if (networkTransport)
+        {
+            SetNetworkManagerData(networkTransport, address, port, initialConnectionData);
             NetworkManager.Singleton.StartHost();
         }
         else
@@ -197,6 +235,8 @@ public class Reconnect : MonoBehaviour
             NetworkManager.Singleton.IsClient &&
             !NetworkManager.Singleton.ShutdownInProgress)
         {
+            BytewarsLogger.LogWarning($"Disconnect gracefully.");
+
             NetworkManager.Singleton.Shutdown();
             yield return new WaitUntil(() => !NetworkManager.Singleton.ShutdownInProgress);
         }
@@ -221,6 +261,8 @@ public class Reconnect : MonoBehaviour
             NetworkManager.Singleton.IsServer &&
             !NetworkManager.Singleton.ShutdownInProgress)
         {
+            BytewarsLogger.Log($"Shutting down server");
+            
             NetworkManager.Singleton.Shutdown();
             yield return new WaitUntil(() => !NetworkManager.Singleton.ShutdownInProgress);
             onServerShutdownFinished?.Invoke();

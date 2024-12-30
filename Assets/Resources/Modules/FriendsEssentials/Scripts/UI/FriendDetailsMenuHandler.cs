@@ -212,6 +212,11 @@ public class FriendDetailsMenuHandler : MenuCanvas
     private void UpdatePartyButtons()
     {
         bool partyEssentialsActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.PartyEssentials);
+        if (!partyEssentialsActive || authEssentialsWrapper.UserData == null)
+        {
+            return;
+        }
+
         bool selfPartyLeader = authEssentialsWrapper.UserData.user_id == PartyHelper.CurrentLeaderUserId;
         bool partyLeader = UserId == PartyHelper.CurrentLeaderUserId;
         bool inParty = PartyHelper.PartyMembersData.Any(data => data.UserId == UserId);

@@ -10,42 +10,22 @@ using UnityEngine;
 public class ConnectionHelper
 {
     private static int ServerClaimedMaxWaitSec = 7;
-    public async Task<ConnectionApprovalResult> ConnectionApproval(NetworkManager.ConnectionApprovalRequest request,
-        NetworkManager.ConnectionApprovalResponse response, bool isServer, 
-        InGameState inGameState, GameModeSO[] availableInGameMode, InGameMode inGameMode,
+    public ConnectionApprovalResult ConnectionApproval(
+        NetworkManager.ConnectionApprovalRequest request,
+        NetworkManager.ConnectionApprovalResponse response, 
+        bool isServer, 
+        InGameState inGameState, 
+        GameModeSO[] availableInGameMode, 
+        InGameMode inGameMode, 
         ServerHelper serverHelper)
     {
         ConnectionApprovalResult result = null;
         InitialConnectionData initialData = GameUtility.FromByteArray<InitialConnectionData>(request.Payload);
-
+        
         int clientRequestedGameModeIndex = (int)initialData.inGameMode;
         BytewarsLogger.Log($"ConnectionApprovalCallback IsServer:{isServer} requested game mode:{clientRequestedGameModeIndex} clientNetworkId{request.ClientNetworkId}");
-        
+
         bool isNewPlayer = string.IsNullOrEmpty(initialData.sessionId);
-
-        if (isNewPlayer && inGameState != InGameState.None)
-        {
-            string reason = "Server claimed event is not received in time.";
-            RejectConnection(response, reason);
-            return null;
-        }
-
-        // Reject the player if the player tried to connect but server has not yet claimed.
-        int serverWaitSec = 0;
-        while(string.IsNullOrEmpty(GameData.ServerSessionID))
-        {
-            BytewarsLogger.Log("Waiting DS to be claimed but player already try to connect");
-            
-            await Task.Delay(1000);
-            serverWaitSec++;
-            
-            if(serverWaitSec>=ServerClaimedMaxWaitSec)
-            {
-                string reason = $"Invalid session id between client's session id ({initialData.serverSessionId}) and server's session id ({GameData.ServerSessionID})";
-                RejectConnection(response, reason);
-                return null;
-            }
-        }
 
         // Reject the player if the player and server have mismatch session id.
         if (isNewPlayer &&
@@ -129,20 +109,21 @@ public class ConnectionHelper
             }
         }
 
-        //TODO verify client against IAM services before approving
-        //spawns player controller
+        // Approve connection
         response.CreatePlayerObject = true;
         response.Approved = true;
         response.Pending = false;
         return result;
     }
 
-    private void RejectConnection(NetworkManager.ConnectionApprovalResponse response, string reason)
+    private void RejectConnection(
+        NetworkManager.ConnectionApprovalResponse response, 
+        string reason)
     {
+        BytewarsLogger.Log($"Reject client connection with reason: {reason}");
         response.Reason = reason;
         response.Approved = false;
         response.Pending = false;
-        BytewarsLogger.Log(reason);
     }
     
 }

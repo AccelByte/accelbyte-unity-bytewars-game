@@ -7,8 +7,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
+using Netcode.Transports.WebSocket;
 using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -59,10 +59,11 @@ public class GameManager : NetworkBehaviour
     private readonly ConnectionHelper connectionHelper = new();
     private readonly ServerHelper serverHelper = new();
     private readonly ClientHelper clientHelper = new();
-    
+    private HashSet<ulong> clientsInGame = new HashSet<ulong>();
+
     private GameModeEnum gameMode = GameModeEnum.MainMenu;
     private List<Vector3> availablePositions;
-    private UnityTransport unityTransport;
+    private WebSocketTransport networkTransport;
     private DebugImplementation debug;
     private MenuManager menuManager;
     private int gameTimeLeft;
@@ -119,11 +120,10 @@ public class GameManager : NetworkBehaviour
         NetworkManager.Singleton.LogLevel = LogLevel.Developer;
 
         SceneManager.activeSceneChanged += OnActiveSceneChanged;
-
-        if (unityTransport == null)
+        if (networkTransport == null)
         {
-            unityTransport = (UnityTransport)NetworkManager.Singleton.NetworkConfig.NetworkTransport;
-            unityTransport.OnTransportEvent += OnTransportEvent;
+            networkTransport = (WebSocketTransport)NetworkManager.Singleton.NetworkConfig.NetworkTransport;
+            networkTransport.OnTransportEvent += OnTransportEvent;
         }
 
 #if UNITY_SERVER
@@ -252,6 +252,7 @@ public class GameManager : NetworkBehaviour
         gameMode = GameModeEnum.MainMenu;
         InGameMode = InGameMode.None;
         connectedClients.Clear();
+        clientsInGame.Clear();
         serverHelper.Reset();
     }
 
@@ -283,7 +284,7 @@ public class GameManager : NetworkBehaviour
 
     private void OnClientStopped(bool isHostStopped)
     {
-        BytewarsLogger.Log($"Client stopped. Is host {isHostStopped}");
+        BytewarsLogger.Log($"Client stopped. Is host: {isHostStopped}"); 
 
         if (isHostStopped) 
         {
@@ -296,23 +297,23 @@ public class GameManager : NetworkBehaviour
 
     private void StartServer()
     {
-        if (!unityTransport)
+        if (!networkTransport)
         {
+            BytewarsLogger.Log("Failed to start server. Network transport is null.");
             return;
         }
 
         GameData.ServerType = ServerType.OnlineDedicatedServer;
 
-        unityTransport.ConnectionData.Address = ConnectionHandler.GetLocalIPAddress();
-        unityTransport.ConnectionData.Port = ConnectionHandler.GetPort();
-        unityTransport.ConnectionData.ServerListenAddress = "0.0.0.0";
+        networkTransport.ConnectAddress = ConnectionHandler.GetLocalIPAddress();
+        networkTransport.Path = "/";
+        networkTransport.Port = ConnectionHandler.GetPort();
+        networkTransport.SecureConnection = false;
+        networkTransport.AllowForwardedRequest = true;
+        networkTransport.CertificateBase64String = string.Empty;
 
+        BytewarsLogger.Log($"Starting server on {networkTransport.ConnectAddress}:{networkTransport.Port}");
         NetworkManager.Singleton.StartServer();
-        NetworkManager.SceneManager.OnSceneEvent += OnNetworkSceneEvent;
-
-        BytewarsLogger.Log("Server Address: " + unityTransport.ConnectionData.ServerListenAddress.ToString());
-        BytewarsLogger.Log("Server Port: " + unityTransport.ConnectionData.Port.ToString());
-        BytewarsLogger.Log("server started");
     }
     
     /// <summary>
@@ -321,16 +322,16 @@ public class GameManager : NetworkBehaviour
     /// <param name="clientNetworkId"></param>
     private void OnClientConnected(ulong clientNetworkId)
     {
-        BytewarsLogger.Log($"Client is connected. Client id: {clientNetworkId}");
+        BytewarsLogger.Log($"Client connected. Client id: {clientNetworkId}");
 
-        reconnect.OnClientConnected(
-            clientNetworkId, IsOwner, IsServer, IsClient, IsHost, serverHelper,
-            InGameMode, connectedClients, InGameState, GameData.ServerType, 
-            Players, gameTimeLeft, clientHelper);
+        reconnect.OnClientConnected(clientNetworkId, IsOwner, IsServer, IsClient, IsHost, serverHelper,
+                                    InGameMode, connectedClients, InGameState, GameData.ServerType, Players, gameTimeLeft, clientHelper);
     }
 
     private void OnClientDisconnected(ulong clientNetworkId)
     {
+        BytewarsLogger.Log($"Client disconnected. Client id: {clientNetworkId}");
+
         string reason = string.Empty;
         int activeSceneBuildIndex = SceneManager.GetActiveScene().buildIndex;
         bool isInMenuScene = activeSceneBuildIndex == GameConstant.MenuSceneBuildIndex;
@@ -385,6 +386,11 @@ public class GameManager : NetworkBehaviour
                 // Start the in-game countdown to shut down the server if the required active team is not met.
                 if (serverHelper.GetActiveTeamsCount() <= GameData.GameModeSo.minimumTeamCountToPlay)
                 {
+                    BytewarsLogger.Log(
+                        $"Shutting down due to minimum team not fulfilled. " +
+                        $"Current active team count: {serverHelper.GetActiveTeamsCount()}. " +
+                        $"Minimum team required: {GameData.GameModeSo.minimumTeamCountToPlay}");
+
                     SetInGameState(InGameState.ShuttingDown);
                 }
             }
@@ -438,30 +444,31 @@ public class GameManager : NetworkBehaviour
     /// </summary>
     /// <param name="request">client information</param>
     /// <param name="response">set whether the client is allowed to connect or not</param>
-    private async void ConnectionApprovalCallback(
+    private void ConnectionApprovalCallback(
         NetworkManager.ConnectionApprovalRequest request,
         NetworkManager.ConnectionApprovalResponse response)
     {
-        ConnectionApprovalResult result = await connectionHelper.ConnectionApproval(
-            request, response, IsServer,
-            InGameState, availableInGameMode, InGameMode, serverHelper);
+        BytewarsLogger.Log($"Start connection approval for {request.ClientNetworkId}");
 
-        BytewarsLogger.Log(
-            $"Client connection approval callback. " +
-            $"Client id: {request.ClientNetworkId}. Is approved: {response.Approved}. Rejected message: {response.Reason}.");
+        ConnectionApprovalResult result = 
+            connectionHelper.ConnectionApproval(request, response, IsServer, InGameState, availableInGameMode, InGameMode, serverHelper);
+
+        BytewarsLogger.Log($"Is {request.ClientNetworkId} connection approved: {response.Approved}. Reason: {response.Reason}");
 
         if (result == null)
         {
             BytewarsLogger.Log("Failed to handle connection approval result. The result is null.");
             return;
         }
-        
+
+        // Setup initial game data.
         if (InGameMode == InGameMode.None)
         {
             InGameMode = result.InGameMode;
             GameData.GameModeSo = result.GameModeSo;
         }
-        
+
+        // Add reconnect player.
         if (result.reconnectPlayer != null)
         {
             Players.TryAdd(request.ClientNetworkId, result.reconnectPlayer);
@@ -1187,7 +1194,8 @@ public class GameManager : NetworkBehaviour
                 SetInGameState(InGameState.Playing);
                 return;
             }
-            
+
+            BytewarsLogger.LogWarning($"On pre-game countdown over. Is enough player: {areEnoughPlayersConnected}");
             SetInGameState(areEnoughPlayersConnected ? InGameState.Playing : InGameState.ShuttingDown);
         }
         
@@ -1314,15 +1322,28 @@ public class GameManager : NetworkBehaviour
     
     private void OnActiveSceneChanged(Scene current, Scene next)
     {
-        BytewarsLogger.Log($"Active scene changed. Current scene: {current.name}. Next scene: {next.name}");
+        BytewarsLogger.Log($"Active scene changed. Current scene: {current.name}:{current.buildIndex}. Next scene: {next.name}:{next.buildIndex}");
 
 #if UNITY_SERVER
-        if (next.buildIndex == GameConstant.MenuSceneBuildIndex)
+        switch(next.buildIndex) 
         {
-            //TODO: ADD server shutdown
-            // Debug.Log("server shutdown");
-            NetworkManager.Singleton.Shutdown();
-            DeregisterServer();
+            case GameConstant.GameSceneBuildIndex:
+                // Setup game.
+                if (InGameState == InGameState.None)
+                {
+                    BytewarsLogger.Log("Game secene loaded. Setup game.");
+                    OnRejectBackfill?.Invoke();
+                    menuManager.CloseMenuPanel();
+                    Pool ??= new ObjectPooling(container, gamePrefabs, fxPrefabs);
+                    SetupGame();
+                }
+                break;
+            case GameConstant.MenuSceneBuildIndex:
+                // Shutdown server when game ends (e.g. when back to Main Menu).
+                BytewarsLogger.Log("Server returned to main menu. Shutting down.");
+                NetworkManager.Singleton.Shutdown();
+                DeregisterServer();
+                return;
         }
 #else
         switch (next.buildIndex)
@@ -1333,7 +1354,6 @@ public class GameManager : NetworkBehaviour
                 menuManager.CloseMenuPanel();
                 SetupGame();
                 break;
-
             case GameConstant.MenuSceneBuildIndex:
                 SetInGameState(InGameState.None);
                 hud.gameObject.SetActive(false);
@@ -1342,43 +1362,30 @@ public class GameManager : NetworkBehaviour
                 break;
         }
 #endif
-    }
-    
-    private void OnNetworkSceneEvent(SceneEvent sceneEvent)
-    {
-        bool isServer = sceneEvent.ClientId.Equals(NetworkManager.ServerClientId);
-        bool isGameScene = !string.IsNullOrEmpty(sceneEvent.SceneName) && sceneEvent.SceneName.Equals(GameConstant.GameSceneName);
 
-        BytewarsLogger.Log($"OnNetworkSceneEvent isServer:{isServer} type {sceneEvent.SceneEventType} " +
-                           $"isGameScene:{isGameScene} clientId:{sceneEvent.ClientId}");
-        
-        if (!isServer)
+        if (!IsDedicatedServer) 
         {
-            return;
-        }
-        
-        if (!isGameScene)
-        {
-            return;
-        }
-        
-        if (sceneEvent.SceneEventType == SceneEventType.LoadComplete)
-        {
-            OnRejectBackfill?.Invoke();
-            menuManager.CloseMenuPanel();
-            Pool ??= new ObjectPooling(container, gamePrefabs, fxPrefabs);
-            SetupGame();
-        }
-        
-        if (sceneEvent.SceneEventType == SceneEventType.LoadEventCompleted && AllClientsSceneLoaded(sceneEvent))
-        {
-            SetInGameState(InGameState.PreGameCountdown);
+            OnClientActiveSceneChangedServerRpc(NetworkManager.Singleton.LocalClientId, current.buildIndex, next.buildIndex);
         }
     }
-    
-    private bool AllClientsSceneLoaded(SceneEvent sceneEvent)
+
+    [ServerRpc(RequireOwnership = false)]
+    private void OnClientActiveSceneChangedServerRpc(ulong clientNetworkId, int currentSceneBuildIndex, int nextSceneBuildIndex) 
     {
-        return connectedClients.Count == sceneEvent.ClientsThatCompleted.Count;
+        // Start game when all clients are in the game scene.
+        if (nextSceneBuildIndex == GameConstant.GameSceneBuildIndex) 
+        {
+            if (connectedClients.Keys.Contains(clientNetworkId))
+            {
+                clientsInGame.Add(clientNetworkId);
+            }
+
+            if (connectedClients.Count == clientsInGame.Count)
+            {
+                BytewarsLogger.Log("All clients are loaded. Starting game.");
+                SetInGameState(InGameState.PreGameCountdown);
+            }
+        }
     }
     
     public void ShowTravelingLoading(Action onComplete, string loadingMessage = "")
@@ -1391,24 +1398,29 @@ public class GameManager : NetworkBehaviour
         Coroutine travelingCoroutine = StartCoroutine(OnShowTravelingLoading(onComplete));
 
         // Show traveling loading with time out countdown.
-        MenuManager.Instance.ShowLoading(
-            loadingMessage,
-            new LoadingTimeoutInfo()
-            {
-                Info = "Time out in ",
-                TimeoutReachedError = "Failed to travel to the the server or host. Connection time out.",
-                TimeoutSec = TravelingTimeOut
-            },
-            () =>
-            {
-                if (travelingCoroutine != null)
+        if (!IsDedicatedServer) 
+        {
+            MenuManager.Instance.ShowLoading(
+                loadingMessage,
+                new LoadingTimeoutInfo()
                 {
-                    StopCoroutine(travelingCoroutine);
-                }
+                    Info = "Time out in ",
+                    TimeoutReachedError = "Failed to travel to the the server or host. Connection time out.",
+                    TimeoutSec = TravelingTimeOut
+                },
+                () =>
+                {
+                    BytewarsLogger.LogWarning($"Shutting down due to traveling time out");
 
-                NetworkManager.Singleton.Shutdown();
-            },
-            false);
+                    if (travelingCoroutine != null)
+                    {
+                        StopCoroutine(travelingCoroutine);
+                    }
+
+                    NetworkManager.Singleton.Shutdown();
+                },
+                false);
+        }
     }
 
     private IEnumerator OnShowTravelingLoading(Action onComplete) 
@@ -1420,12 +1432,6 @@ public class GameManager : NetworkBehaviour
     #endregion
 
     #region Network Management
-    
-    public static void StartListenNetworkSceneEvent()
-    {
-        NetworkManager.Singleton.SceneManager.OnSceneEvent -= Instance.OnNetworkSceneEvent;
-        NetworkManager.Singleton.SceneManager.OnSceneEvent += Instance.OnNetworkSceneEvent;
-    }
 
     public override void OnNetworkSpawn()
     {
@@ -1446,7 +1452,7 @@ public class GameManager : NetworkBehaviour
             sessionId = null
         };
 
-        reconnect.ConnectAsClient(unityTransport, address, port, initialData);
+        reconnect.ConnectAsClient(networkTransport, address, port, initialData);
     }
     
     public void StartAsHost(string address, ushort port, InGameMode inGameMode, string serverSessionId)
@@ -1454,8 +1460,7 @@ public class GameManager : NetworkBehaviour
         
         var initialData = new InitialConnectionData()
             { inGameMode = inGameMode, serverSessionId = serverSessionId };
-        reconnect.StartAsHost(unityTransport, address, port, initialData);
-        NetworkManager.Singleton.SceneManager.OnSceneEvent += OnNetworkSceneEvent;
+        reconnect.StartAsHost(networkTransport, address, port, initialData);
     }
     
     /// <summary>
@@ -1498,7 +1503,7 @@ public class GameManager : NetworkBehaviour
     
     public void StartAsClient(string address, ushort port, InitialConnectionData initialConnectionData)
     {
-        reconnect.ConnectAsClient(unityTransport, address, port, initialConnectionData);
+        reconnect.ConnectAsClient(networkTransport, address, port, initialConnectionData);
     }
 
     #endregion

@@ -26,7 +26,7 @@ public class P2PHelper
 
     public static void StartAsHost(InGameMode gameMode, string matchSessionId)
     {
-        GameManager.Instance.ShowTravelingLoading(() => 
+        GameManager.Instance.ShowTravelingLoading(() =>
         {
             BytewarsLogger.Log($"Start P2P Host");
 
@@ -35,8 +35,7 @@ public class P2PHelper
 
             SetP2PNetworkTransport(gameMode, matchSessionId);
             networkManager.StartHost();
-
-            GameManager.StartListenNetworkSceneEvent();
+            BytewarsLogger.Log($"Start P2P Host");
         });
     }
 
@@ -44,14 +43,13 @@ public class P2PHelper
     {
         GameManager.Instance.ShowTravelingLoading(() =>
         {
-            BytewarsLogger.Log($"Start P2P Client hostUserId: {hostUserId}");
-
             GameManager.Instance.ResetCache();
             GameData.ServerType = ServerType.OnlinePeer2Peer;
 
             SetP2PNetworkTransport(gameMode, matchSessionId);
             transportManager.SetTargetHostUserId(hostUserId);
             networkManager.StartClient();
+            BytewarsLogger.Log($"Start P2P Client hostUserId: {hostUserId}");
         });
     }
 

@@ -374,8 +374,10 @@ public class SteamConfiguration
 [Serializable]
 public class MultiplayerDSConfiguration
 {
-    public bool isServerUseAMS;
-    public bool overrideDSVersion;
+    public bool isServerUseAMS = false;
+    public bool overrideDSVersion = false;
+    public string proxyUrl = string.Empty;
+    public string proxyPath = string.Empty;
 }
 
 [Serializable]
