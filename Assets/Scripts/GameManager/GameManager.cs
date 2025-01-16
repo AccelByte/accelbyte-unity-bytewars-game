@@ -1119,6 +1119,7 @@ public class GameManager : NetworkBehaviour
         if (!Players.TryGetValue(playerClientNetworkId, out Player player)) 
         {
             BytewarsLogger.LogWarning($"[Client] Unable to sync player missile. Player with client id {playerClientNetworkId} is not found.");
+            return;
         }
         player.SyncMissile(missileId, velocity, position, rotation);
     }

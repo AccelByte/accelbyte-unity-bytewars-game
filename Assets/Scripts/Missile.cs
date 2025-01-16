@@ -185,7 +185,8 @@ public class Missile : GameEntityAbs
         transform.position += velocity * deltaTime; 
         transform.rotation = Quaternion.LookRotation(velocity, Vector3.forward) * Quaternion.AngleAxis(90f, Vector3.right);
 
-        if (isOnServer)
+        // Sync the missile to other players if the missile has valid owner.
+        if (isOnServer && owningPlayerState != null)
         {
             syncMissileTimer += Time.deltaTime;
 

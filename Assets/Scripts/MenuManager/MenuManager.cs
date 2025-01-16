@@ -413,6 +413,13 @@ public class MenuManager : MonoBehaviour
         
         foreach (MenuCanvas menuCanvas in mainMenuConfig.otherMenuCanvas)
         {
+            /* The Main Menu config may contains Tutorial Module UI assets and those asset IDs are persistently saved.
+             * If the those assets does not exists (e.g. core game does not have Tutorial Modules), then do not initiate the UI. */
+            if (menuCanvas == null) 
+            {
+                continue;
+            }
+
             MenuCanvas otherCoreMenu = Instantiate(menuCanvas, transform);
             otherCoreMenu.gameObject.SetActive(false);
             string gameObjectName = menuCanvas.gameObject.name;
