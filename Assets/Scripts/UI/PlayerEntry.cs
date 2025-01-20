@@ -1,45 +1,45 @@
-using System;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class PlayerEntry : MonoBehaviour
 {
-    [SerializeField] private Image shipAvatar;
-
-    [SerializeField] private TextMeshProUGUI shipName;
     [SerializeField] private Image playerAvatar;
-    private string avatarUrl;
+    [SerializeField] private TextMeshProUGUI playerName;
+    
+    private string avatarURL;
+    private readonly Vector2 centerPivot = new Vector2(0.5f, 0.5f);
 
     public void Set(TeamState teamState, PlayerState playerState, bool isCurrentPlayer)
     {
-        shipAvatar.color = teamState.teamColour;
-        shipName.color = teamState.teamColour;
-        var playerName = playerState.GetPlayerName();
-        if (isCurrentPlayer)
-        {
-            shipName.text = $"You: {playerName}";
-        }
-        else
-        {
-            shipName.text = playerName;
-        }
+        string playerName = playerState.GetPlayerName();
+        this.playerName.text = isCurrentPlayer ? $"{playerName} (You)" : playerName;
 
-        avatarUrl = playerState.avatarUrl;
+        avatarURL = playerState.avatarUrl;
+
+        this.playerName.color = teamState.teamColour;
+        playerAvatar.color = teamState.teamColour;
     }
-    private readonly Vector2 _centerPivot = new Vector2(0.5f, 0.5f);
+    
     private void OnEnable()
     {
-        if (!String.IsNullOrEmpty(avatarUrl))
+        if (!string.IsNullOrEmpty(avatarURL))
         {
-            var sizeDelta = playerAvatar.rectTransform.sizeDelta;
-            var imageWidth = (int)sizeDelta.x;
-            var imageHeight = (int)sizeDelta.y;
-            CacheHelper.LoadTexture(avatarUrl, imageWidth, imageHeight, texture =>
+            Vector2 sizeDelta = playerAvatar.rectTransform.sizeDelta;
+            int imageWidth = (int)sizeDelta.x;
+            int imageHeight = (int)sizeDelta.y;
+
+            CacheHelper.LoadTexture(avatarURL, imageWidth, imageHeight, texture =>
             {
-                if(texture!=null)
-                    playerAvatar.sprite = 
-                        Sprite.Create(texture, new Rect(0,0,texture.width,texture.height), _centerPivot);
+                if (texture != null)
+                {
+                    playerAvatar.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), centerPivot);
+                    playerAvatar.color = Color.white;
+                }
             });
         }
     }

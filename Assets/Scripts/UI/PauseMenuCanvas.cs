@@ -55,5 +55,6 @@ public class PauseMenuCanvas : MenuCanvas
     public void DisableRestartBtn()
     {
         isRestartBtnShown = false;
+        restartBtn.gameObject.SetActive(false);
     }
 }

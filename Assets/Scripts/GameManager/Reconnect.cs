@@ -1,53 +1,91 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
+using Netcode.Transports.WebSocket;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class Reconnect : MonoBehaviour
 {
-    public void ConnectAsClient(UnityTransport unityTransport, string address, ushort port,
+    public void ConnectAsClient(
+        WebSocketTransport networkTransport, 
+        string address, 
+        ushort port,
         InitialConnectionData initialConnectionData)
     {
-        if (unityTransport)
+        if (networkTransport)
         {
-            SetNetworkManagerData(unityTransport, address, port, initialConnectionData);
+            BytewarsLogger.Log($"Starting client to connect to {address}:{port}");
+            SetNetworkManagerData(networkTransport, address, port, initialConnectionData);
             NetworkManager.Singleton.StartClient();
-            BytewarsLogger.Log($"start as client connect to {address}:{port}");
-            //after called StartClient() NetworkManager will call OnClientConnected if the client connected to server successfully
-            //TODO set error connect to server callback
         }
         else
         {
-            BytewarsLogger.LogWarning("can't start as client, unity transport is null");
+            BytewarsLogger.LogWarning("Cannot start as client, unity transport is null");
         }
     }
 
-    private void SetNetworkManagerData(UnityTransport unityTransport, string address, ushort port,
+    private void SetNetworkManagerData(
+        WebSocketTransport networkTransport, 
+        string address, 
+        ushort port,
         InitialConnectionData initialConnectionData)
     {
-        unityTransport.ConnectionData.Address = address;
-        unityTransport.ConnectionData.Port = port;
-        unityTransport.MaxConnectAttempts = GameConstant.MaxConnectAttemptsSec;
-        var connectionData = GameUtility.ToByteArray(initialConnectionData);
-        NetworkManager.Singleton.NetworkConfig.ConnectionData = connectionData;
-        NetworkManager.Singleton.NetworkConfig.NetworkTransport = unityTransport;
-    }
-    public void StartAsHost(UnityTransport unityTransport, string address, ushort port,
-        InitialConnectionData initialConnectionData)
-    {
-        if (unityTransport)
+        if (!networkTransport) 
         {
-            unityTransport.ConnectionData.ServerListenAddress = "0.0.0.0";
-            SetNetworkManagerData(unityTransport, address, port, initialConnectionData);
+            BytewarsLogger.LogWarning("Failed to set network manager data. Network transport is null.");
+            return;
+        }
+
+        // Enable secure websocket connection (WSS) and proxy only for packaged WebGL build.
+        bool isRequireSecureConnection = false;
+#if (UNITY_WEBGL && !UNITY_EDITOR)
+        isRequireSecureConnection = true;
+#endif
+
+        TutorialModuleUtil.Proxy proxy = TutorialModuleUtil.GetProxy();
+        string proxyUrl = proxy.Url;
+        string proxyPath = proxy.Path.Replace("{server_ip}", address).Replace("{server_port}", port.ToString());
+
+        // If require secure connection but the proxy is empty, abort to use secure connection.
+        if (isRequireSecureConnection && (string.IsNullOrEmpty(proxyUrl) || string.IsNullOrEmpty(proxyPath))) 
+        {
+            BytewarsLogger.LogWarning("Failed to enable secure WebSocket connection (WSS). The proxy setting is empty.");
+            isRequireSecureConnection = false;
+        }
+
+        networkTransport.ConnectAddress = isRequireSecureConnection ? proxyUrl : address;
+        networkTransport.Path = isRequireSecureConnection ? proxyPath : "/";
+        networkTransport.Port = isRequireSecureConnection ? (ushort)443 : port;
+        networkTransport.SecureConnection = isRequireSecureConnection;
+        networkTransport.AllowForwardedRequest = true;
+        networkTransport.CertificateBase64String = string.Empty;
+        
+        byte[] connectionData = GameUtility.ToByteArray(initialConnectionData);
+        NetworkManager.Singleton.NetworkConfig.ConnectionData = connectionData;
+        NetworkManager.Singleton.NetworkConfig.NetworkTransport = networkTransport;
+    }
+
+    public void StartAsHost(
+        WebSocketTransport networkTransport, 
+        string address, 
+        ushort port,
+        InitialConnectionData initialConnectionData)
+    {
+        if (networkTransport)
+        {
+            SetNetworkManagerData(networkTransport, address, port, initialConnectionData);
             NetworkManager.Singleton.StartHost();
         }
         else
         {
-            Debug.LogError("can't start as host, unity transport is null");
+            BytewarsLogger.LogWarning("Cannot start as host, unity transport is null");
         }
     }
 
@@ -71,16 +109,16 @@ public class Reconnect : MonoBehaviour
         yield return wait3Seconds;
         var connectionData = GameUtility.ToByteArray(initialConnectionData);
         NetworkManager.Singleton.NetworkConfig.ConnectionData = connectionData;
-        Debug.Log("reconnect start client");
+        BytewarsLogger.Log("Reconnect start client");
         NetworkManager.Singleton.StartClient();
         reconnectionInProgress = false;
     }
     public void OnClientConnected(ulong clientNetworkId, bool isOwner, bool isServer, bool isClient, bool isHost,
         ServerHelper serverHelper, InGameMode inGameMode,
-        Dictionary<ulong, GameClientController> connectedClients, InGameState inGameState,
+        Dictionary<ulong, GameClientController> connectedClients, InGameState inGameState, ServerType serverType,
         Dictionary<ulong, Player> players, int gameTimeLeft, ClientHelper clientHelper)
     {
-        Debug.Log($"OnClientConnected IsServer:{isServer} isOwner:{isOwner} clientNetworkId:{clientNetworkId}");
+        BytewarsLogger.Log($"OnClientConnected IsServer:{isServer} isOwner:{isOwner} clientNetworkId:{clientNetworkId}");
         isIntentionallyDisconnect = false;
         var game = GameManager.Instance;
         if (isOwner && isServer)
@@ -94,13 +132,13 @@ public class Reconnect : MonoBehaviour
             //most variable exists only on IsServer bracket
             bool isInGameScene = GameConstant.GameSceneBuildIndex == SceneManager.GetActiveScene().buildIndex;
             game.SendConnectedPlayerStateClientRpc(serverHelper.ConnectedTeamStates.Values.ToArray(),
-                serverHelper.ConnectedPlayerStates.Values.ToArray(), inGameMode, isInGameScene);
+                serverHelper.ConnectedPlayerStates.Values.ToArray(), inGameMode, serverType, isInGameScene);
             var playerObj = NetworkManager.Singleton.ConnectedClients[clientNetworkId].PlayerObject;
             var gameClient = playerObj.GetComponent<GameClientController>();
             if (gameClient)
             {
                 connectedClients.Add(clientNetworkId, gameClient);
-                Debug.Log($"clientNetworkId: {clientNetworkId} connected");
+                BytewarsLogger.Log($"ClientNetworkId: {clientNetworkId} connected");
                 if (isInGameScene && inGameState != InGameState.GameOver)
                 {
                     if (players.TryGetValue(clientNetworkId, out var serverPlayer))
@@ -141,14 +179,14 @@ public class Reconnect : MonoBehaviour
     public void OnClientStopped(bool isHost, InGameState inGameState, ServerHelper serverHelper, ulong clientNetworkId,
         InGameMode inGameMode)
     {
-        Debug.Log($"OnClientStopped isHost:{isHost} clientNetworkId:{clientNetworkId}");
+        BytewarsLogger.Log($"OnClientStopped isHost:{isHost} clientNetworkId:{clientNetworkId}");
         if (isHost)
         {
-            serverHelper.Reset();
+            GameManager.Instance.ResetCache();
             StartCoroutine(GameManager.Instance.QuitToMainMenu());
             return;
-        }
-        else
+        } 
+        else 
         {
             //TODO check is in game scene, check whether client intentionally click quit button
             if (inGameState != InGameState.GameOver)
@@ -175,12 +213,12 @@ public class Reconnect : MonoBehaviour
                 var menuCanvas = MenuManager.Instance.GetCurrentMenu();
                 if (menuCanvas && menuCanvas is MatchLobbyMenu lobby)
                 {
-                    if (!isIntentionallyDisconnect)
+                    if(!isIntentionallyDisconnect) 
                     {
-                        lobby.ShowStatus("disconnected from server, trying to reconnect...");
+                        lobby.ShowStatus("Disconnected from server, trying to reconnect...");
                     }
                 }
-            }
+            }            
         }
     }
 
@@ -197,6 +235,8 @@ public class Reconnect : MonoBehaviour
             NetworkManager.Singleton.IsClient &&
             !NetworkManager.Singleton.ShutdownInProgress)
         {
+            BytewarsLogger.LogWarning($"Disconnect gracefully.");
+
             NetworkManager.Singleton.Shutdown();
             yield return new WaitUntil(() => !NetworkManager.Singleton.ShutdownInProgress);
         }
@@ -221,6 +261,8 @@ public class Reconnect : MonoBehaviour
             NetworkManager.Singleton.IsServer &&
             !NetworkManager.Singleton.ShutdownInProgress)
         {
+            BytewarsLogger.Log($"Shutting down server");
+            
             NetworkManager.Singleton.Shutdown();
             yield return new WaitUntil(() => !NetworkManager.Singleton.ShutdownInProgress);
             onServerShutdownFinished?.Invoke();

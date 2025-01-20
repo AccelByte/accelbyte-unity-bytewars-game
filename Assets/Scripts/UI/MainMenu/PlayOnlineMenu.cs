@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,40 +27,39 @@ public class PlayOnlineMenu : MenuCanvas
 
     private void SetModuleButtonVisibility()
     {
-        #if !BYTEWARS_DEBUG
-        var isCreateSessionBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.SessionEssentials);
-        var isQuickPlayBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithDS);
-        var isCreateBrowseMatchBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithDS);
-        
+#if !BYTEWARS_DEBUG
+        bool isCreateSessionBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.SessionEssentials);
+        bool isQuickPlayBtnActive = (TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithDS) 
+            || TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithP2P));
+        bool isCreateBrowseMatchBtnActive = (TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithDS) 
+            || TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithP2P));
+
         createSessionButton.gameObject.SetActive(isCreateSessionBtnActive);
         quickPlayButton.gameObject.SetActive(isQuickPlayBtnActive);
         createMatchButton.gameObject.SetActive(isCreateBrowseMatchBtnActive);
         browseMatchButton.gameObject.SetActive(isCreateBrowseMatchBtnActive);
-        #endif
+#endif
     }
 
 
     private void OnQuickPlayButtonPressed()
     {
-        // MenuManager.Instance.ChangeToMenu(AssetEnum.ServerTypeSelection);
-        //TODO delete this and uncomment code above to enable peer to peer server selection
-        // GameData.ServerType = ServerType.OnlineDedicatedServer;
         MenuManager.Instance.ChangeToMenu(TutorialType.MatchmakingSession);
     }
 
     private void OnCreateMatchButtonPressed()
     {
-       // MenuManager.Instance.ChangeToMenu(AssetEnum.CreateMatchMenuCanvas);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.MatchSessionHandler);
     }
 
     private void OnBrowserMatchButtonPressed()
     {
-        // MenuManager.Instance.ChangeToMenu(AssetEnum.BrowseMatchMenuCanvas);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.BrowseMatchMenuCanvas);
     }
-    
+
     private void OnCreateSessionPressed()
     {
-        // MenuManager.Instance.ChangeToMenu(AssetEnum.SessionEssentialsMenuCanvas);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.SessionEssentialsMenuCanvas);
     }
 
     public override GameObject GetFirstButton()

@@ -1,4 +1,7 @@
-using System;
+// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -27,7 +30,7 @@ public class ButtonAnimation : MonoBehaviour, IPointerEnterHandler, IDeselectHan
         AudioManager.Instance?.PlaySfx("Click_on_Button");
         OnComplete();
     }
-    
+
     private void UpdateValueExampleCallback(Color val)
     {
         text.color = val;
@@ -41,19 +44,23 @@ public class ButtonAnimation : MonoBehaviour, IPointerEnterHandler, IDeselectHan
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (!EventSystem.current.alreadySelecting)
+        {
             EventSystem.current.SetSelectedGameObject(gameObject);
+        }
     }
 
     public void OnDeselect(BaseEventData eventData)
     {
-        if(selectable!=null)
+        if (selectable != null)
+        {
             selectable.OnPointerExit(null);
+        }
     }
 
     private void OnEnable()
     {
         if (contentSizeFitter != null
-            && rectTransform!=null)
+            && rectTransform != null)
         {
             StartCoroutine(FixLayout());
         }

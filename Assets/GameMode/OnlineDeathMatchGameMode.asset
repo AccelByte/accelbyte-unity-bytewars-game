@@ -33,18 +33,19 @@ MonoBehaviour:
   numRetriesToPlacePlayer: 100
   gameDuration: 300
   baseKillScore: 500
-  playerStartLives: 2
+  playerStartLives: 3
   teamColours:
   - {r: 0.45098042, g: 0.5686275, b: 1, a: 1}
   - {r: 1, g: 0.43137258, b: 0.50980395, a: 1}
   - {r: 0.48627454, g: 1, b: 0.4431373, a: 1}
   - {r: 1, g: 0.9450981, b: 0.37254903, a: 1}
   gameMode: 3
-  playerPerTeamCount: 2
+  playerPerTeamCount: 4
   teamCount: 2
+  minimumTeamCountToPlay: 1
   maxInFlightMissilesPerPlayer: 1
-  lobbyCountdownSecond: 25
+  lobbyCountdownSecond: 30
   beforeGameCountdownSecond: 5
   beforeShutDownCountdownSecond: 30
   gameOverShutdownCountdown: 30
-  lobbyShutdownCountdown: -1
+  lobbyShutdownCountdown: 30

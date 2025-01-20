@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public static class ConnectionHandler
 {
@@ -19,7 +20,10 @@ public static class ConnectionHandler
         {
             return;
         }
-        var args = GetCommandlineArgs();
+        Dictionary<string, string> args = GetCommandlineArgs();
+#if UNITY_WEBGL
+        args = GetURLParameters();
+#endif
         if (args.TryGetValue("-localserver", out string servername))
         {
             LocalServerName = servername;
@@ -54,8 +58,32 @@ public static class ConnectionHandler
         return argDictionary;
     }
 
+    public static Dictionary<string, string> GetURLParameters()
+    {
+        Dictionary<string, string> parameters = new Dictionary<string, string>();
+        string url = Application.absoluteURL;
+
+        if (url.Contains("?"))
+        {
+            string queryString = url.Substring(url.IndexOf('?') + 1);
+            string[] pairs = queryString.Split('&');
+
+            foreach (string pair in pairs)
+            {
+                string[] keyValue = pair.Split('=');
+                if (keyValue.Length == 2)
+                {
+                    parameters[keyValue[0]] = keyValue[1];
+                }
+            }
+        }
+
+        return parameters;
+    }
+
     public static string GetLocalIPAddress()
     {
+#if !UNITY_WEBGL
         var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
         foreach (var ip in host.AddressList)
         {
@@ -64,6 +92,7 @@ public static class ConnectionHandler
                 return ip.ToString();
             }
         }
+#endif
         return "0.0.0.0";
     }
 

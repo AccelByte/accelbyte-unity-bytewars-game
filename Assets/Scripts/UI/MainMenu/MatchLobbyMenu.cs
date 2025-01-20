@@ -1,4 +1,9 @@
-﻿using System.Collections;
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
+using Extensions;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -8,7 +13,10 @@ using UnityEngine.UI;
 
 public class MatchLobbyMenu : MenuCanvas
 {
-    [SerializeField] private PlayerEntry[] _playersEntries;
+    [SerializeField] private RectTransform teamEntryListPanel;
+    [SerializeField] private TeamEntry teamEntryPrefab;
+    [SerializeField] private PlayerEntry playerEntryPrefab;
+
     [SerializeField] private Button quitButton;
     [SerializeField] private Button inviteFriendsButton;
     [SerializeField] private Button startButton;
@@ -23,7 +31,12 @@ public class MatchLobbyMenu : MenuCanvas
     {
         Refresh();
     }
-    
+
+    private void OnDisable()
+    {
+        statusContainer.SetActive(false);
+    }
+
     private void Awake()
     {
         GameManager.OnGameStateChanged += OnGameStateChanged;
@@ -53,28 +66,23 @@ public class MatchLobbyMenu : MenuCanvas
         }
 #endif
     }
-    
-    private void ResetPlayerEntries()
-    {
-        _playersEntries.ToList().ForEach(entry => entry.gameObject.SetActive(false));
-    }
 
     private static void OnStartButtonClicked()
     {
         var playerObj = NetworkManager.Singleton.LocalClient.PlayerObject;
-        
+
         if (!playerObj)
         {
             return;
         }
-        
+
         var gameController = playerObj.GetComponent<GameClientController>();
         if (gameController)
         {
             gameController.StartOnlineGame();
         }
     }
-    
+
     private void OnQuitButtonClicked()
     {
         StartCoroutine(LeaveSessionAndQuit());
@@ -107,43 +115,72 @@ public class MatchLobbyMenu : MenuCanvas
 
     public void Refresh()
     {
-        ResetPlayerEntries();
-        
-        PopulatePlayerEntries();
-        
-        startButton.gameObject.SetActive(SessionCache.IsSessionLeader());
+        GenerateTeamEntries();
+
+        if (SessionCache.IsCreateMatch())
+        {
+            startButton.gameObject.SetActive(SessionCache.IsSessionLeader());
+        } 
+        else
+        {
+            /* If P2P, only show the start button if the player is the session leader.
+            * Otherwise, always show the start button on other server mode. */
+            startButton.gameObject.SetActive(
+                GameData.ServerType.Equals(ServerType.OnlinePeer2Peer) ?
+                GameManager.Instance.IsHost :
+                true);
+        }
     }
     
-    private void PopulatePlayerEntries()
+    private void GenerateTeamEntries()
     {
         ulong clientNetworkId = GameManager.Instance.ClientNetworkId;
         Dictionary<ulong, PlayerState> playerStates = GameManager.Instance.ConnectedPlayerStates;
         Dictionary<int, TeamState> teamStates = GameManager.Instance.ConnectedTeamStates;
-        
-        foreach (KeyValuePair<ulong, PlayerState> kvp in playerStates)
+
+        teamEntryListPanel.DestroyAllChildren();
+
+        // Generate team and its member entries.
+        Dictionary<int, TeamEntry> teamEntries = new Dictionary<int, TeamEntry>();
+        foreach (KeyValuePair<ulong, PlayerState> kvp in playerStates.OrderBy(p => p.Value.teamIndex))
         {
             PlayerState playerState = kvp.Value;
+            int playerTeamIndex = playerState.teamIndex;
             bool isCurrentPlayer = playerState.clientNetworkId == clientNetworkId;
-            
-            SpawnPlayer(teamStates[playerState.teamIndex], playerState, isCurrentPlayer);
-        }
-    }
-    
-    private void SpawnPlayer(TeamState teamState, PlayerState playerState, bool isCurrentPlayer)
-    {
-        foreach (var playerEntry in _playersEntries)
-        {
-            if (playerEntry.gameObject.activeSelf)
+
+            if (!teamStates.ContainsKey(playerTeamIndex))
             {
+                BytewarsLogger.Log($"Cannot spawn player entry. Invalid team index: {playerTeamIndex}");
                 continue;
             }
-            
-            playerEntry.Set(teamState, playerState, isCurrentPlayer);
-            playerEntry.gameObject.SetActive(true);
-            break;
+
+            // Create the team entry if not yet.
+            if (!teamEntries.ContainsKey(playerTeamIndex))
+            {
+                TeamEntry teamEntry = Instantiate(teamEntryPrefab, Vector3.zero, Quaternion.identity, teamEntryListPanel);
+                teamEntry.Set(teamStates[playerTeamIndex]);
+                teamEntries.Add(playerTeamIndex, teamEntry);
+            }
+
+            RectTransform teamEntryContainer = (RectTransform)teamEntries[playerTeamIndex].transform;
+            RectTransform playerEntryContainer = teamEntries[playerTeamIndex].PlayerEntryContainer;
+
+            // Create the player entry.
+            PlayerEntry playerEntry = Instantiate(
+                playerEntryPrefab, 
+                Vector3.zero, 
+                Quaternion.identity,
+                playerEntryContainer);
+
+            playerEntry.Set(teamStates[playerTeamIndex], playerState, isCurrentPlayer);
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(playerEntryContainer);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(teamEntryContainer);
         }
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(teamEntryListPanel);
     }
-    
+
     public void Countdown(int second)
     {
         ShowStatus(CountDownPrefix + second);

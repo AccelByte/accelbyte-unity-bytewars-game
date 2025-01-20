@@ -4934,21 +4934,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   missileExplosion: {fileID: -7757702795387921814, guid: a325900f3f30b944a9a173d5a057407c,
     type: 3}
-  m_popupScoreTextPrefab: {fileID: 8058943206113242913, guid: f23f393532a28b24e9b3b21d79715c60,
-    type: 3}
-  m_expiryTime: 0
-  m_skimDeltaForIncrementSeconds: 0.25
-  m_additionalSkimScoreMultiplier: 2
-  scoreIncrement: 100
-  m_maxTimeAlive: 20
-  m_skimDistanceThreshold: 1
-  _mass: 1
-  _radius: 0.1
-  _mesh: {fileID: 2352445206210135324}
-  _renderer: {fileID: 6747372275707910487}
-  _particleSystem: {fileID: -4094237378551273343}
+  meshFilter: {fileID: 2352445206210135324}
+  meshRenderer: {fileID: 6747372275707910487}
+  missileParticleSystem: {fileID: -4094237378551273343}
   travelSoundClip: {fileID: 8300000, guid: fd4a17ef5f39a4f4d90a55ebdd18ec5b, type: 3}
   fireSoundClip: {fileID: 8300000, guid: e56a817346f4aca41961848167d26d7f, type: 3}
+  popupScoreTextPrefab: {fileID: 8058943206113242913, guid: f23f393532a28b24e9b3b21d79715c60,
+    type: 3}
+  mass: 1
+  radius: 0.1
+  skimDeltaForIncrementSeconds: 0.25
+  additionalSkimScoreMultiplier: 2
+  scoreIncrement: 100
+  maxTimeAlive: 20
+  skimDistanceThreshold: 1
 --- !u!65 &-1527670407104055140
 BoxCollider:
   m_ObjectHideFlags: 0

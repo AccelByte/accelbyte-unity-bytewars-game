@@ -1,3 +1,10 @@
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
+using System.IO;
+using AccelByte.Models;
+using Newtonsoft.Json;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
@@ -10,20 +17,48 @@ public class Builder
         "Assets/Scenes/GalaxyWorld.unity"
     };
     
-    [MenuItem("Build/Build Windows64 Client")]
-    public static void BuildWindowsClient()
+    [MenuItem("Build/Build Windows64 Client/Development Build")]
+    public static void BuildWindowsClientDevelopment()
     {
+        BuildWindowsClient(true);
+    }
+
+    [MenuItem("Build/Build Windows64 Client/Release Build")]
+    public static void BuildWindowsClientRelease()
+    {
+        BuildWindowsClient(false);
+    }
+
+    private static void BuildWindowsClient(bool development)
+    {
+        string[] cmdArgs = System.Environment.GetCommandLineArgs();
+        
+        if (development)
+        {
+            GenerateSDKConfig();
+        }
+
+        string locationPathName = "../Build/Client/ByteWars.exe";
+        foreach (string arg in cmdArgs)
+        {
+            if (arg.Contains("-setBuildPath="))
+            {
+                string buildPath = arg.Replace("-setBuildPath=", "");
+                locationPathName = buildPath;
+            }
+        }
+
         EditorUserBuildSettings.standaloneBuildSubtarget = StandaloneBuildSubtarget.Player;
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64);
-        var options = new BuildPlayerOptions
+        BuildPlayerOptions options = new BuildPlayerOptions
         {
             scenes = scenes,
-            locationPathName = "../Build/Client/ByteWars.exe",
+            locationPathName = locationPathName,
             target = BuildTarget.StandaloneWindows64,
-            options = BuildOptions.None
+            options = development ? BuildOptions.Development : BuildOptions.None
         };
         
-        var report = BuildPipeline.BuildPlayer(options);
+        BuildReport report = BuildPipeline.BuildPlayer(options);
         if (report.summary.result == BuildResult.Succeeded)
         {
             Debug.Log($"[Builder.BuildWindowsClient] Build client successful - Build written to: {options.locationPathName}");
@@ -33,21 +68,45 @@ public class Builder
             Debug.LogError("[Builder.BuildWindowsClient] Build client failed");
         }
     }
-    
-    [MenuItem("Build/Build Server")]
-    public static void BuildLinuxServer()
+
+    [MenuItem("Build/Build Server/Development Build")]
+    public static void BuildLinuxServerDevelopment()
     {
+        BuildLinuxServer(true);
+    }
+
+    [MenuItem("Build/Build Server/Release Build")]
+    public static void BuildLinuxServerRelease()
+    {
+        BuildLinuxServer(false);
+    }
+
+    private static void BuildLinuxServer(bool development)
+    {
+        string[] cmdArgs = System.Environment.GetCommandLineArgs();
+        string locationPathName = "../Build/Server/ByteWarsServer.x86_64";
+        
+        foreach (string arg in cmdArgs)
+        {
+            if (arg.Contains("-setBuildPath="))
+            {
+                string buildPath = arg.Replace("-setBuildPath=", "");
+                locationPathName = buildPath;
+            }
+        }
+
         EditorUserBuildSettings.standaloneBuildSubtarget = StandaloneBuildSubtarget.Server;
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.LinuxHeadlessSimulation, BuildTarget.StandaloneLinux64);
-        var options = new BuildPlayerOptions
+        BuildPlayerOptions options = new BuildPlayerOptions
         {
             scenes = scenes,
-            locationPathName = "../Build/Server/ByteWarsServer.x86_64",
+            locationPathName = locationPathName,
             target = BuildTarget.StandaloneLinux64,
             subtarget = (int)StandaloneBuildSubtarget.Server,
-            options = BuildOptions.None
+            options = development ? BuildOptions.Development : BuildOptions.None
         };
-        var report = BuildPipeline.BuildPlayer(options);
+        BuildReport report = BuildPipeline.BuildPlayer(options);
+        
         if (report.summary.result == BuildResult.Succeeded)
         {
             Debug.Log($"[Builder.BuildLinuxServer] Build server successful - Build written to: {options.locationPathName}");
@@ -71,5 +130,99 @@ public class Builder
                 PlayerSettings.bundleVersion = gameVersion;
             }
         }
+    }
+
+    public static void GenerateSDKConfig()
+    {
+        string[] cmdArgs = System.Environment.GetCommandLineArgs();
+        MultiConfigs multiConfigs = new MultiConfigs();
+        Config config = new Config();
+        bool isServer = false;
+
+        foreach (string arg in cmdArgs)
+        {
+            if (arg.Contains("-namespace="))
+            {
+                string agsNamespace = arg.Replace("-namespace=", "");
+                config.Namespace = agsNamespace;
+                config.Expand(true);
+            }
+
+            if (arg.Contains("-baseUrl="))
+            {
+                string baseUrl = arg.Replace("-baseUrl=", "");
+                config.BaseUrl = baseUrl;
+                config.Expand(true);
+            }
+
+            if (arg.Contains("-redirectUri="))
+            {
+                string redirectUri = arg.Replace("-redirectUri=", "");
+                config.RedirectUri = redirectUri;
+                config.Expand(true);
+            }
+
+            if (arg.Contains("-publisherNamespace="))
+            {
+                string publisherNamespace = arg.Replace("-publisherNamespace=", "");
+                config.PublisherNamespace = publisherNamespace;
+                config.Expand(true);
+            }
+
+            if (arg.Contains("-server="))
+            {
+                bool isForServer = bool.Parse(arg.Replace("-server=", ""));
+                isServer = isForServer;
+            }
+        }
+        config.EnableAmsServerQos = true;
+        multiConfigs.Default = config;
+        multiConfigs.Expand(true);
+        
+        string fileName = isServer ? "AccelByteServerSDKConfig.json" : "AccelByteSDKConfig.json";
+        string json = JsonConvert.SerializeObject(multiConfigs);
+        File.WriteAllText($"Assets/Resources/{fileName}", json);
+        Debug.Log($"[Builder.GenerateSDKConfigJSON] Generate JSON Assets/Resources/{fileName}");
+
+        GenerateOAuthConfig();
+    }
+
+    public static void GenerateOAuthConfig()
+    {
+        string[] cmdArgs = System.Environment.GetCommandLineArgs();
+        MultiOAuthConfigs multiOAuthConfig = new MultiOAuthConfigs();
+        OAuthConfig oauthConfig = new OAuthConfig();
+        bool isServer = false;
+
+        foreach (string arg in cmdArgs)
+        {
+            if (arg.Contains("-clientId="))
+            {
+                string clientId = arg.Replace("-clientId=", "");
+                oauthConfig.ClientId = clientId;
+                oauthConfig.Expand();
+            }
+
+            if (arg.Contains("-clientSecret="))
+            {
+                string clientSecret = arg.Replace("-clientSecret=", "");
+                oauthConfig.ClientSecret = clientSecret;
+                oauthConfig.Expand();
+            }
+
+            if (arg.Contains("-server="))
+            {
+                bool isForServer = bool.Parse(arg.Replace("-server=", ""));
+                isServer = isForServer;
+            }
+        }
+
+        multiOAuthConfig.Default = oauthConfig;
+        multiOAuthConfig.Expand();
+
+        string fileName = isServer ? "AccelByteServerSDKOAuthConfig.json" : "AccelByteSDKOAuthConfig.json";
+        string json = JsonConvert.SerializeObject(multiOAuthConfig);
+        File.WriteAllText($"Assets/Resources/{fileName}", json);
+        Debug.Log($"[Builder.GenerateSDKOAuthJSON] Generate JSON Assets/Resources/{fileName}");
     }
 }

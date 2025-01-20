@@ -18,7 +18,7 @@
                     "name": "Fire",
                     "type": "Button",
                     "id": "1cac3e98-a88d-4c70-b7b3-4102c63bc8b0",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -27,7 +27,7 @@
                     "name": "OpenPauseMenu",
                     "type": "Button",
                     "id": "923f68e6-bc0e-4ee9-9987-d49bdbfc2819",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false

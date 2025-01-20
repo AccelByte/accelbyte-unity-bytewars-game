@@ -32,10 +32,23 @@ public class InGameHUD : MonoBehaviour
 
     public void Init(TeamState[] teamStates, PlayerState[] playerStates)
     {
+        Dictionary<int, int> teamMemberCount = new Dictionary<int, int>();
+        for (int i = 0; i < teamStates.Length; i++)
+        {
+            teamMemberCount.Add(i, 0);
+        }
+        foreach (PlayerState playerState in playerStates)
+        {
+            teamMemberCount[playerState.teamIndex]++;
+        }
+
         foreach (TeamState teamState in teamStates)
         {
-            var hud = _playerHUDs[teamState.teamIndex];
-            hud.Init(teamState, playerStates);
+            if (teamMemberCount[teamState.teamIndex] > 0)
+            {
+                PlayerHUD hud = _playerHUDs[teamState.teamIndex];
+                hud.Init(teamState, playerStates);
+            }
         }
     }
 
