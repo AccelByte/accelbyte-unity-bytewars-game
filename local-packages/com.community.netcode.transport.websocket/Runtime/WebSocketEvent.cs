@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using Unity.Netcode;
+using WebSocketSharp;
 
 namespace Netcode.Transports.WebSocket
 {
@@ -19,6 +20,7 @@ namespace Netcode.Transports.WebSocket
         public byte[] Payload;
         public string Error;
         public string Reason;
+        public CloseStatusCode CloseCode = CloseStatusCode.Undefined;
 
         public NetworkEvent GetNetworkEvent()
         {

@@ -13,13 +13,14 @@ public class MainMenu : MenuCanvas
 {
     [SerializeField] private Button playButton;
     [SerializeField] private Button playOnlineBtn;
+    [SerializeField] private Button customMatchmakingButton;
     [SerializeField] private Button profileButton;
     [SerializeField] private Button leaderboardButton;
     [SerializeField] private Button socialButton;
     [SerializeField] private Button helpAndOptionsButton;
     [SerializeField] private Button quitButton;
     [SerializeField] private LayoutGroup layoutGroup;
-    
+
     public static event Action<Action> OnQuitPressed;
 
     private void Start()
@@ -28,6 +29,7 @@ public class MainMenu : MenuCanvas
 
         playButton.onClick.AddListener(OnPlayButtonPressed);
         playOnlineBtn.onClick.AddListener(OnPlayOnlineButtonPressed);
+        customMatchmakingButton.onClick.AddListener(OnCustomMatchmakingButtonPressed);
         leaderboardButton.onClick.AddListener(OnLeaderboardButtonPressed);
         profileButton.onClick.AddListener(OnProfileButtonPressed);
         socialButton.onClick.AddListener(OnSocialButtonPressed);
@@ -53,6 +55,11 @@ public class MainMenu : MenuCanvas
         MenuManager.Instance.ChangeToMenu(AssetEnum.PlayOnlineMenuCanvas);
     }
     
+    private static void OnCustomMatchmakingButtonPressed() 
+    {
+        MenuManager.Instance.ChangeToMenu(AssetEnum.CustomMatchmakingMenu);
+    }
+
     private static void OnLeaderboardButtonPressed()
     {
         ModuleModel leaderboardEssentialModule = TutorialModuleManager.Instance.GetModule(TutorialType.LeaderboardEssentials);
@@ -120,6 +127,8 @@ public class MainMenu : MenuCanvas
                                  || TutorialModuleManager.Instance.IsModuleActive(TutorialType.SessionEssentials);
         playOnlineBtn.gameObject.SetActive(isOnlineBtnActive);
 #endif
+        bool isCustomMatchmakingModuleActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.CustomMatchmaking);
+        customMatchmakingButton.gameObject.SetActive(isCustomMatchmakingModuleActive);
 
         bool isFriendModuleActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.FriendsEssentials);
         socialButton.gameObject.SetActive(isFriendModuleActive);

@@ -5,6 +5,7 @@
 //Auto-generated from AssetNameEnumGenerator
 public enum AssetEnum
 {
+	AMSModuleAssetConfig,
 	AnalyticsAssetConfig,
 	AuthEssentialsAssetConfig,
 	BlockedPlayerEntryComponent,
@@ -23,6 +24,8 @@ public enum AssetEnum
 	CreditsMenuCanvas,
 	CrossplayPreferencesAssetConfig,
 	CrossPlayPreferencesMenu,
+	CustomMatchmakingAssetConfig,
+	CustomMatchmakingMenu,
 	EliminationMenuCanvas,
 	emails,
 	FindFriendsEntryComponent,

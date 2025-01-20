@@ -16,7 +16,6 @@ public class HelpAndOptionsMenu : MenuCanvas
     // Start is called before the first frame update
     void Start()
     {
-        
         helpButton.onClick.AddListener((() =>
         {
             MenuManager.Instance.ChangeToMenu(AssetEnum.HelpMenuCanvas);
@@ -33,6 +32,7 @@ public class HelpAndOptionsMenu : MenuCanvas
         {
             MenuManager.Instance.ChangeToMenu(AssetEnum.OnlineSettingsMenu);
         }));
+        onlineSettingsButton.gameObject.SetActive(TutorialModuleManager.Instance.IsModuleActive(TutorialType.OnlineSettings));
         backButton.onClick.AddListener(() => MenuManager.Instance.OnBackPressed());
     }
 

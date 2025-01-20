@@ -52,7 +52,18 @@
         return;
       }
 
-      if (ev.data instanceof ArrayBuffer) {
+      if (typeof ev.data === "string") {
+        var msg = ev.data;
+        var msgBytes = lengthBytesUTF8(msg);
+        var msgBuffer = _malloc(msgBytes + 1);
+        stringToUTF8(msg, msgBuffer, msgBytes + 1);
+        try {
+          Module['dynCall_vii'](state.onMessage, msgBuffer, msgBytes);
+        } finally {
+           _free(msgBuffer);  // Clean up memory
+        }
+      }
+      else if (ev.data instanceof ArrayBuffer) {
         var dataBuffer = new Uint8Array(ev.data);
 
         var buffer = _malloc(dataBuffer.length);

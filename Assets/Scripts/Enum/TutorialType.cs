@@ -30,5 +30,7 @@ public enum TutorialType
     OnlineSettings = 201,
     MultiplayerSettings = 202,
     RegionPreferences = 203,
-    CrossplayPreferences = 204
+    CrossplayPreferences = 204,
+    AMSModule = 205,
+    CustomMatchmaking = 206
 }

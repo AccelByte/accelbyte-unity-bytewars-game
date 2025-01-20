@@ -153,6 +153,12 @@ namespace Netcode.Transports.WebSocket
 
         public void OnClose(object sender, CloseEventArgs e)
         {
+            CloseStatusCode closeCode = CloseStatusCode.Undefined;
+            if (Enum.IsDefined(typeof(CloseStatusCode), e.Code))
+            {
+                closeCode = (CloseStatusCode)e.Code;
+            }
+            
             lock (ConnectionLock)
             {
                 EventQueue.Enqueue(new WebSocketEvent()
@@ -161,7 +167,8 @@ namespace Netcode.Transports.WebSocket
                     Payload = null,
                     Type = WebSocketEvent.WebSocketEventType.Close,
                     Error = null,
-                    Reason = e.Reason
+                    Reason = e.Reason,
+                    CloseCode = closeCode
                 });
             }
         }

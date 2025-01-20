@@ -1,4 +1,4 @@
-#if UNITY_WEBGL
+﻿#if UNITY_WEBGL
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -104,7 +104,8 @@ namespace Netcode.Transports.WebSocket
                 Payload = null,
                 Type = WebSocketEvent.WebSocketEventType.Close,
                 Error = null,
-                Reason = null
+                Reason = null,
+                CloseCode = code
             });
         }
     }
