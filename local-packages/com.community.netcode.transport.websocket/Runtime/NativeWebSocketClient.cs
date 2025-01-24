@@ -29,9 +29,14 @@ namespace Netcode.Transports.WebSocket
             }
         }
 
-        public NativeWebSocketClient(string url)
+        public NativeWebSocketClient(string url, string username, string password)
         {
             Connection = new WebSocketSharp.WebSocket(url);
+
+            if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+            {
+                Connection.SetCredentials(username, password, true);
+            }
 
             Connection.OnOpen += OnOpen;
             Connection.OnMessage += OnMessage;

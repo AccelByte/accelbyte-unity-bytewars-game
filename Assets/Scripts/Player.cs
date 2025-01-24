@@ -9,7 +9,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[RequireComponent(typeof(PlayerInput), typeof(MeshRenderer))]
+[RequireComponent(typeof(PlayerInput), typeof(MeshRenderer), typeof(Collider))]
 public class Player : GameEntityAbs
 {
     [Header("Player Components")]
@@ -103,10 +103,10 @@ public class Player : GameEntityAbs
         this.playerState = playerState;
         gameObject.name = $"{InGameFactory.PlayerInstancePrefix}Player{this.playerState.playerIndex + 1}";
 
-        Init(maxMissilesInFlight, teamColor);
+        Initialize(maxMissilesInFlight, teamColor);
     }
 
-    public void Init(int maxMissilesInFlight, Color color)
+    public void Initialize(int maxMissilesInFlight, Color color)
     {
         Reset();
 
@@ -117,15 +117,31 @@ public class Player : GameEntityAbs
         playerInput.enabled = true;
         transform.position = playerState.position;
 
-        // Display ship.
+        // Display ship and enable collider.
         SetShipColour(color);
         gameObject.SetActive(true);
+        GetComponent<Collider>().enabled = true;
 
         // Display powerbar.
         powerBarUI.Init();
         powerBarUI.SetPosition(transform.position);
         powerBarUI.SetPercentageFraction(FirePowerLevel, false);
         isShowPowerBarUI = IsShowPowerBarUI();
+    }
+
+    public void Deinitialize(bool isResetMissile) 
+    {
+        // Reset missile.
+        if (isResetMissile)
+        {
+            firedMissiles.Values.ToList().ForEach(missile => missile.Reset());
+            firedMissiles.Clear();
+            missileTimer = 0.0f;
+        }
+
+        // Hide ship and disable collider.
+        gameObject.SetActive(false);
+        GetComponent<Collider>().enabled = false;
     }
 
     private bool IsShowPowerBarUI()
@@ -337,10 +353,7 @@ public class Player : GameEntityAbs
 
     public override void Reset()
     {
-        firedMissiles.Values.ToList().ForEach(missile => missile.Reset());
-        firedMissiles.Clear();
-        gameObject.SetActive(false);
-        missileTimer = 0.0f;
+        Deinitialize(true);
     }
 
     public override void SetId(int id)

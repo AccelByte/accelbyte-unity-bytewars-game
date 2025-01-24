@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class ClientHelper
@@ -33,11 +34,13 @@ public class ClientHelper
             gameEntity.transform.rotation = levelObject.Rotation;
             gameEntity.SetId(levelObject.ID);
 
+            bool isValidEntity = false;
+
             // Adding game entity to the respective collection.
             if (gameEntity is Planet planet)
             {
                 planets ??= new Dictionary<int, Planet>();
-                planets.TryAdd(levelObject.ID, planet);
+                isValidEntity = planets.TryAdd(levelObject.ID, planet);
             }
             else if (gameEntity is Player player && player != null)
             {
@@ -50,13 +53,19 @@ public class ClientHelper
                     Color teamColour = serverHelper.ConnectedTeamStates[playerState.teamIndex].teamColour;
 
                     player.SetPlayerState(playerState, GameData.GameModeSo.maxInFlightMissilesPerPlayer, teamColour);
-                    players.TryAdd(clientNetworkId, player);
+                    isValidEntity = players.TryAdd(clientNetworkId, player);
 
                     playerClientIdIndex++;
                 }
             }
 
-            activeGameEntities.Add(gameEntity);
+            gameEntity.gameObject.SetActive(isValidEntity);
+
+            // If valid, add to active entity collection.
+            if (isValidEntity)
+            {
+                activeGameEntities.Add(gameEntity);
+            }
         }
     }
 }

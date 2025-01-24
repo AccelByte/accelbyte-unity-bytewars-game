@@ -377,8 +377,16 @@ public class MultiplayerDSConfiguration
 {
     public bool isServerUseAMS = false;
     public bool overrideDSVersion = false;
-    public string proxyUrl = string.Empty;
-    public string proxyPath = string.Empty;
+    public ProxyConfiguration proxyConfiguration;
+}
+
+[Serializable]
+public class ProxyConfiguration
+{
+    public string url = string.Empty;
+    public string path = "/";
+    public string username = string.Empty;
+    public string password = string.Empty;
 }
 
 [Serializable]

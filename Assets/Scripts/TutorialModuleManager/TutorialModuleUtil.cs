@@ -10,12 +10,6 @@ public static class TutorialModuleUtil
 {
     private static bool? overrideDedicatedServerVersion = null;
 
-    public struct Proxy 
-    {
-        public string Url;
-        public string Path;
-    }
-
     public static bool IsAccelbyteSDKInstalled()
     {
         List<string> types = (from assembly in AppDomain.CurrentDomain.GetAssemblies() from type in assembly.GetTypes() where type.Name.Contains("AccelByte") select type.Name).ToList();
@@ -97,34 +91,43 @@ public static class TutorialModuleUtil
         return overrideDedicatedServerVersion.Value;
     }
 
-    public static Proxy GetProxy()
+    public static ProxyConfiguration GetProxy()
     {
         const string proxyUrlParam = "-ProxyUrl=";
         const string proxyPathParam = "-ProxyPath=";
+        const string proxyUsernameParam = "-ProxyUsername=";
+        const string proxyPasswordParam = "-ProxyPassword=";
 
-        // Get from launch parameter first.
+        // Get values from config file.
+        ProxyConfiguration proxyConfig = ConfigurationReader.Config.multiplayerDSConfiguration.proxyConfiguration;
+
+        // Override the config file with launch parameter.
         string proxyUrl = GetLaunchParamValue(proxyUrlParam);
         string proxyPath = GetLaunchParamValue(proxyPathParam);
+        string proxyUsername = GetLaunchParamValue(proxyUsernameParam);
+        string proxyPassword = GetLaunchParamValue(proxyPasswordParam);
 
-        // Get from config file if laucnh params are empty.
-        if (ConfigurationReader.Config != null) 
+        if (!string.IsNullOrEmpty(proxyUrl)) 
         {
-            if (string.IsNullOrEmpty(proxyUrl)) 
-            {
-                proxyUrl = ConfigurationReader.Config.multiplayerDSConfiguration.proxyUrl;
-            }
-            if (string.IsNullOrEmpty(proxyPath)) 
-            {
-                proxyPath = ConfigurationReader.Config.multiplayerDSConfiguration.proxyPath;
-            }
+            proxyConfig.url = proxyUrl;
+        }
+        if (!string.IsNullOrEmpty(proxyPath))
+        {
+            proxyConfig.path = proxyPath;
+        }
+        if (!string.IsNullOrEmpty(proxyUsername))
+        {
+            proxyConfig.username = proxyUsername;
+        }
+        if (!string.IsNullOrEmpty(proxyPassword))
+        {
+            proxyConfig.password = proxyPassword;
         }
         
-        BytewarsLogger.Log($"Proxy Url is set to {proxyUrl} and its path is set to {proxyPath}");
+        BytewarsLogger.Log(
+            $"Proxy config: Url: {proxyConfig.url}, Path: {proxyConfig.path}, " +
+            $"Is auth credentials empty: {string.IsNullOrEmpty(proxyConfig.username) || string.IsNullOrEmpty(proxyConfig.password)}");
 
-        return new Proxy
-        {
-            Url = proxyUrl,
-            Path = proxyPath
-        };
+        return proxyConfig;
     }
 }

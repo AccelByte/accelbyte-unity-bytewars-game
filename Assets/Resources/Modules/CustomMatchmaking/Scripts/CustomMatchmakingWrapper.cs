@@ -50,7 +50,11 @@ public class CustomMatchmakingWrapper : MonoBehaviour
         nativeWebSocket.OnError += OnMatchmakerError;
         nativeWebSocket.Connect();
 #else
-        netcodeWebSocket = WebSocketClientFactory.Create(matchmakerUrl);
+        netcodeWebSocket = WebSocketClientFactory.Create(
+            useSecureConnection: false, 
+            url: matchmakerUrl, 
+            username: string.Empty, 
+            password: string.Empty);
         netcodeWebSocket.Connect();
 #endif
     }

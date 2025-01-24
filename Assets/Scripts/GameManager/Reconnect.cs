@@ -49,9 +49,9 @@ public class Reconnect : MonoBehaviour
         isRequireSecureConnection = true;
 #endif
 
-        TutorialModuleUtil.Proxy proxy = TutorialModuleUtil.GetProxy();
-        string proxyUrl = proxy.Url;
-        string proxyPath = proxy.Path.Replace("{server_ip}", address).Replace("{server_port}", port.ToString());
+        ProxyConfiguration proxy = TutorialModuleUtil.GetProxy();
+        string proxyUrl = proxy.url;
+        string proxyPath = proxy.path.Replace("{server_ip}", address).Replace("{server_port}", port.ToString());
 
         // If require secure connection but the proxy is empty, abort to use secure connection.
         if (isRequireSecureConnection && (string.IsNullOrEmpty(proxyUrl) || string.IsNullOrEmpty(proxyPath))) 
@@ -66,7 +66,9 @@ public class Reconnect : MonoBehaviour
         networkTransport.SecureConnection = isRequireSecureConnection;
         networkTransport.AllowForwardedRequest = true;
         networkTransport.CertificateBase64String = string.Empty;
-        
+        networkTransport.AuthUsername = proxy.username;
+        networkTransport.AuthPassword = proxy.password;
+
         byte[] connectionData = GameUtility.ToByteArray(initialConnectionData);
         NetworkManager.Singleton.NetworkConfig.ConnectionData = connectionData;
         NetworkManager.Singleton.NetworkConfig.NetworkTransport = networkTransport;
@@ -144,18 +146,21 @@ public class Reconnect : MonoBehaviour
                     if (players.TryGetValue(clientNetworkId, out var serverPlayer))
                     {
                         serverPlayer.UpdateMissilesState();
-                        game.ReAddReconnectedPlayerClientRpc(clientNetworkId, serverPlayer.GetFiredMissilesId(),
+                        game.ReAddReconnectedPlayerClientRpc(
+                            clientNetworkId, 
+                            serverPlayer.GetFiredMissilesId(),
                             serverHelper.ConnectedTeamStates.Values.ToArray(),
-                            serverHelper.ConnectedPlayerStates.Values.ToArray());
+                            serverHelper.ConnectedPlayerStates.Values.ToArray(),
+                            game.CreatedLevel);
                     }
                     //gameplay already started
                     if (gameTimeLeft != 0)
                     {
-                        game.SetInGameState(InGameState.Playing);
+                        game.SetInGameState(InGameState.Playing, true);
                     }
                     else
                     {
-                        game.SetInGameState(InGameState.PreGameCountdown);
+                        game.SetInGameState(InGameState.PreGameCountdown, true);
                     }
                 }
             }

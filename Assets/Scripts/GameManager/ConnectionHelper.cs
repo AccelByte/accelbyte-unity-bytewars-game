@@ -6,6 +6,7 @@ using System;
 using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class ConnectionHelper
 {
@@ -39,7 +40,7 @@ public class ConnectionHelper
 
         // Set server game mode if none.
         GameModeSO gameModeSo = availableInGameMode[clientRequestedGameModeIndex];
-        if (inGameMode==InGameMode.None)
+        if (inGameMode == InGameMode.None)
         {
             result = new ConnectionApprovalResult()
             {
@@ -59,9 +60,11 @@ public class ConnectionHelper
             }
         }
 
-        // Create a new player state for the new player, reject if failed.
-        if (isNewPlayer)
+        // If the game has not yet started, there is no reconnection and player are always treated as new player.
+        bool isGameScene = SceneManager.GetActiveScene().buildIndex == GameConstant.GameSceneBuildIndex;
+        if (isNewPlayer || !isGameScene)
         {
+            // Create a new player state for the new player, reject if failed.
             if (serverHelper.CreateNewPlayerState(request.ClientNetworkId, gameModeSo) == null)
             {
                 string reason = "Game is full. No avaiable team for the player.";
