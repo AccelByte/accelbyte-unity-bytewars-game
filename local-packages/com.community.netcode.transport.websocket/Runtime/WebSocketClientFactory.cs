@@ -65,11 +65,20 @@ namespace Netcode.Transports.WebSocket
         }
 #endif
 
-        public static IWebSocketClient Create(string url)
+        public static IWebSocketClient Create(bool useSecureConnection, string url, string username, string password)
         {
+            string protocol = useSecureConnection ? "wss" : "ws";
+            string targetUrl = $"{protocol}://{url}";
+
 #if (UNITY_WEBGL && !UNITY_EDITOR)
+            // Reformat url to add basic authentication to WebSocket header.
+            if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+            {
+                targetUrl = $"{protocol}://{username}:{password}@{url}";
+            }
+
             Client = new JSWebSocketClient();
-            _SetUrl(url);
+            _SetUrl(targetUrl);
             _SetOnOpen(OnOpenEvent);
             _SetOnMessage(OnMessageEvent);
             _SetOnError(OnErrorEvent);
@@ -77,7 +86,7 @@ namespace Netcode.Transports.WebSocket
 
             return Client;
 #else
-            return new NativeWebSocketClient(url);
+            return new NativeWebSocketClient(targetUrl, username, password);
 #endif
         }
     }

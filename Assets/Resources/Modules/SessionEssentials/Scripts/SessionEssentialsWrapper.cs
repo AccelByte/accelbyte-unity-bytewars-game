@@ -1,4 +1,4 @@
-// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -27,7 +27,7 @@ public class SessionEssentialsWrapper : MonoBehaviour
     /// <summary>
     /// This event will be raised after LeaveSession is complete
     /// </summary>
-    public event Action<Result<SessionV2GameSession>> OnLeaveSessionCompleteEvent;
+    public event Action<Result> OnLeaveSessionCompleteEvent;
 
     /// <summary>
     /// This event will be raised after GetGameSessionDetailsById is complete
@@ -146,7 +146,7 @@ public class SessionEssentialsWrapper : MonoBehaviour
     /// LeaveSession callback
     /// </summary>
     /// <param name="result"></param>
-    private void OnLeaveSessionCompleted(Result<SessionV2GameSession> result)
+    private void OnLeaveSessionCompleted(Result result)
     {
         if (!result.IsError)
         {

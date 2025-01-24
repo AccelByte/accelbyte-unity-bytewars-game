@@ -303,7 +303,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
         StartJoinToGameSession(cachedSessionId);
     }
 
-    private void OnLeaveSessionComplete(Result<SessionV2GameSession> result)
+    private void OnLeaveSessionComplete(Result result)
     {
         if (!result.IsError)
         {

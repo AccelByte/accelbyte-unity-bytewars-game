@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Security.Cryptography.X509Certificates;
 using Unity.Netcode;
 using UnityEngine;
@@ -19,6 +19,8 @@ namespace Netcode.Transports.WebSocket
         public bool SecureConnection = false;
         public bool AllowForwardedRequest;
         public string CertificateBase64String;
+        public string AuthUsername;
+        public string AuthPassword;
 
         public override ulong ServerClientId => 0;
 
@@ -113,8 +115,11 @@ namespace Netcode.Transports.WebSocket
                 throw new InvalidOperationException("Socket already started");
             }
 
-            var protocol = SecureConnection ? "wss" : "ws";
-            WebSocketClient = WebSocketClientFactory.Create($"{protocol}://{ConnectAddress}:{Port}{Path}");
+            WebSocketClient = WebSocketClientFactory.Create(
+                SecureConnection,
+                $"{ConnectAddress}:{Port}{Path}",
+                AuthUsername,
+                AuthPassword);
             WebSocketClient.Connect();
 
             IsStarted = true;

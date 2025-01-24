@@ -124,7 +124,7 @@ public class SessionMenuHandler : MenuCanvas
         MenuManager.Instance.OnBackPressed();
     }
 
-    private void OnLeaveSessionCompleted(Result<SessionV2GameSession> result)
+    private void OnLeaveSessionCompleted(Result result)
     {
         if (!result.IsError)
         {

@@ -279,7 +279,7 @@ public class MatchSessionWrapper : GameSessionUtilityWrapper
     }
 
 
-    private void OnLeaveCustomSessionCompleted(Result<SessionV2GameSession> result)
+    private void OnLeaveCustomSessionCompleted(Result result)
     {
         if (!result.IsError)
         {

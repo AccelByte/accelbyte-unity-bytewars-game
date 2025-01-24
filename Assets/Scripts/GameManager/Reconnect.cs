@@ -49,9 +49,9 @@ public class Reconnect : MonoBehaviour
         isRequireSecureConnection = true;
 #endif
 
-        TutorialModuleUtil.Proxy proxy = TutorialModuleUtil.GetProxy();
-        string proxyUrl = proxy.Url;
-        string proxyPath = proxy.Path.Replace("{server_ip}", address).Replace("{server_port}", port.ToString());
+        ProxyConfiguration proxy = TutorialModuleUtil.GetProxy();
+        string proxyUrl = proxy.url;
+        string proxyPath = proxy.path.Replace("{server_ip}", address).Replace("{server_port}", port.ToString());
 
         // If require secure connection but the proxy is empty, abort to use secure connection.
         if (isRequireSecureConnection && (string.IsNullOrEmpty(proxyUrl) || string.IsNullOrEmpty(proxyPath))) 
@@ -66,7 +66,9 @@ public class Reconnect : MonoBehaviour
         networkTransport.SecureConnection = isRequireSecureConnection;
         networkTransport.AllowForwardedRequest = true;
         networkTransport.CertificateBase64String = string.Empty;
-        
+        networkTransport.AuthUsername = proxy.username;
+        networkTransport.AuthPassword = proxy.password;
+
         byte[] connectionData = GameUtility.ToByteArray(initialConnectionData);
         NetworkManager.Singleton.NetworkConfig.ConnectionData = connectionData;
         NetworkManager.Singleton.NetworkConfig.NetworkTransport = networkTransport;
