@@ -146,18 +146,21 @@ public class Reconnect : MonoBehaviour
                     if (players.TryGetValue(clientNetworkId, out var serverPlayer))
                     {
                         serverPlayer.UpdateMissilesState();
-                        game.ReAddReconnectedPlayerClientRpc(clientNetworkId, serverPlayer.GetFiredMissilesId(),
+                        game.ReAddReconnectedPlayerClientRpc(
+                            clientNetworkId, 
+                            serverPlayer.GetFiredMissilesId(),
                             serverHelper.ConnectedTeamStates.Values.ToArray(),
-                            serverHelper.ConnectedPlayerStates.Values.ToArray());
+                            serverHelper.ConnectedPlayerStates.Values.ToArray(),
+                            game.CreatedLevel);
                     }
                     //gameplay already started
                     if (gameTimeLeft != 0)
                     {
-                        game.SetInGameState(InGameState.Playing);
+                        game.SetInGameState(InGameState.Playing, true);
                     }
                     else
                     {
-                        game.SetInGameState(InGameState.PreGameCountdown);
+                        game.SetInGameState(InGameState.PreGameCountdown, true);
                     }
                 }
             }

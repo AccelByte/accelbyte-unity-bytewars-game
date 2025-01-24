@@ -45,6 +45,7 @@ public class GameManager : NetworkBehaviour
     public List<GameEntityAbs> ActiveGEs { get; } = new();
     public Dictionary<ulong, Player> Players { get; } = new();
     public ObjectPooling Pool { get; private set; }
+    public LevelCreationResult CreatedLevel { get; private set; }
     public Camera MainCamera => mainCamera;
     public TeamState[] TeamStates => serverHelper.GetTeamStates();
     public Dictionary<int, TeamState> ConnectedTeamStates => serverHelper.ConnectedTeamStates;
@@ -167,6 +168,12 @@ public class GameManager : NetworkBehaviour
 
     private void SetupGame()
     {
+        // Only offline game, server, and host are able to setup the game.
+        if (NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsHost) 
+        {
+            return;
+        }
+
         if (!InGameState.Equals(InGameState.None))
         {
             BytewarsLogger.LogWarning("Cannot setup game. Game is already setup.");
@@ -223,10 +230,11 @@ public class GameManager : NetworkBehaviour
         CreateLevelAndInitializeHud(
             serverHelper.ConnectedTeamStates,
             serverHelper.ConnectedPlayerStates,
-            out LevelCreationResult result);
-        
+            out LevelCreationResult levelResult);
+        CreatedLevel = levelResult;
+
         PlaceObjectsClientRpc(
-            result,
+            CreatedLevel,
             serverHelper.ConnectedTeamStates.Values.ToArray(),
             serverHelper.ConnectedPlayerStates.Values.ToArray());
     }
@@ -248,6 +256,7 @@ public class GameManager : NetworkBehaviour
     
     public void ResetCache()
     {
+        CreatedLevel = null;
         isGameStarted = false;
         gameMode = GameModeEnum.MainMenu;
         InGameMode = InGameMode.None;
@@ -493,13 +502,15 @@ public class GameManager : NetworkBehaviour
             Players.Remove(clientNetworkId);
         }
 
-        if (!isInGameScene || InGameState == InGameState.GameOver)
-        {
-            serverHelper.RemovePlayerState(clientNetworkId);
-        }
-        else
+        // If in gameplay, only disconnect player state but don't remove it. This is to support player reconnection.
+        if (isInGameScene)
         {
             serverHelper.DisconnectPlayerState(clientNetworkId, player);
+        }
+        // Else, remove the player state so other player can join the lobby.
+        else
+        {
+            serverHelper.RemovePlayerState(clientNetworkId);
         }
 
         RemoveConnectedClientRpc(clientNetworkId, serverHelper.ConnectedTeamStates.Values.ToArray(), 
@@ -524,30 +535,37 @@ public class GameManager : NetworkBehaviour
             return;
         }
 
-        if (isResetMissile)
-        {
-            player.Reset();
-        }
-        else
-        {
-            player.gameObject.SetActive(false);
-        }
+        player.Deinitialize(isResetMissile);
     }
 
-    private void ReAddReconnectedPlayerOnClient(ulong clientNetworkId, int[] firedMissilesId,
-        TeamState[] teamStates, PlayerState[] playerStates)
+    private void ReAddReconnectedPlayerOnClient(
+        ulong clientNetworkId, 
+        int[] firedMissilesId,
+        TeamState[] teamStates, 
+        PlayerState[] playerStates,
+        LevelCreationResult levelResult)
     {
         BytewarsLogger.Log($"ReAddReconnectedPlayerOnClient IsServer:{IsServer} clientNetworkId:{clientNetworkId}");
 
-        clientHelper.SetClientNetworkId(clientNetworkId);
+        // Reset HUD
         hud.HideGameStatusContainer();
 
+        // Reconnected player may have different network id, thus reassign the client network id to client helper.
+        if (clientNetworkId == NetworkManager.Singleton.LocalClientId) 
+        {
+            clientHelper.SetClientNetworkId(clientNetworkId);
+        }
+
+        // Span reconnected player ship.
         Player player = InGameFactory.SpawnReconnectedShip(clientNetworkId, serverHelper, Pool);
         if (player)
         {
             player.SetFiredMissilesId(firedMissilesId);
             Players.TryAdd(clientNetworkId, player);
         }
+
+        // Respawn level objects.
+        PlaceLevelObjects(levelResult, teamStates, playerStates);
 
         serverHelper.UpdatePlayerStates(teamStates, playerStates);
     }
@@ -557,7 +575,8 @@ public class GameManager : NetworkBehaviour
         ulong clientNetworkId, 
         int[] firedMissilesId,
         TeamState[] teamStates, 
-        PlayerState[] playerStates)
+        PlayerState[] playerStates,
+        LevelCreationResult levelResult)
     {
         BytewarsLogger.Log($"[Client] Re-add reconnected player. Client id: {clientNetworkId}. Is host: {IsHost}");
 
@@ -566,7 +585,7 @@ public class GameManager : NetworkBehaviour
             return;
         }
 
-        ReAddReconnectedPlayerOnClient(clientNetworkId, firedMissilesId, teamStates, playerStates);
+        ReAddReconnectedPlayerOnClient(clientNetworkId, firedMissilesId, teamStates, playerStates, levelResult);
     }
 
     public void OnTransportEvent(NetworkEvent networkEvent, ulong clientNetworkId, ArraySegment<byte> payload, float receiveTime)
@@ -701,11 +720,11 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    public bool SetInGameState(InGameState newState)
+    public bool SetInGameState(InGameState newState, bool forceChangeState = false)
     {
         BytewarsLogger.Log($"Try to set in-game state to: {newState}");
 
-        if (InGameState == newState)
+        if (!forceChangeState && InGameState == newState)
         {
             BytewarsLogger.LogWarning($"Cannot set in-game state to {newState} because the current state is already the same.");
             return false;
@@ -779,7 +798,7 @@ public class GameManager : NetworkBehaviour
         // Broadcast to update in-game state on connected game clients.
         if (IsServer || IsHost)
         {
-            UpdateInGameStateClientRpc(InGameState, gameTimeLeft);
+            UpdateInGameStateClientRpc(InGameState, gameTimeLeft, forceChangeState);
         }
 
         OnGameStateChanged?.Invoke(newState);
@@ -788,7 +807,7 @@ public class GameManager : NetworkBehaviour
     }
     
     [ClientRpc]
-    private void UpdateInGameStateClientRpc(InGameState newState, int remainingGameTime)
+    private void UpdateInGameStateClientRpc(InGameState newState, int remainingGameTime, bool forceChangeState = false)
     {
         if (IsHost) 
         {
@@ -797,7 +816,7 @@ public class GameManager : NetworkBehaviour
         }
 
         BytewarsLogger.Log($"[Client] Try to set in-game state from {InGameState} to: {newState}");
-        if (InGameState == newState)
+        if (!forceChangeState && InGameState == newState)
         {
             BytewarsLogger.LogWarning($"[Client] Cannot set in-game state from {InGameState} to {newState} because the current state is already the same.");
             return;
@@ -812,7 +831,7 @@ public class GameManager : NetworkBehaviour
 
     private void UpdateInGameUI() 
     {
-        BytewarsLogger.Log("Received to update in-game user interface.");
+        BytewarsLogger.Log($"Received to update in-game user interface. Current in-game state: {InGameState}. Game time left: {gameTimeLeft}");
 
         // Adjust time scale when the game is paused or resumed.
         Time.timeScale = InGameState == InGameState.LocalPause ? 0 : 1;
@@ -932,30 +951,44 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void PlaceObjectsClientRpc(
         LevelCreationResult levelResult,
-        TeamState[] teamStates, 
+        TeamState[] teamStates,
         PlayerState[] playerStates)
     {
         BytewarsLogger.Log($"[Client] Place level objects. Is local player: {IsLocalPlayer}. Is client: {IsClient}. Is host: {IsHost}");
-
+        PlaceLevelObjects(levelResult, teamStates, playerStates);
+    }
+    
+    private void PlaceLevelObjects(
+        LevelCreationResult levelResult,
+        TeamState[] teamStates,
+        PlayerState[] playerStates) 
+    {
         if (IsHost)
         {
             return;
         }
-        
+
+        if (CreatedLevel != null)
+        {
+            BytewarsLogger.Log($"[Client] Cannot place level objects. Level objects is already created.");
+            return;
+        }
+        CreatedLevel = levelResult;
+
         AudioManager.Instance.PlayGameplayBGM();
 
         serverHelper.UpdatePlayerStates(teamStates, playerStates);
         Pool ??= new ObjectPooling(container, gamePrefabs, fxPrefabs);
         availablePositions = new List<Vector3>(levelResult.AvailablePositions);
-        
+
         clientHelper.PlaceObjectsOnClient(
-            levelResult.LevelObjects, 
-            playerStates.Select(x => x.clientNetworkId).ToArray(), 
+            levelResult.LevelObjects,
+            playerStates.Select(x => x.clientNetworkId).ToArray(),
             Pool,
             gamePrefabDict,
             planets,
             Players,
-            serverHelper, 
+            serverHelper,
             ActiveGEs);
 
         menuManager.HideLoading(false);
@@ -964,7 +997,7 @@ public class GameManager : NetworkBehaviour
         hud.gameObject.SetActive(true);
         hud.Init(teamStates, playerStates);
     }
-    
+
     public static bool IsLocalGame() => !NetworkManager.Singleton.IsListening;
 
     #endregion
@@ -994,7 +1027,7 @@ public class GameManager : NetworkBehaviour
         
         player.transform.rotation = rotation;
         player.PlayerState.position = position;
-        player.Init(maxInFlightMissile, teamColor);
+        player.Initialize(maxInFlightMissile, teamColor);
     }
     
     [ClientRpc]
@@ -1060,7 +1093,7 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     public void UpdatePlayerStatesClientRpc(TeamState[] teamStates, PlayerState[] playerStates)
     {
-        BytewarsLogger.LogWarning(
+        BytewarsLogger.Log(
             $"[Client] Update player states. Is host: {IsHost}. " +
             $"Team states: {JsonUtility.ToJson(teamStates)}. Player states: {JsonUtility.ToJson(playerStates)}");
 
@@ -1445,14 +1478,14 @@ public class GameManager : NetworkBehaviour
         base.OnNetworkSpawn();
     }
     
-    public void StartAsClient(string address, ushort port, InGameMode inGameMode)
+    public void StartAsClient(string address, ushort port, InGameMode inGameMode, string sessionId = null)
     {
-        var initialData = new InitialConnectionData
+        // Start connect the client to game server.
+        InitialConnectionData initialData = new InitialConnectionData
         {
             inGameMode = inGameMode, 
-            sessionId = null
+            sessionId = sessionId
         };
-
         reconnect.ConnectAsClient(networkTransport, address, port, initialData);
     }
     
@@ -1487,6 +1520,7 @@ public class GameManager : NetworkBehaviour
         InGameMode = inGameMode;
         GameData.GameModeSo = availableInGameMode[(int)inGameMode];
         GameData.ServerType = serverType;
+        GameData.CachedPlayerState = playerStates.FirstOrDefault(x => x.clientNetworkId == NetworkManager.Singleton.LocalClientId);
 
         if (!isInGameScene)
         {

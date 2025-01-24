@@ -195,7 +195,7 @@ public class InGameFactory
         Vector3 newPosition = GetPlayerSpawnPosition(gameModeSo, instantiatedGEs, instantiatedShips, availablePositions);
         Color teamColor = gameModeSo.teamColours[playerToRespawn.PlayerState.teamIndex];
         playerToRespawn.PlayerState.position = newPosition;
-        playerToRespawn.Init(gameModeSo.maxInFlightMissilesPerPlayer, teamColor);
+        playerToRespawn.Initialize(gameModeSo.maxInFlightMissilesPerPlayer, teamColor);
 
         // Add old position to available positions.
         availablePositions.Add(oldPosition);
