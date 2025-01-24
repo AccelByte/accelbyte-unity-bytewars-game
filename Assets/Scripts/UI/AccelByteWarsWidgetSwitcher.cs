@@ -115,11 +115,26 @@ public class AccelByteWarsWidgetSwitcher : MonoBehaviour
         loadingStatePanel.gameObject.SetActive(newState == WidgetState.Loading);
         errorStatePanel.gameObject.SetActive(newState == WidgetState.Error);
 
-        retryButton.gameObject.SetActive(enableRetryButton && showRetryButton);
-        cancelButton.gameObject.SetActive(enableCancelButton && showCancelButton);
+        cancelButton.gameObject.SetActive(showCancelButton);
+        EnableCancelButton(enableCancelButton);
+
+        retryButton.gameObject.SetActive(showRetryButton);
+        EnableRetryButton(enableRetryButton);
 
         CurrentState = newState;
         OnStateChanged?.Invoke(CurrentState);
+    }
+
+    public void EnableCancelButton(bool isEnable) 
+    {
+        enableCancelButton = isEnable;
+        cancelButton.enabled = enableCancelButton;
+    }
+
+    public void EnableRetryButton(bool isEnable) 
+    {
+        enableRetryButton = isEnable;
+        retryButton.enabled = enableRetryButton;
     }
 
     private void OnValidate()

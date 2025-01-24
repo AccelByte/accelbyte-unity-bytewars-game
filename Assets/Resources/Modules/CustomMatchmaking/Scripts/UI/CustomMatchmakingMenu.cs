@@ -67,6 +67,7 @@ public class CustomMatchmakingMenu : MenuCanvas
     private void StartMatchmaking() 
     {
         widgetSwitcher.LoadingMessage = CustomMatchmakingModels.RequestMatchmakingMessage;
+        widgetSwitcher.EnableCancelButton(false);
         widgetSwitcher.SetWidgetState(WidgetState.Loading);
 
         customMatchmakingWrapper.StartMatchmaking();
@@ -75,6 +76,7 @@ public class CustomMatchmakingMenu : MenuCanvas
     private void CancelMatchmaking() 
     {
         widgetSwitcher.LoadingMessage = CustomMatchmakingModels.CancelMatchmakingMessage;
+        widgetSwitcher.EnableCancelButton(false);
         widgetSwitcher.SetWidgetState(WidgetState.Loading);
 
         customMatchmakingWrapper.CancelMatchmaking();
@@ -83,6 +85,7 @@ public class CustomMatchmakingMenu : MenuCanvas
     private void OnMatchmakingStarted() 
     {
         widgetSwitcher.LoadingMessage = CustomMatchmakingModels.FindingMatchMessage;
+        widgetSwitcher.EnableCancelButton(true);
         widgetSwitcher.SetWidgetState(WidgetState.Loading);
     }
 
