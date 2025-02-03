@@ -89,7 +89,7 @@ public class CustomMatchmakingMenu : MenuCanvas
         widgetSwitcher.SetWidgetState(WidgetState.Loading);
     }
 
-    private void OnMatchmakingStopped(WebSocketCloseCode closeCode)
+    private void OnMatchmakingStopped(WebSocketCloseCode closeCode, string closeMessage)
     {
         if (closeCode == WebSocketCloseCode.Normal) 
         {
@@ -97,8 +97,7 @@ public class CustomMatchmakingMenu : MenuCanvas
         }
         else
         {
-            // Display generic error message.
-            OnMatchmakingError(CustomMatchmakingModels.MatchmakingErrorMessage);
+            OnMatchmakingError(closeMessage);
         }
     }
 

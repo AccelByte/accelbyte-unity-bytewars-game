@@ -15,10 +15,12 @@ using static Netcode.Transports.WebSocket.WebSocketEvent;
 public class CustomMatchmakingWrapper : MonoBehaviour
 {
     public Action OnMatchmakingStarted;
-    public Action<WebSocketCloseCode /*closeCode*/> OnMatchmakingStopped;
+    public Action<WebSocketCloseCode /*closeCode*/, string /*closeMessage*/> OnMatchmakingStopped;
     public Action<CustomMatchmakingModels.MatchmakerPayload /*payload*/> OnMatchmakingPayload;
     public Action<string /*serverIp*/, ushort /*serverPort*/> OnMatchmakingServerReady;
     public Action<string /*errorMessage*/> OnMatchmakingError;
+
+    private string pendingCloseMessage = string.Empty;
 
 #if !UNITY_WEBGL
     // Use native WebSocket.
@@ -31,6 +33,8 @@ public class CustomMatchmakingWrapper : MonoBehaviour
     public void StartMatchmaking() 
     {
         BytewarsLogger.Log("Start matchmaking.");
+
+        pendingCloseMessage = string.Empty;
 
         string matchmakerUrl = CustomMatchmakingModels.GetMatchmakerUrl();
 #if !UNITY_WEBGL 
@@ -139,13 +143,31 @@ public class CustomMatchmakingWrapper : MonoBehaviour
 
     private void OnMatchmakerClosed(WebSocketCloseCode closeCode)
     {
-        BytewarsLogger.Log($"Disconnected from matchmaker. Close code: {closeCode}");
 #if !UNITY_WEBGL
         nativeWebSocket = null;
 #else
         netcodeWebSocket = null;
 #endif
-        OnMatchmakingStopped?.Invoke(closeCode);
+
+        // Store and clear the pending close message.
+        string closeMessage = pendingCloseMessage;
+        pendingCloseMessage = string.Empty;
+
+        /* Handle WebSocket close conditions:
+         * If closed normally with a close message, set the close code to undefined.
+         * If closed abnormally, use the generic error message.
+         * Otherwise, retain the WebSocket's native close code and message. */
+        if (closeCode == WebSocketCloseCode.Normal && !string.IsNullOrEmpty(closeMessage))
+        {
+            closeCode = WebSocketCloseCode.Undefined;
+        }
+        else if (closeCode == WebSocketCloseCode.Abnormal)
+        {
+            closeMessage = CustomMatchmakingModels.MatchmakingErrorMessage;
+        }
+
+        BytewarsLogger.Log($"Disconnected from matchmaker. Close code: {closeCode}. Close message: {closeMessage}");
+        OnMatchmakingStopped?.Invoke(closeCode, closeMessage);
     }
 
     private void OnMatchmakerPayload(byte[] bytes) 
@@ -167,11 +189,15 @@ public class CustomMatchmakingWrapper : MonoBehaviour
         catch (Exception e) 
         {
             BytewarsLogger.LogWarning($"Cannot handle matchmaker payload. Unable to parse payload. Error: {e.Message}");
-            return;
+            payload = null;
         }
+
+        // Abort matchmaking if payload is invalid.
         if (payload == null)
         {
             BytewarsLogger.LogWarning("Cannot handle matchmaker payload. Matchmaker payload is null.");
+            pendingCloseMessage = CustomMatchmakingModels.MatchmakingInvalidPayloadErrorMessage;
+            CancelMatchmaking();
             return;
         }
 
@@ -194,6 +220,7 @@ public class CustomMatchmakingWrapper : MonoBehaviour
 #else
         netcodeWebSocket = null;
 #endif
+        pendingCloseMessage = errorMessage;
         OnMatchmakingError?.Invoke(errorMessage);
     }
 

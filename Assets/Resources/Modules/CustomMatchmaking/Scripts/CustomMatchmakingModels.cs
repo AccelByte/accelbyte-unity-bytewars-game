@@ -12,6 +12,7 @@ public class CustomMatchmakingModels
     public static readonly string RequestMatchmakingMessage = "Requesting";
     public static readonly string CancelMatchmakingMessage = "Canceling";
     public static readonly string MatchmakingErrorMessage = "Connection failed. Make sure the matchmaking server is running, reachable, and the address and port is set properly.";
+    public static readonly string MatchmakingInvalidPayloadErrorMessage = "Received invalid payload format from matchmaking server. Make sure you are running a compatible version.";
 
     public enum MatchmakerPayloadType
     {
