@@ -13,13 +13,13 @@ Byte Wars AMS is the official tutorial game for AccelByte Multiplayer Servers (A
 
 ## Clone Byte Wars
 
-You can find the **Byte Wars AMS** project from the `main-ams` branch on the [Byte Wars Unity GitHub repository](https://github.com/AccelByte/accelbyte-unity-bytewars-game/tree/main-ams). Use the Git command below to clone the project.
+You can find the **Byte Wars AMS** project from the `tutorialmodules-ams` branch on the [Byte Wars Unity GitHub repository](https://github.com/AccelByte/accelbyte-unity-bytewars-game/tree/tutorialmodules-ams). Use the Git command below to clone the project.
 
 ```bash
-git clone -b main-ams https://github.com/AccelByte/accelbyte-unity-bytewars-game.git
+git clone -b tutorialmodules-ams https://github.com/AccelByte/accelbyte-unity-bytewars-game.git
 ```
 
-The `main-ams` branch contain [AccelByte Unity SDK](https://github.com/AccelByte/accelbyte-unity-sdk) as project dependencies defined in the `Packages/manifest.json` file.
+The `tutorialmodules-ams` branch contain [AccelByte Unity SDK](https://github.com/AccelByte/accelbyte-unity-sdk) as project dependencies defined in the `Packages/manifest.json` file.
 
 ## Open Byte Wars in Unity
 
