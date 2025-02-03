@@ -57,7 +57,8 @@ public class MainMenu : MenuCanvas
     
     private static void OnCustomMatchmakingButtonPressed() 
     {
-        MenuManager.Instance.ChangeToMenu(AssetEnum.CustomMatchmakingMenu);
+        ModuleModel customMatchmakingModule = TutorialModuleManager.Instance.GetModule(TutorialType.CustomMatchmaking);
+        MenuManager.Instance.ChangeToMenu(customMatchmakingModule.isStarterActive ? AssetEnum.CustomMatchmakingMenu_Starter : AssetEnum.CustomMatchmakingMenu);
     }
 
     private static void OnLeaderboardButtonPressed()

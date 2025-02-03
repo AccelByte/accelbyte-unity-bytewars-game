@@ -26,6 +26,7 @@ public enum AssetEnum
 	CrossPlayPreferencesMenu,
 	CustomMatchmakingAssetConfig,
 	CustomMatchmakingMenu,
+	CustomMatchmakingMenu_Starter,
 	EliminationMenuCanvas,
 	emails,
 	FindFriendsEntryComponent,
