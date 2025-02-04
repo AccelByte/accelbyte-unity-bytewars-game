@@ -4,7 +4,9 @@
 
 using System;
 using System.Net;
+using System.Collections.Generic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using UnityEngine;
 using NativeWebSocket;
 #if UNITY_WEBGL
@@ -184,7 +186,15 @@ public class CustomMatchmakingWrapper : MonoBehaviour
         CustomMatchmakingModels.MatchmakerPayload payload = null;
         try 
         {
-            payload = JsonConvert.DeserializeObject<CustomMatchmakingModels.MatchmakerPayload>(payloadStr);
+            /* Configure settings to prevent enum deserialization from integer values.
+             * The enum value must match the string representation defined in the class.*/
+            JsonSerializerSettings settings = new JsonSerializerSettings
+            {
+                Converters = new List<JsonConverter> { new StringEnumConverter { AllowIntegerValues = false } },
+                NullValueHandling = NullValueHandling.Ignore
+            };
+
+            payload = JsonConvert.DeserializeObject<CustomMatchmakingModels.MatchmakerPayload>(payloadStr, settings);
         }
         catch (Exception e) 
         {

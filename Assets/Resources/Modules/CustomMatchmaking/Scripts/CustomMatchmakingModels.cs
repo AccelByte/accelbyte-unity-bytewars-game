@@ -2,6 +2,8 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
+using Newtonsoft.Json;
+
 public class CustomMatchmakingModels
 {
     public static readonly string CustomMatchmakerConfigKey = "CustomMatchmakingUrl";
@@ -24,7 +26,10 @@ public class CustomMatchmakingModels
 
     public class MatchmakerPayload
     {
+        [JsonProperty(Required = Required.Always)]
         public MatchmakerPayloadType type { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
         public string message { get; set; }
     }
 
