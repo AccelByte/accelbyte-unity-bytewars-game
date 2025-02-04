@@ -18,8 +18,8 @@ public class CustomMatchmakingModels
     {
         OnFindingMatch,
         OnMatchFound,
-        OnMatchError,
-        OnServerReady
+        OnServerReady,
+        OnServerClaimFailed
     }
 
     public class MatchmakerPayload
