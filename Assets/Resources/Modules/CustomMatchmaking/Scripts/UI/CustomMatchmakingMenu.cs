@@ -79,7 +79,7 @@ public class CustomMatchmakingMenu : MenuCanvas
         widgetSwitcher.EnableCancelButton(false);
         widgetSwitcher.SetWidgetState(WidgetState.Loading);
 
-        customMatchmakingWrapper.CancelMatchmaking();
+        customMatchmakingWrapper.CancelMatchmaking(isIntentional: true);
     }
 
     private void OnMatchmakingStarted() 
@@ -115,6 +115,6 @@ public class CustomMatchmakingMenu : MenuCanvas
 
     private void OnSwitcherStateChanged(WidgetState state)
     {
-        backButton.enabled = state != WidgetState.Loading;
+        backButton.gameObject.SetActive(state != WidgetState.Loading);
     }
 }

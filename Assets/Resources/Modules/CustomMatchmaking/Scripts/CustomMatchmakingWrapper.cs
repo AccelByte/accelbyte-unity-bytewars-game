@@ -65,8 +65,14 @@ public class CustomMatchmakingWrapper : MonoBehaviour
 #endif
     }
 
-    public void CancelMatchmaking() 
+    public void CancelMatchmaking(bool isIntentional) 
     {
+        // Use generic error message if the cancelation is intentional.
+        if (isIntentional)
+        {
+            pendingCloseMessage = CustomMatchmakingModels.MatchmakingCanceledErrorMessage;
+        }
+
 #if !UNITY_WEBGL
         if (nativeWebSocket == null)
         {
@@ -207,7 +213,7 @@ public class CustomMatchmakingWrapper : MonoBehaviour
         {
             BytewarsLogger.LogWarning("Cannot handle matchmaker payload. Matchmaker payload is null.");
             pendingCloseMessage = CustomMatchmakingModels.MatchmakingInvalidPayloadErrorMessage;
-            CancelMatchmaking();
+            CancelMatchmaking(isIntentional: false);
             return;
         }
 
@@ -250,6 +256,8 @@ public class CustomMatchmakingWrapper : MonoBehaviour
         else
         {
             BytewarsLogger.LogWarning($"Cannot travel to server. Unable to parse server info Ip address and port.");
+            pendingCloseMessage = CustomMatchmakingModels.MatchmakingInvalidPayloadErrorMessage;
+            CancelMatchmaking(isIntentional: false);
         }
     }
 
