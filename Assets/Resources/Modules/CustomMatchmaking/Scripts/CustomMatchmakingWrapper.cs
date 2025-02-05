@@ -169,7 +169,7 @@ public class CustomMatchmakingWrapper : MonoBehaviour
         {
             closeCode = WebSocketCloseCode.Undefined;
         }
-        else if (closeCode == WebSocketCloseCode.Abnormal)
+        else if (closeCode != WebSocketCloseCode.Normal)
         {
             closeMessage = CustomMatchmakingModels.MatchmakingErrorMessage;
         }
