@@ -42,6 +42,12 @@ public static class TutorialModuleUtil
 
     public static string GetLaunchParamValue(string param)
     {
+        string resultStr = string.Empty;
+
+#if (UNITY_WEBGL && !UNITY_EDITOR)
+        Dictionary<string, string> urlParams = ConnectionHandler.GetURLParameters();
+        urlParams.TryGetValue(param, out resultStr);
+#else
         string[] cmdArgs = Environment.GetCommandLineArgs();
 #if UNITY_EDITOR
         if (ParrelSync.ClonesManager.IsClone())
@@ -49,8 +55,6 @@ public static class TutorialModuleUtil
             cmdArgs = ParrelSync.ClonesManager.GetArgument().Split();
         }
 #endif
-
-        string resultStr = string.Empty;
         foreach (string cmdArg in cmdArgs)
         {
             if (cmdArg.Contains(param, StringComparison.OrdinalIgnoreCase))
@@ -59,7 +63,7 @@ public static class TutorialModuleUtil
                 break;
             }
         }
-
+#endif
         return resultStr;
     }
 
