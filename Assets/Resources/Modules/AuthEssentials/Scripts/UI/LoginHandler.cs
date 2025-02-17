@@ -1,4 +1,4 @@
-// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -208,33 +208,27 @@ public class LoginHandler : MenuCanvas
     private void AutoLoginURL()
     {
         Dictionary<string, string> urlParams = ConnectionHandler.GetURLParameters();
-
-        if (urlParams.Count == 0)
+        if (urlParams.TryGetValue("-AUTH_TYPE", out string authType) && authType == "ACCELBYTE")
         {
-            BytewarsLogger.Log($"Url Params Not found");
-            return;
-        }
+            CurrentView = LoginView.LoginLoading;
 
-        CurrentView = LoginView.LoginLoading;
+            urlParams.TryGetValue("-AUTH_LOGIN", out string email);
+            urlParams.TryGetValue("-AUTH_PASSWORD", out string password);
 
-        if (urlParams.TryGetValue("-AUTH_TYPE", out string authType))
-        {
-            if (authType == "ACCELBYTE")
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
             {
-                urlParams.TryGetValue("-AUTH_LOGIN", out string email);
-                urlParams.TryGetValue("-AUTH_PASSWORD", out string password);
-
-                if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-                {
-                    failedMessageText.text = $"Login Failed:\n Email and Password fields cannot be empty.";
-                    CurrentView = LoginView.LoginFailed;
-                    StartCoroutine(SetSelectedGameObject(retryLoginButton.gameObject));
-                    retryLoginButton.gameObject.SetActive(false);
-                    return;
-                }
-
-                authWrapper.LoginWithUsername(email, password, OnLoginCompleted);
+                failedMessageText.text = $"Login Failed:\n Email and Password fields cannot be empty.";
+                CurrentView = LoginView.LoginFailed;
+                StartCoroutine(SetSelectedGameObject(retryLoginButton.gameObject));
+                retryLoginButton.gameObject.SetActive(false);
+                return;
             }
+
+            authWrapper.LoginWithUsername(email, password, OnLoginCompleted);
+        }
+        else 
+        {
+            BytewarsLogger.Log("No auth credentials provided. Skipping auto login.");
         }
     }
 
