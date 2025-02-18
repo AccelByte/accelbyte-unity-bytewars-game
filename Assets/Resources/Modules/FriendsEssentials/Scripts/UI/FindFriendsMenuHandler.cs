@@ -100,7 +100,8 @@ public class FindFriendsMenuHandler : MenuCanvas
         friendSearchBar.enabled = false;
         ClearSearchPanel();
 
-        friendsEssentialsWrapper.GetUserByFriendCode(query, result =>
+        // Find friend by friend code, make sure the friend code is in uppercase.
+        friendsEssentialsWrapper.GetUserByFriendCode(query.ToUpper(), result =>
         {
             OnUsersFriendCodeFound(result, query, fallbackAction: () =>
             {

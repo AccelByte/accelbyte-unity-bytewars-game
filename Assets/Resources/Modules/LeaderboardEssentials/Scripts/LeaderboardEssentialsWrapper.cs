@@ -72,11 +72,11 @@ public class LeaderboardEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Get Leaderboard List V3 successful.");
+            BytewarsLogger.Log("Get Leaderboard List V3 successful.");
         }
         else
         {
-            Debug.Log($"Get Leaderboard List V3 failed. Message: {result.Error.Message}");
+            BytewarsLogger.LogWarning($"Get Leaderboard List V3 failed. Message: {result.Error.Message}");
         }
         
         customCallback?.Invoke(result);
@@ -91,11 +91,11 @@ public class LeaderboardEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Get Rankings V3 successful.");
+            BytewarsLogger.Log("Get Rankings V3 successful.");
         }
         else
         {
-            Debug.Log($"Get Rankings V3 failed. Message: {result.Error.Message}");
+            BytewarsLogger.LogWarning($"Get Rankings V3 failed. Message: {result.Error.Message}");
         }
         
         customCallback?.Invoke(result);
@@ -110,11 +110,11 @@ public class LeaderboardEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Get User Ranking V3 successfull.");
+            BytewarsLogger.Log("Get User Ranking V3 successfull.");
         }
         else
         {
-            Debug.Log($"Get User Ranking V3 failed. Message: {result.Error.Message}");
+            BytewarsLogger.LogWarning($"Get User Ranking V3 failed. Message: {result.Error.Message}");
         }
         
         customCallback?.Invoke(result);

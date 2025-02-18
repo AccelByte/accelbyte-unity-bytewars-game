@@ -22,7 +22,7 @@ using ParrelSync;
 public class LoginHandler_Starter : MenuCanvas
 {
     public delegate void LoginHandlerDelegate(TokenData tokenData);
-    public static event LoginHandlerDelegate onLoginCompleted = delegate {};
+    public static event LoginHandlerDelegate OnLoginCompleted = delegate {};
 
     public UnityAction OnRetryLoginClicked
     {

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System.Collections;
 using System.Collections.Generic;
 using AccelByte.Api;
@@ -52,11 +56,11 @@ public class CloudSaveEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Save Player Record from Client successful.");
+            BytewarsLogger.Log("Save Player Record from Client successful.");
         }
         else
         {
-            Debug.Log($"Save Player Record from Client failed. Message: {result.Error.Message}");
+            BytewarsLogger.LogWarning($"Save Player Record from Client failed. Message: {result.Error.Message}");
         }
         
         customCallback?.Invoke(result);
@@ -66,11 +70,11 @@ public class CloudSaveEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Get Player Record from Client successful.");
+            BytewarsLogger.Log("Get Player Record from Client successful.");
         }
         else
         {
-            Debug.Log($"Get Player Record from Client failed. Message: {result.Error.Message}");
+            BytewarsLogger.LogWarning($"Get Player Record from Client failed. Message: {result.Error.Message}");
         }
         
         customCallback?.Invoke(result);
@@ -80,11 +84,11 @@ public class CloudSaveEssentialsWrapper : MonoBehaviour
         {
             if (!result.IsError)
             {
-                Debug.Log($"Delete Player Record from Client successful.");
+                BytewarsLogger.Log($"Delete Player Record from Client successful.");
             }
             else
             {
-                Debug.Log($"Delete Player Record from Client failed. Message: {result.Error.Message}");
+                BytewarsLogger.LogWarning($"Delete Player Record from Client failed. Message: {result.Error.Message}");
             }
             
             customCallback?.Invoke(result);

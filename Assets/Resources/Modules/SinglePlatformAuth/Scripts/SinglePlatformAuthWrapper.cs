@@ -98,10 +98,11 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
         if (loginHandler == null) return;
         loginHandler.OnRetryLoginClicked = OnLoginWithSteamButtonClicked;
         loginHandler.SetView(LoginHandler.LoginView.LoginLoading);
-        //get steam token to be used as platform token later
-        #if !UNITY_WEBGL
+
+        // Get steam token to be used as platform token later
+#if !UNITY_WEBGL
         steamHelper.GetAuthSessionTicket(OnGetAuthSessionTicketFinished);
-        #endif
+#endif
     }
 
     private void GetUserPublicData(string receivedUserId)
@@ -133,7 +134,7 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
     {
         if (result.IsError)
         {
-            Debug.Log($"[{ClassName}] error OnGetUserPublicDataFinished:{result.Error.Message}");
+            BytewarsLogger.Log($"[{ClassName}] error OnGetUserPublicDataFinished:{result.Error.Message}");
             loginHandler.OnRetryLoginClicked = () => GetUserPublicData(tokenData.user_id);
             loginHandler.OnLoginCompleted(CreateLoginErrorResult(result.Error.Code, result.Error.Message));
         }
@@ -160,7 +161,7 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
         }
         else
         {
-            //login with platform token
+            // Login with platform token
             user.LoginWithOtherPlatform(PlatformType, 
                 steamAuthSessionTicket, OnLoginWithOtherPlatformCompleted);
         }

@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System.IO;
 using System.Runtime.CompilerServices;
 using AccelByte.Api;
@@ -8,15 +12,15 @@ using UnityEngine;
 
 public static class MatchSessionHelper
 {
-    private static ApiClient _apiClient;
-    private static User _user;
+    private static ApiClient apiClient;
+    private static User user;
     
     private static void Init()
     {
-        if (_user==null)
+        if (user == null)
         {
-            _apiClient = AccelByteSDK.GetClientRegistry().GetApi();
-            _user = _apiClient.GetApi<User, UserApi>();
+            apiClient = AccelByteSDK.GetClientRegistry().GetApi();
+            user = apiClient.GetApi<User, UserApi>();
         }
     }
 
@@ -35,7 +39,7 @@ public static class MatchSessionHelper
     {
         Init();
         GameData.CachedPlayerState.playerId = receivedUserId;
-        _user.GetUserByUserId(receivedUserId, OnGetUserPublicDataFinished);
+        user.GetUserByUserId(receivedUserId, OnGetUserPublicDataFinished);
     }
 
     private static void OnGetUserPublicDataFinished(Result<PublicUserData> result)

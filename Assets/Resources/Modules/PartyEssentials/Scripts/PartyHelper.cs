@@ -38,7 +38,7 @@ public class PartyHelper : MonoBehaviour
         PartyEssentialsWrapper.OnUserKicked += OnKickedFromParty;
         PartyEssentialsWrapper.OnPartyUpdated += CheckPartyMemberStatus;
 
-        LoginHandler.onLoginCompleted += data => CheckPartyStatus();
+        LoginHandler.OnLoginComplete += data => CheckPartyStatus();
     }
 
     public static void ResetPartyData()

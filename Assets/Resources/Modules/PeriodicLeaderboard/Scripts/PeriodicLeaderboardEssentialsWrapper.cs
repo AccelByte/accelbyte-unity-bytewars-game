@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -47,11 +51,11 @@ public class PeriodicLeaderboardEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Get Stat's Cycle Config info success!");
+            BytewarsLogger.Log("Get Stat's Cycle Config info success!");
         }
         else
         {
-            Debug.Log($"Get Stat's Cycle Config info failed. Message: {result.Error.Message}");
+            BytewarsLogger.LogWarning($"Get Stat's Cycle Config info failed. Message: {result.Error.Message}");
         }
         
         customCallback?.Invoke(result);
@@ -61,11 +65,11 @@ public class PeriodicLeaderboardEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Get Ranking by Cycle success!");
+            BytewarsLogger.Log("Get Ranking by Cycle success!");
         }
         else
         {
-            Debug.Log($"Get Rankings by Cycle failed. Message: {result.Error.Message}");
+            BytewarsLogger.LogWarning($"Get Rankings by Cycle failed. Message: {result.Error.Message}");
         }
         
         customCallback?.Invoke(result);

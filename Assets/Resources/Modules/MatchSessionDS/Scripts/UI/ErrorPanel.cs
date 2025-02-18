@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -10,16 +10,16 @@ public class ErrorPanel : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI errorLabel;
     [SerializeField] private Button okButton;
-    private UnityAction _onOkButtonClicked;
+    private UnityAction onOkButtonClicked;
     void Start()
     {
-        okButton.onClick.AddListener(_onOkButtonClicked);
+        okButton.onClick.AddListener(onOkButtonClicked);
     }
 
     public void Show(string errorInfo, UnityAction errorOkCallback)
     {
         errorLabel.text = errorInfo;
-        _onOkButtonClicked = errorOkCallback;
+        onOkButtonClicked = errorOkCallback;
         gameObject.SetActive(true);
     }
     

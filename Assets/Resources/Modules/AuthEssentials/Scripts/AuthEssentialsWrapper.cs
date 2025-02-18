@@ -22,10 +22,6 @@ public class AuthEssentialsWrapper : MonoBehaviour
     private User user;
     private UserProfiles userProfiles;
     private Lobby lobby;
-    
-    // required variables to login with other platform outside AccelByte
-    private PlatformType platformType;
-    private string platformToken;
 
     private void Awake()
     {

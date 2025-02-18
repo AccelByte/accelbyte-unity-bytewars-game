@@ -11,9 +11,9 @@ using UnityEngine;
 public class StatsHelper : MonoBehaviour
 {
     // statcodes' name configured in Admin Portal
-    private const string SINGLEPLAYER_STATCODE = "unity-highestscore-singleplayer";
-    private const string ELIMINATION_STATCODE = "unity-highestscore-elimination";
-    private const string TEAMDEATHMATCH_STATCODE = "unity-highestscore-teamdeathmatch";
+    private const string SinglePlayerStatCode = "unity-highestscore-singleplayer";
+    private const string EliminationStatCode = "unity-highestscore-elimination";
+    private const string TeamDeathmatchStatCode = "unity-highestscore-teamdeathmatch";
 
     private StatsEssentialsWrapper statsWrapper;
 
@@ -31,7 +31,7 @@ public class StatsHelper : MonoBehaviour
         string targetStatCode = string.Empty;
         if (gameMode is GameModeEnum.SinglePlayer or GameModeEnum.LocalMultiplayer) 
         {
-            targetStatCode = SINGLEPLAYER_STATCODE;
+            targetStatCode = SinglePlayerStatCode;
         }
         else if (gameMode is GameModeEnum.OnlineMultiplayer) 
         {
@@ -39,11 +39,11 @@ public class StatsHelper : MonoBehaviour
             {
                 case InGameMode.OnlineEliminationGameMode:
                 case InGameMode.CreateMatchEliminationGameMode:
-                    targetStatCode = ELIMINATION_STATCODE;
+                    targetStatCode = EliminationStatCode;
                     break;
                 case InGameMode.OnlineDeathMatchGameMode:
                 case InGameMode.CreateMatchDeathMatchGameMode:
-                    targetStatCode = TEAMDEATHMATCH_STATCODE;
+                    targetStatCode = TeamDeathmatchStatCode;
                     break;
             }
         }

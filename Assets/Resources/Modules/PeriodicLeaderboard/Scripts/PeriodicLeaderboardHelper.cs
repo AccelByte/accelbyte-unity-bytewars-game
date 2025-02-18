@@ -10,15 +10,15 @@ using UnityEngine.UI;
 public class PeriodicLeaderboardHelper : MonoBehaviour
 {
     private PeriodicLeaderboardEssentialsWrapper periodicLeaderboardWrapper;
-    private const int RESULTOFFSET = 0;
-    private const int RESULTLIMIT = 10;
+    private const int ResultOffset = 0;
+    private const int ResultLimit = 10;
     
     void Start()
     {
         periodicLeaderboardWrapper = TutorialModuleManager.Instance.GetModuleClass<PeriodicLeaderboardEssentialsWrapper>();
         
-        LeaderboardCycleMenu.onLeaderboardCycleMenuActivated += DisplayLeaderboardCycleButtons;
-        LeaderboardMenu.onDisplayRankingListEvent += DisplayCycleRankingList;
+        LeaderboardCycleMenu.OnLeaderboardCycleMenuActivated += DisplayLeaderboardCycleButtons;
+        LeaderboardMenu.OnDisplayRankingListEvent += DisplayCycleRankingList;
     }
     
     private void DisplayLeaderboardCycleButtons(LeaderboardCycleMenu leaderboardCycleMenu, Transform leaderboardListPanel, GameObject leaderboardItemButtonPrefab)
@@ -76,7 +76,7 @@ public class PeriodicLeaderboardHelper : MonoBehaviour
             LeaderboardSelectionMenu.chosenLeaderboardCode,
             LeaderboardCycleMenu.chosenCycleId,
             leaderboardMenu.OnGetRankingsCompleted,
-            RESULTOFFSET,
-            RESULTLIMIT);
+            ResultOffset,
+            ResultLimit);
     }
 }

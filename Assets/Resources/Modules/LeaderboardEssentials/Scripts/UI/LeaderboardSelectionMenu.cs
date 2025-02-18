@@ -89,10 +89,10 @@ public class LeaderboardSelectionMenu : MenuCanvas
             return;
         }
 
-        LeaderboardDataV3[] leadeboardList = result.Value.Data.Where(data => data.Name.Contains("Unity")).ToArray();
+        LeaderboardDataV3[] leaderboardList = result.Value.Data.Where(data => data.Name.Contains("Unity")).ToArray();
 
         // No relevant leaderboard was found.
-        if (leadeboardList.Length <= 0)
+        if (leaderboardList.Length <= 0)
         {
             CurrentView = LeaderboardSelectionView.Empty;
             return;
@@ -101,7 +101,7 @@ public class LeaderboardSelectionMenu : MenuCanvas
         // Show leaderboard list.
         leaderboardListPanel.DestroyAllChildren();
         leaderboardCycleIds.Clear();
-        foreach (LeaderboardDataV3 leaderboard in leadeboardList)
+        foreach (LeaderboardDataV3 leaderboard in leaderboardList)
         {
             Button leaderboardButton =
                 Instantiate(leaderboardItemButtonPrefab, leaderboardListPanel).GetComponent<Button>();

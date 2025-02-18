@@ -54,13 +54,13 @@ public class LeaderboardMenu : MenuCanvas
     private string currentLeaderboardCode;
     private LeaderboardCycleMenu.LeaderboardCycleType currentCycleType;
 
-    private const int QUERY_OFFSET = 0;
-    private const int QUERY_LIMIT = 10;
+    private const int QueryOffset = 0;
+    private const int QueryLimit = 10;
 
     public delegate void LeaderboardMenuDelegate(LeaderboardMenu leaderboardMenu,
         UserCycleRanking[] userCycleRankings = null);
 
-    public static event LeaderboardMenuDelegate onDisplayRankingListEvent = delegate { };
+    public static event LeaderboardMenuDelegate OnDisplayRankingListEvent = delegate { };
 
     void Start()
     {
@@ -208,10 +208,10 @@ public class LeaderboardMenu : MenuCanvas
 
         if (currentCycleType == LeaderboardCycleMenu.LeaderboardCycleType.AllTime)
         {
-            leaderboardWrapper.GetRankings(currentLeaderboardCode, OnGetRankingsCompleted, QUERY_OFFSET, QUERY_LIMIT);
+            leaderboardWrapper.GetRankings(currentLeaderboardCode, OnGetRankingsCompleted, QueryOffset, QueryLimit);
         }
 
-        onDisplayRankingListEvent.Invoke(this);
+        OnDisplayRankingListEvent.Invoke(this);
     }
 
     public void InstantiateRankingEntry(string userId, int playerRank, string playerName, float playerScore)

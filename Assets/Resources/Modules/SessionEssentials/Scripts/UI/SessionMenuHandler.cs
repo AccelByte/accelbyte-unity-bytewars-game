@@ -104,7 +104,7 @@ public class SessionMenuHandler : MenuCanvas
         if (sessionEssentialsWrapper == null)
         {
             sessionEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<SessionEssentialsWrapper>();
-            SubcribeSessionEvents();
+            SubscribeSessionEvents();
         }
         
         createEliminationButton.onClick.AddListener(OnEliminationButtonClicked);
@@ -224,7 +224,7 @@ public class SessionMenuHandler : MenuCanvas
             return;
         }
         
-        SubcribeSessionEvents();
+        SubscribeSessionEvents();
     }
 
     private void OnDisable()
@@ -234,7 +234,7 @@ public class SessionMenuHandler : MenuCanvas
             return;
         }
 
-        UnSubcribeSessionEvents();
+        UnSubscribeSessionEvents();
     }
 
     public override GameObject GetFirstButton()
@@ -249,13 +249,13 @@ public class SessionMenuHandler : MenuCanvas
 
     #region EventListener
 
-    private void SubcribeSessionEvents()
+    private void SubscribeSessionEvents()
     {
         sessionEssentialsWrapper.OnCreateSessionCompleteEvent += OnCreateSessionCompleted;
         sessionEssentialsWrapper.OnLeaveSessionCompleteEvent += OnLeaveSessionCompleted;
     }
 
-    private void UnSubcribeSessionEvents()
+    private void UnSubscribeSessionEvents()
     {
         sessionEssentialsWrapper.OnCreateSessionCompleteEvent -= OnCreateSessionCompleted;
         sessionEssentialsWrapper.OnLeaveSessionCompleteEvent -= OnLeaveSessionCompleted;

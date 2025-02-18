@@ -52,7 +52,7 @@ public class LeaderboardCycleMenu : MenuCanvas
         Transform leaderboardListPanel,
         GameObject leaderboardItemButtonPrefab);
 
-    public static event LeaderboardCycleMenuDelegate onLeaderboardCycleMenuActivated = delegate { };
+    public static event LeaderboardCycleMenuDelegate OnLeaderboardCycleMenuActivated = delegate { };
 
     private void Start()
     {
@@ -67,7 +67,7 @@ public class LeaderboardCycleMenu : MenuCanvas
         
         if (ApiClientHelper.IsPlayerLoggedIn)
         {
-            onLeaderboardCycleMenuActivated.Invoke(this, leaderboardListPanel, leaderboardItemButtonPrefab);
+            OnLeaderboardCycleMenuActivated.Invoke(this, leaderboardListPanel, leaderboardItemButtonPrefab);
         }
     }
 

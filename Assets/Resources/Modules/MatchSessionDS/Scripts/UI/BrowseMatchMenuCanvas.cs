@@ -159,7 +159,7 @@ public class BrowseMatchMenuCanvas : MenuCanvas
 
     private void OnScrollValueChanged(Vector2 scrollPos)
     {
-        //scroll reach bottom
+        // Query next sessions when reached the bottom of the scroll panel
         if (scrollPos.y <= 0)
         {
             browseMatchSessionWrapper.QueryNextMatchSessions(OnNextPageMatchSessionsRetrieved);

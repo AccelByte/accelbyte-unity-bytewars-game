@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -10,7 +10,7 @@ public class LoadingPanel : MonoBehaviour
     [SerializeField] private Image[] loadingImages;
     [SerializeField] private Button cancelBtn;
     [SerializeField] private TextMeshProUGUI infoText;
-    private int _index = 0;
+    private int index = 0;
     private const float animationSpeed = 0.65f;
     void Start()
     {
@@ -19,7 +19,7 @@ public class LoadingPanel : MonoBehaviour
 
     private void StartAnimate()
     {
-        _index = 0;
+        index = 0;
         for (int i = 0; i < loadingImages.Length; i++)
         {
             loadingImages[i].color = new Color(1, 1, 1, 0);
@@ -30,20 +30,19 @@ public class LoadingPanel : MonoBehaviour
 
     private void AnimateImage()
     {
-        ;
-        if (_index == loadingImages.Length - 1)
+        if (index == loadingImages.Length - 1)
         {
-            LeanTween.color(loadingImages[_index].rectTransform, Color.white, animationSpeed)
+            LeanTween.color(loadingImages[index].rectTransform, Color.white, animationSpeed)
                 .setLoopCount(2).setLoopType(LeanTweenType.pingPong)
                 .setEaseOutQuad()
                 .setOnComplete(StartAnimate);
         }
         else
         {
-            LeanTween.color(loadingImages[_index].rectTransform, Color.white, animationSpeed)
+            LeanTween.color(loadingImages[index].rectTransform, Color.white, animationSpeed)
                 .setEaseOutQuad()
                 .setLoopCount(2).setLoopType(LeanTweenType.pingPong);
-            _index++;
+            index++;
         }
     }
     public void Show(string loadingInfo, UnityAction cancelCallback=null)

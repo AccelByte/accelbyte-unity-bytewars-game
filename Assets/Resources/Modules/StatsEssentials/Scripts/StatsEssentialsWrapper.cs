@@ -148,11 +148,11 @@ public class StatsEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Update User's Stat Items from Client successful.");
+            BytewarsLogger.Log("Update User's Stat Items from Client successful.");
         }
         else
         {
-            Debug.Log($"Update User's Stat Items from Client failed. Message: {result.Error.Message}");
+            BytewarsLogger.LogWarning($"Update User's Stat Items from Client failed. Message: {result.Error.Message}");
         }
         
         customCallback?.Invoke(result);
@@ -167,11 +167,11 @@ public class StatsEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Update User's Stat Items from Server successful.");
+            BytewarsLogger.Log("Update User's Stat Items from Server successful.");
         }
         else
         {
-            Debug.Log($"Update User's Stat Items from Server failed. Message: {result.Error.Message}");
+            BytewarsLogger.LogWarning($"Update User's Stat Items from Server failed. Message: {result.Error.Message}");
         }
         
         customCallback?.Invoke(result);
@@ -186,11 +186,11 @@ public class StatsEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Get User's Stat Items from Client successful.");
+            BytewarsLogger.Log("Get User's Stat Items from Client successful.");
         }
         else
         {
-            Debug.Log($"Get User's Stat Items from Client failed. Message: {result.Error.Message}");
+            BytewarsLogger.LogWarning($"Get User's Stat Items from Client failed. Message: {result.Error.Message}");
         }
         
         customCallback?.Invoke(result);
@@ -205,11 +205,11 @@ public class StatsEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Get User's Stat Items from Server successful.");
+            BytewarsLogger.Log("Get User's Stat Items from Server successful.");
         }
         else
         {
-            Debug.Log($"Get User's Stat Items from Server failed. Message: {result.Error.Message}");
+            BytewarsLogger.LogWarning($"Get User's Stat Items from Server failed. Message: {result.Error.Message}");
         }
         
         customCallback?.Invoke(result);
@@ -224,11 +224,11 @@ public class StatsEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Reset User Stat Item's value from Client successful.");
+            BytewarsLogger.Log("Reset User Stat Item's value from Client successful.");
         }
         else
         {
-            Debug.Log($"Reset User Stat Item's value from Client failed. Message: {result.Error.Message}");
+            BytewarsLogger.LogWarning($"Reset User Stat Item's value from Client failed. Message: {result.Error.Message}");
         }
         
         customCallback?.Invoke(result);
@@ -243,11 +243,11 @@ public class StatsEssentialsWrapper : MonoBehaviour
     {
         if (!result.IsError)
         {
-            Debug.Log("Reset User Stat Item's value from Server successful.");
+            BytewarsLogger.Log("Reset User Stat Item's value from Server successful.");
         }
         else
         {
-            Debug.Log($"Reset User Stat Item's value from Server failed. Message: {result.Error.Message}");
+            BytewarsLogger.LogWarning($"Reset User Stat Item's value from Server failed. Message: {result.Error.Message}");
         }
         
         customCallback?.Invoke(result);

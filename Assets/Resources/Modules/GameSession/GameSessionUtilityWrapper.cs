@@ -19,12 +19,12 @@ public class GameSessionUtilityWrapper : SessionEssentialsWrapper
     private const string TeamDeathmatchDSAMSMatchPool = "unity-teamdeathmatch-ds-ams";
 
 #if UNITY_SERVER
-    private DedicatedServerManager _dedicatedServerManager;
+    private DedicatedServerManager dedicatedServerManager;
     
     public DedicatedServerManager DedicatedServerManager 
     { 
-        get => _dedicatedServerManager;
-        private set => _dedicatedServerManager = value; 
+        get => dedicatedServerManager;
+        private set => dedicatedServerManager = value; 
     }
 #endif
 
@@ -32,8 +32,8 @@ public class GameSessionUtilityWrapper : SessionEssentialsWrapper
     {
         base.Awake();
 #if UNITY_SERVER
-        _dedicatedServerManager = AccelByteSDK.GetServerRegistry().GetApi().GetDedicatedServerManager();
-        DedicatedServerManager = _dedicatedServerManager;
+        dedicatedServerManager = AccelByteSDK.GetServerRegistry().GetApi().GetDedicatedServerManager();
+        DedicatedServerManager = dedicatedServerManager;
 #endif
     }
 
@@ -65,7 +65,6 @@ public class GameSessionUtilityWrapper : SessionEssentialsWrapper
         }
     }
 
-    //overload TravelToDS
     protected internal void TravelToDS(SessionV2GameSession sessionV2Game, InGameMode gameMode)
     {
         if (NetworkManager.Singleton.IsListening)

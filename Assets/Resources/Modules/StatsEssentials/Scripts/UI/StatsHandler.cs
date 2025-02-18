@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,26 +19,23 @@ public class StatsHandler : MenuCanvas
     [SerializeField] private TMP_Text teamDeathmatchStatValueText;
     [SerializeField] private Button backButton;
 
-    // statcodes' name configured in Admin Portal
-    private const string SINGLEPLAYER_STATCODE = "unity-highestscore-singleplayer";
-    private const string ELIMINATION_STATCODE = "unity-highestscore-elimination";
-    private const string TEAMDEATHMATCH_STATCODE = "unity-highestscore-teamdeathmatch";
+    // Statcodes' name configured in Admin Portal
+    private const string SinglePlayerStatCode = "unity-highestscore-singleplayer";
+    private const string EliminationStatCode = "unity-highestscore-elimination";
+    private const string TeamDeathmatchStatCode = "unity-highestscore-teamdeathmatch";
 	
-    private StatsEssentialsWrapper _statsWrapper;
+    private StatsEssentialsWrapper statsWrapper;
     
     // Start is called before the first frame update
     void Start()
     {
-        // get stats' wrapper
-        _statsWrapper = TutorialModuleManager.Instance.GetModuleClass<StatsEssentialsWrapper>();
-        
-        // uncomment to Reset Stat Item's value
-        // _statsWrapper.ResetUserStatsFromClient(SINGLEPLAYER_STATCODE, null, null);
+        // Get stats' wrapper
+        statsWrapper = TutorialModuleManager.Instance.GetModuleClass<StatsEssentialsWrapper>();
 
         // UI initialization
         backButton.onClick.AddListener(OnBackButtonClicked);
 		
-        // set default values
+        // Set default values
         singlePlayerStatValueText.text = "0";
         eliminationStatValueText.text = "0";
         teamDeathmatchStatValueText.text = "0";
@@ -44,7 +45,7 @@ public class StatsHandler : MenuCanvas
 
     void OnEnable()
     {
-        if (gameObject.activeSelf && _statsWrapper != null)
+        if (gameObject.activeSelf && statsWrapper != null)
         {
             DisplayStats();
         }
@@ -52,14 +53,14 @@ public class StatsHandler : MenuCanvas
 
     private void DisplayStats()
     {
-        // trying to get the stats values
+        // Trying to get the stats values
         string[] statCodes =
         {
-            SINGLEPLAYER_STATCODE,
-            ELIMINATION_STATCODE,
-            TEAMDEATHMATCH_STATCODE
+            SinglePlayerStatCode,
+            EliminationStatCode,
+            TeamDeathmatchStatCode
         };
-        _statsWrapper.GetUserStatsFromClient(statCodes, null, OnGetUserStatsCompleted);
+        statsWrapper.GetUserStatsFromClient(statCodes, null, OnGetUserStatsCompleted);
     }
 
     private void OnGetUserStatsCompleted(Result<PagedStatItems> result)
@@ -67,16 +68,16 @@ public class StatsHandler : MenuCanvas
         if (!result.IsError){
             foreach (StatItem statItem in result.Value.data)
             {
-                Debug.Log("[STATS]" + statItem.statCode + " - " + statItem.value);
+                BytewarsLogger.Log("[STATS]" + statItem.statCode + " - " + statItem.value);
                 switch (statItem.statCode)
                 {
-                    case SINGLEPLAYER_STATCODE:
+                    case SinglePlayerStatCode:
                         singlePlayerStatValueText.text = statItem.value.ToString();
                         break;
-                    case ELIMINATION_STATCODE:
+                    case EliminationStatCode:
                         eliminationStatValueText.text = statItem.value.ToString();
                         break;
-                    case TEAMDEATHMATCH_STATCODE:
+                    case TeamDeathmatchStatCode:
                         teamDeathmatchStatValueText.text = statItem.value.ToString();
                         break;
                 }

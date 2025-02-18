@@ -22,7 +22,7 @@ public class SinglePlatformAuthWrapper_Starter : MonoBehaviour
 
     private void Start()
     {
-        Debug.Log($"[{ClassName}] is started");
+        BytewarsLogger.Log($"[{ClassName}] is started");
         steamHelper = new SteamHelper();
         var apiClient = AccelByteSDK.GetClientRegistry().GetApi();
         user = apiClient.GetApi<User, UserApi>();

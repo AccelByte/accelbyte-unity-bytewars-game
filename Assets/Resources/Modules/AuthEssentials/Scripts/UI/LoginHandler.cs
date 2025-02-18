@@ -21,7 +21,7 @@ using ParrelSync;
 public class LoginHandler : MenuCanvas
 {
     public delegate void LoginHandlerDelegate(TokenData tokenData);
-    public static event LoginHandlerDelegate onLoginCompleted = delegate {};
+    public static event LoginHandlerDelegate OnLoginComplete = delegate {};
     public UnityAction OnRetryLoginClicked
     {
         set
@@ -81,7 +81,7 @@ public class LoginHandler : MenuCanvas
     
     private void Start()
     {
-        // get auth's subsystem
+        // Get auth's subsystem
         authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
         loginWithDeviceIdButton.onClick.AddListener(OnLoginWithDeviceIdButtonClicked);
         retryLoginButton.onClick.AddListener(OnRetryLoginButtonClicked);
@@ -133,7 +133,7 @@ public class LoginHandler : MenuCanvas
     {
         if (!result.IsError)
         {
-            onLoginCompleted.Invoke(result.Value);
+            OnLoginComplete.Invoke(result.Value);
             MenuManager.Instance.ChangeToMenu(AssetEnum.MainMenuCanvas);
             BytewarsLogger.Log($"[LoginHandler.OnLoginCompleted] success: {result.Value.ToJsonString()}");
         }
@@ -184,7 +184,7 @@ public class LoginHandler : MenuCanvas
             }
         }
 
-        // try login with the username and password specified with command-line arguments
+        // Try login with the username and password specified with command-line arguments
         if (username != string.Empty && password != string.Empty)
         {
             CurrentView = LoginView.LoginLoading;

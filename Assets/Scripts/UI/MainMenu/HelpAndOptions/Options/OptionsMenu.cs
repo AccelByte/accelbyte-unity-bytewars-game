@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -15,8 +15,8 @@ public class OptionsMenu : MenuCanvas
 
     public delegate void OptionsMenuDelegate(float musicVolume, float sfxVolume);
 
-    public static event OptionsMenuDelegate onOptionsMenuActivated = delegate {};
-    public static event OptionsMenuDelegate onOptionsMenuDeactivated = delegate {};
+    public static event OptionsMenuDelegate OnOptionsMenuActivated = delegate {};
+    public static event OptionsMenuDelegate OnOptionsMenuDeactivated = delegate {};
 
     void Start()
     {
@@ -39,13 +39,13 @@ public class OptionsMenu : MenuCanvas
             musicVolumeSlider.value = AudioManager.Instance.GetCurrentVolume(AudioManager.AudioType.MusicAudio);
             sfxVolumeSlider.value = AudioManager.Instance.GetCurrentVolume(AudioManager.AudioType.SfxAudio);
 
-            onOptionsMenuActivated.Invoke(musicVolumeSlider.value, sfxVolumeSlider.value);
+            OnOptionsMenuActivated.Invoke(musicVolumeSlider.value, sfxVolumeSlider.value);
         }
     }
 
     private void OnDisable()
     {
-        onOptionsMenuDeactivated.Invoke(musicVolumeSlider.value, sfxVolumeSlider.value);
+        OnOptionsMenuDeactivated.Invoke(musicVolumeSlider.value, sfxVolumeSlider.value);
     }
 
     private void ChangeMusicVolume(float musicVolume)

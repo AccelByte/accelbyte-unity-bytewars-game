@@ -32,12 +32,12 @@ public class PresenceEssentialsWrapper_Starter : MonoBehaviour
     {
         lobby = ApiClient.GetLobby();
 
-        LoginHandler.onLoginCompleted += CheckLobbyConnection;
+        LoginHandler.OnLoginComplete += CheckLobbyConnection;
     }
     
     private void OnDestroy()
     {
-        LoginHandler.onLoginCompleted -= CheckLobbyConnection;
+        LoginHandler.OnLoginComplete -= CheckLobbyConnection;
     }
     
     private void CheckLobbyConnection(TokenData _)

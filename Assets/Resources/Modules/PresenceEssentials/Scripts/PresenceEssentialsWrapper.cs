@@ -37,7 +37,7 @@ public class PresenceEssentialsWrapper : MonoBehaviour
     {
         lobby = ApiClient.GetLobby();
 
-        LoginHandler.onLoginCompleted += CheckLobbyConnection;
+        LoginHandler.OnLoginComplete += CheckLobbyConnection;
         
         lobby.FriendsStatusChanged += OnStatusChanged;
         lobby.Connected += UpdateSelfPresenceStatus;
@@ -78,7 +78,7 @@ public class PresenceEssentialsWrapper : MonoBehaviour
 
     private void OnDestroy()
     {
-        LoginHandler.onLoginCompleted -= CheckLobbyConnection;
+        LoginHandler.OnLoginComplete -= CheckLobbyConnection;
 
         lobby.FriendsStatusChanged -= OnStatusChanged;
         lobby.Connected -= UpdateSelfPresenceStatus;

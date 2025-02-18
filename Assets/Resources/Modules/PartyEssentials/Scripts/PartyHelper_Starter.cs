@@ -20,7 +20,7 @@ public class PartyHelper_Starter : MonoBehaviour
         _partyInvitationPrefab = AssetManager.Singleton.GetAsset(AssetEnum.PartyInvitationEntryPanel) as GameObject;
         _messageNotificationPrefab = AssetManager.Singleton.GetAsset(AssetEnum.MessageNotificationEntryPanel) as GameObject;
 
-        LoginHandler.onLoginCompleted += data =>
+        LoginHandler.OnLoginComplete += data =>
         {
             // put your code here
             

@@ -141,7 +141,7 @@ public class BrowseMatchMenuCanvas_Starter : MenuCanvas
 
     private void OnScrollValueChanged(Vector2 scrollPos)
     {
-        //scroll reach bottom
+        // Query next sessions when reached the bottom of the scroll panel
         if (scrollPos.y <= 0)
         {
             //TODO: Copy your code here

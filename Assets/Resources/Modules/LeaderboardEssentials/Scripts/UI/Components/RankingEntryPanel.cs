@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -11,7 +15,7 @@ public class RankingEntryPanel : MonoBehaviour
     [SerializeField] private TMP_Text playerNameText;
     [SerializeField] private TMP_Text playerScoreText;
 
-    private const string DEFAULT_DISPLAY_NAME_PREFIX = "PLAYER-";
+    private const string DefaultDisplayNamePrefix = "PLAYER-";
     
     public void ResetRankingEntry()
     {
@@ -23,7 +27,7 @@ public class RankingEntryPanel : MonoBehaviour
     public void SetRankingDetails(string userId, int playerRank, string playerName, float playerScore)
     {
         // If display name is null or empty, set to default format: "PLAYER-<<5 char of userId>>"
-        if (string.IsNullOrEmpty(playerName)) playerName = $"{DEFAULT_DISPLAY_NAME_PREFIX}{userId[..5]}";
+        if (string.IsNullOrEmpty(playerName)) playerName = $"{DefaultDisplayNamePrefix}{userId[..5]}";
         
         playerRankText.text = $"#{playerRank}";
         playerNameText.text = playerName;
