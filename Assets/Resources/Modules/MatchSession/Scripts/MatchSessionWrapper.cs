@@ -67,17 +67,13 @@ public class MatchSessionWrapper : GameSessionUtilityWrapper
             request.requestedRegions = preferredRegions;
         }
 
-        // Playing with Party additional code
-        if (!string.IsNullOrEmpty(PartyHelper.CurrentPartyId))
+        // Set party members in a team for playing with party feature.
+        SessionV2PartySession partySession = PartyEssentialsModels.PartyHelper.CurrentPartySession;
+        if (!string.IsNullOrEmpty(partySession.id))
         {
-            string[] memberIds = PartyHelper.PartyMembersData.Select(data => data.UserId).ToArray();
-            
             request.teams = new SessionV2TeamData[]
             {
-                new SessionV2TeamData()
-                {
-                    userIds = memberIds
-                }
+                new SessionV2TeamData { userIds = partySession.members.Select(x => x.id).ToArray() }
             };
         }
 

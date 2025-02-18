@@ -42,9 +42,7 @@ public class PresenceEssentialsWrapper : MonoBehaviour
         lobby.FriendsStatusChanged += OnStatusChanged;
         lobby.Connected += UpdateSelfPresenceStatus;
 
-        PartyEssentialsWrapper.OnPartyUpdated += OnPartyUpdated;
-        PartyEssentialsWrapper.OnUserKicked += OnPartyUserKicked;
-        PartyEssentialsWrapper.OnLeaveParty += OnLeaveParty;
+        PartyEssentialsModels.PartyHelper.BindOnPartyUpdate(OnPartyUpdate);
 
         SceneManager.sceneLoaded += OnSceneLoaded;
         MenuManager.OnMenuChanged += OnMenuChanged;
@@ -82,10 +80,8 @@ public class PresenceEssentialsWrapper : MonoBehaviour
 
         lobby.FriendsStatusChanged -= OnStatusChanged;
         lobby.Connected -= UpdateSelfPresenceStatus;
-        
-        PartyEssentialsWrapper.OnPartyUpdated -= OnPartyUpdated;
-        PartyEssentialsWrapper.OnUserKicked -= OnPartyUserKicked;
-        PartyEssentialsWrapper.OnLeaveParty -= OnLeaveParty;
+
+        PartyEssentialsModels.PartyHelper.UnBindOnPartyUpdate(OnPartyUpdate);
 
         SceneManager.sceneLoaded -= OnSceneLoaded;
         MenuManager.OnMenuChanged -= OnMenuChanged;
@@ -260,28 +256,9 @@ public class PresenceEssentialsWrapper : MonoBehaviour
         OnFriendsStatusChanged?.Invoke(result.Value);
     }
     
-    private void OnPartyUpdated(string leaderId, SessionV2MemberData[] members)
+    private void OnPartyUpdate()
     {
-        bool inParty = members.Any(data => data.id == friendsEssentialsWrapper.PlayerUserId);
-        bool aloneInParty = members.Where(member => member.id != friendsEssentialsWrapper.PlayerUserId)
-            .All(member => member.status != SessionV2MemberStatus.JOINED);
-        
-        IsInParty = inParty && !aloneInParty;
-
-        UpdateSelfPresenceStatus();
-    }
-    
-    private void OnPartyUserKicked(string partyId)
-    {
-        IsInParty = false;
-
-        UpdateSelfPresenceStatus();
-    }
-    
-    private void OnLeaveParty()
-    {
-        IsInParty = false;
-
+        IsInParty = PartyEssentialsModels.PartyHelper.CurrentPartySession != null;
         UpdateSelfPresenceStatus();
     }
 

@@ -41,7 +41,7 @@ public class PresenceHelper : MonoBehaviour
             { PresenceActivity.InAMatch, "In a Match" },
             { PresenceActivity.Matchmaking, "Matchmaking" },
             { PresenceActivity.MatchLobby, "Lobby" },
-            { PresenceActivity.InAParty, "Offline" },
+            { PresenceActivity.InAParty, "In a Party" },
             { PresenceActivity.Elimination, "Elimination" },
             { PresenceActivity.TeamDeathmatch, "Death Match" },
             { PresenceActivity.Singleplayer, "Singleplayer" },

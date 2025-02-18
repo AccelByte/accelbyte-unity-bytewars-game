@@ -18,6 +18,7 @@ public class MenuManager : MonoBehaviour
     public bool IsInitiated { get; private set; }
     public bool IsLoading => GetMenu(AssetEnum.LoadingMenuCanvas).gameObject.activeSelf;
     public PromptMenuCanvas PromptMenu { get; private set; }
+    public PushNotificationMenu PushNotificationMenu { get; private set; }
 
     public Dictionary<AssetEnum, MenuCanvas> AllMenu => menusDictionary;
     public readonly List<Vector3> TargetCameraPositions = new ()
@@ -334,7 +335,7 @@ public class MenuManager : MonoBehaviour
             return;
         }
         
-        InitOverlay();
+        InitPushNotification();
         InitPromptMenu();
         
         var allActiveModule = TutorialModuleManager.Instance.GetAllActiveModule();
@@ -479,12 +480,12 @@ public class MenuManager : MonoBehaviour
         }
     }
 
-    private void InitOverlay()
+    private void InitPushNotification()
     {
-        GameObject pushNotificationPrefab = AssetManager.Singleton.GetAsset(AssetEnum.PushNotificationCanvas) as GameObject;
-        GameObject pushNotificationCanvas = Instantiate(pushNotificationPrefab, transform);
-        pushNotificationCanvas.name = pushNotificationPrefab.name;
-        pushNotificationCanvas.SetActive(false);
+        GameObject prefab = AssetManager.Singleton.GetAsset(AssetEnum.PushNotificationMenu) as GameObject;
+        PushNotificationMenu = Instantiate(prefab, transform).GetComponent<PushNotificationMenu>();
+        PushNotificationMenu.gameObject.name = prefab.name;
+        PushNotificationMenu.gameObject.SetActive(false);
     }
 
     private void InitPromptMenu()
@@ -602,6 +603,24 @@ public class MenuManager : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region Push Notification Methods
+    public void PushNotification(PushNotificationModel pushNotification) 
+    {
+        PushNotificationMenu.gameObject.SetActive(true);
+        PushNotificationMenu.PushNotification(pushNotification);
+    }
+
+    public void RemoveNotification(PushNotificationEntry notificationEntry) 
+    {
+        if (!PushNotificationMenu.isActiveAndEnabled) 
+        {
+            return;
+        }
+
+        PushNotificationMenu.RemoveNotification(notificationEntry);
+    }
     #endregion
 
     #region Countdown Methods

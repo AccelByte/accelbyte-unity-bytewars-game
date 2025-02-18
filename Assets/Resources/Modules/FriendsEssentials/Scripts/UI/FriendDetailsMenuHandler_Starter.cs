@@ -46,12 +46,8 @@ public class FriendDetailsMenuHandler_Starter : MenuCanvas
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
         blockButton.onClick.AddListener(BlockPlayer);
         unfriendButton.onClick.AddListener(Unfriend);
-        
-        promoteToLeaderButton.onClick.AddListener(PromoteToPartyLeader);
-        kickButton.onClick.AddListener(KickFromParty);
-        inviteToPartyButton.onClick.AddListener(InviteToParty);
-        
-        InitializePartyButtons(false);
+
+        InitializePartyButtons();
 
         // TODO: Define Module Wrapper listeners here.
     }
@@ -88,39 +84,44 @@ public class FriendDetailsMenuHandler_Starter : MenuCanvas
 
     #region Party Module
 
-    #region Main Functions
+    private void InitializePartyButtons()
+    {
+        inviteToPartyButton.onClick.AddListener(() => { PartyEssentialsModels.PartyHelper.OnInviteToPartyButtonClicked(UserId); });
+        promoteToLeaderButton.onClick.AddListener(() => { PartyEssentialsModels.PartyHelper.OnPromotePartyLeaderButtonClicked(UserId); });
+        kickButton.onClick.AddListener(() => { PartyEssentialsModels.PartyHelper.OnKickPlayerFromPartyButtonClicked(UserId); });
 
-    private void PromoteToPartyLeader()
-    {
-        BytewarsLogger.LogWarning("PromoteToPartyLeader is not yet implemented.");
-    }
-    
-    private void KickFromParty()
-    {
-        BytewarsLogger.LogWarning("KickFromParty is not yet implemented.");
-    }
-    
-    private void InviteToParty()
-    {
-        BytewarsLogger.LogWarning("InviteToParty is not yet implemented.");
+        PartyEssentialsModels.PartyHelper.BindOnPartyUpdate(UpdatePartyButtons);
+
+        // Update party button states after initialization.
+        UpdatePartyButtons();
     }
 
-    #endregion Main Functions
-
-    #region View Management
-
-    private void InitializePartyButtons(bool inParty)
+    private void UpdatePartyButtons()
     {
-        bool partyEssentialsActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.PartyEssentials);
+        ModuleModel partyModule = TutorialModuleManager.Instance.GetModule(TutorialType.PartyEssentials);
+        bool isPartyModuleActive = partyModule != null && partyModule.isActive;
 
-        promoteToLeaderButton.gameObject.SetActive(partyEssentialsActive && !inParty);
-        kickButton.gameObject.SetActive(partyEssentialsActive && !inParty);
-        inviteToPartyButton.gameObject.SetActive(partyEssentialsActive && inParty);
+        SessionV2PartySession partySession = PartyEssentialsModels.PartyHelper.CurrentPartySession;
+        PlayerState currentUser = GameData.CachedPlayerState;
+
+        bool isFriendInParty = false, isCurrentUserIsLeader = false;
+        if (currentUser != null)
+        {
+            isFriendInParty =
+                partySession == null ? false :
+                partySession.members.
+                Where(x => x.StatusV2 == SessionV2MemberStatus.JOINED).
+                Select(x => x.id).Contains(UserId);
+
+            isCurrentUserIsLeader =
+                partySession != null &&
+                partySession.leaderId == (currentUser == null ? string.Empty : currentUser.playerId);
+        }
+
+        inviteToPartyButton.gameObject.SetActive(isPartyModuleActive && !isFriendInParty);
+        promoteToLeaderButton.gameObject.SetActive(isPartyModuleActive && isFriendInParty && isCurrentUserIsLeader);
+        kickButton.gameObject.SetActive(isPartyModuleActive && isFriendInParty && isCurrentUserIsLeader);
     }
-
-    // TODO: Implement Party view management functions here.
-
-    #endregion View Management
 
     #endregion Party Module
 

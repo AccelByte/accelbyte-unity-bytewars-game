@@ -61,7 +61,7 @@ public class SocialMenuHandler : MenuCanvas
     
     private static void OnPartyButtonClicked()
     {
-        MenuManager.Instance.ChangeToMenu(AssetEnum.PartyMenuCanvas);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.PartyMenu);
     }
     
     private static void OnBlockedPlayersClicked()

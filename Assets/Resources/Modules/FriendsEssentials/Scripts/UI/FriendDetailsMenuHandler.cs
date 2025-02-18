@@ -33,8 +33,7 @@ public class FriendDetailsMenuHandler : MenuCanvas
 
     private ManagingFriendsWrapper managingFriendsWrapper;
     private AuthEssentialsWrapper authEssentialsWrapper;
-    private PartyHelper partyHelper;
-
+    
     private void OnEnable()
     {
         if (managingFriendsWrapper == null)
@@ -46,16 +45,8 @@ public class FriendDetailsMenuHandler : MenuCanvas
         {
             authEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
         }
-        
-        if (partyHelper == null)
-        {
-            partyHelper = TutorialModuleManager.Instance.GetComponentInChildren<PartyHelper>();
-        }
-        
-        if (managingFriendsWrapper != null && authEssentialsWrapper != null && partyHelper != null)
-        {
-            UpdatePartyButtons();
-        }
+
+        UpdatePartyButtons();
     }
     
     private void Awake()
@@ -66,12 +57,8 @@ public class FriendDetailsMenuHandler : MenuCanvas
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
         blockButton.onClick.AddListener(BlockPlayer);
         unfriendButton.onClick.AddListener(Unfriend);
-        
-        promoteToLeaderButton.onClick.AddListener(PromoteToPartyLeader);
-        kickButton.onClick.AddListener(KickFromParty);
-        inviteToPartyButton.onClick.AddListener(InviteToParty);
-        
-        InitializePartyButtons(false);
+
+        InitializePartyButtons();
 
         // Bind to both to support mixed usage of starter and non modules
         ManagingFriendsWrapper.OnPlayerUnfriended += OnUnfriendedOrBlocked;
@@ -173,60 +160,44 @@ public class FriendDetailsMenuHandler : MenuCanvas
 
     #region Party Module
 
-    #region Main Functions
-
-    private void InviteToParty()
+    private void InitializePartyButtons()
     {
-        partyHelper.InviteToParty(UserId);
+        inviteToPartyButton.onClick.AddListener(() => { PartyEssentialsModels.PartyHelper.OnInviteToPartyButtonClicked(UserId); });
+        promoteToLeaderButton.onClick.AddListener(() => { PartyEssentialsModels.PartyHelper.OnPromotePartyLeaderButtonClicked(UserId); });
+        kickButton.onClick.AddListener(() => { PartyEssentialsModels.PartyHelper.OnKickPlayerFromPartyButtonClicked(UserId); });
 
+        PartyEssentialsModels.PartyHelper.BindOnPartyUpdate(UpdatePartyButtons);
+
+        // Update party button states after initialization.
         UpdatePartyButtons();
     }
 
-    private void PromoteToPartyLeader()
-    {
-        partyHelper.PromoteToPartyLeader(UserId);
-
-        UpdatePartyButtons();
-    }
-    
-    private void KickFromParty()
-    {
-        partyHelper.KickFromParty(UserId);
-
-        UpdatePartyButtons();
-    }
-
-    #endregion Main Functions
-
-    #region View Management
-
-    private void InitializePartyButtons(bool inParty)
-    {
-        bool partyEssentialsActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.PartyEssentials);
-
-        promoteToLeaderButton.gameObject.SetActive(partyEssentialsActive && !inParty);
-        kickButton.gameObject.SetActive(partyEssentialsActive && !inParty);
-        inviteToPartyButton.gameObject.SetActive(partyEssentialsActive && inParty);
-    }
-    
     private void UpdatePartyButtons()
     {
-        bool partyEssentialsActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.PartyEssentials);
-        if (!partyEssentialsActive || authEssentialsWrapper.UserData == null)
+        ModuleModel partyModule = TutorialModuleManager.Instance.GetModule(TutorialType.PartyEssentials);
+        bool isPartyModuleActive = partyModule != null && partyModule.isActive;
+
+        SessionV2PartySession partySession = PartyEssentialsModels.PartyHelper.CurrentPartySession;
+        PlayerState currentUser = GameData.CachedPlayerState;
+
+        bool isFriendInParty = false, isCurrentUserIsLeader = false;
+        if (currentUser != null)
         {
-            return;
+            isFriendInParty =
+                partySession == null ? false :
+                partySession.members.
+                Where(x => x.StatusV2 == SessionV2MemberStatus.JOINED).
+                Select(x => x.id).Contains(UserId);
+
+            isCurrentUserIsLeader =
+                partySession != null &&
+                partySession.leaderId == (currentUser == null ? string.Empty : currentUser.playerId);
         }
 
-        bool selfPartyLeader = authEssentialsWrapper.UserData.user_id == PartyHelper.CurrentLeaderUserId;
-        bool partyLeader = UserId == PartyHelper.CurrentLeaderUserId;
-        bool inParty = PartyHelper.PartyMembersData.Any(data => data.UserId == UserId);
-
-        promoteToLeaderButton.gameObject.SetActive(partyEssentialsActive && selfPartyLeader && inParty);
-        kickButton.gameObject.SetActive(partyEssentialsActive && selfPartyLeader && inParty);
-        inviteToPartyButton.gameObject.SetActive(partyEssentialsActive && !partyLeader && !inParty);
+        inviteToPartyButton.gameObject.SetActive(isPartyModuleActive && !isFriendInParty);
+        promoteToLeaderButton.gameObject.SetActive(isPartyModuleActive && isFriendInParty && isCurrentUserIsLeader);
+        kickButton.gameObject.SetActive(isPartyModuleActive && isFriendInParty && isCurrentUserIsLeader);
     }
-    
-    #endregion View Management
 
     #endregion Party Module
 

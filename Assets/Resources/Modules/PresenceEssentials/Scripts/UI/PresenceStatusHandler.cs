@@ -160,6 +160,7 @@ public class PresenceStatusHandler : MonoBehaviour
     {
         string statusText = string.Empty;
 
+        activity = Uri.UnescapeDataString(activity);
         bool activityUndefined = activity is PresenceHelper.DefaultActivityKeyword;
         if (activityUndefined)
         {

@@ -81,10 +81,11 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
             optionalParams.latencies = preferredRegions;
         }
 
-        // Play with Party additional code
-        if (!string.IsNullOrEmpty(PartyHelper.CurrentPartyId))
+        // Add party session id for playing with party feature.
+        string partySessionId = PartyEssentialsModels.PartyHelper.CurrentPartySession.id;
+        if (!string.IsNullOrEmpty(partySessionId))
         {
-            optionalParams.sessionId = PartyHelper.CurrentPartyId;
+            optionalParams.sessionId = partySessionId;
         }
 
         matchmakingV2.CreateMatchmakingTicket(matchPool, optionalParams, OnStartMatchmakingComplete);

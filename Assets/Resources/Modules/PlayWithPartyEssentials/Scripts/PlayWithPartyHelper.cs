@@ -1,8 +1,9 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
 using System;
+using System.Linq;
 using AccelByte.Core;
 using AccelByte.Models;
 using UnityEngine;
@@ -69,20 +70,22 @@ public class PlayWithPartyHelper : MonoBehaviour
     {
         Button joinButton = joinButtonGameObject.GetComponent<Button>();
         joinButton.enabled = true; // enable button by default
-        if (!String.IsNullOrWhiteSpace(PartyHelper.CurrentPartyId)
-            && authWrapper.UserData.user_id != PartyHelper.CurrentLeaderUserId)
+
+        SessionV2PartySession partySession = PartyEssentialsModels.PartyHelper.CurrentPartySession;
+        if (partySession != null && authWrapper.UserData.user_id != partySession.leaderId)
         {
-            joinButton.enabled = false; // disable if player is a party member
+            joinButton.enabled = false;
         }
     }
 
     private void OnJoinButtonClicked(string sessionId)
     {
-        if (authWrapper.UserData.user_id == PartyHelper.CurrentLeaderUserId)
+        SessionV2PartySession partySession = PartyEssentialsModels.PartyHelper.CurrentPartySession;
+        if (authWrapper.UserData.user_id == partySession.leaderId)
         {
-            foreach (PartyMemberData member in PartyHelper.PartyMembersData)
+            foreach (SessionV2MemberData member in partySession.members.Where(x => x.StatusV2 == SessionV2MemberStatus.JOINED))
             {
-                playWithPartyWrapper.InviteUserToGameSession(sessionId, member.UserId, null);
+                playWithPartyWrapper.InviteUserToGameSession(sessionId, member.id, null);
             }
         }
     }
@@ -90,7 +93,7 @@ public class PlayWithPartyHelper : MonoBehaviour
     private void OnInvitedToGameSession(string sessionId)
     {
         BytewarsLogger.Log($"sessionId {sessionId}");
-        if (!String.IsNullOrWhiteSpace(PartyHelper.CurrentPartyId))
+        if (PartyEssentialsModels.PartyHelper.CurrentPartySession != null)
         {
             playWithPartyWrapper.GetGameSessionBySessionId(sessionId, OnGetGameSessionCompleted);
         }
