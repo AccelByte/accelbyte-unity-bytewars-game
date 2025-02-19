@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -20,9 +20,10 @@ public class InGameCamera : MonoBehaviour
     private Vector2 furthestMissilePositionToFrame = new();
     
     private const float cameraLerpTolerance = 0.01f;
+    private const float cameraClipPlaneDistance = 200f;
     private float cameraAspectRatio = 16.0f / 9.0f;
     private float largestWidthToFrame = 0;
-
+    
     #region Initialization and Lifecycle
 
     private void Awake()
@@ -74,6 +75,9 @@ public class InGameCamera : MonoBehaviour
         maxCameraFrameExtents = minCameraFrameExtents * minMaxSizeMultiplier;
         furthestMissilePositionToFrame = minCameraFrameExtents;
 
+        mainCamera.nearClipPlane = -cameraClipPlaneDistance;
+        mainCamera.farClipPlane = cameraClipPlaneDistance;
+
 #if UNITY_SERVER
         mainCamera.orthographicSize = maxCameraFrameExtents.y;
 #else
@@ -105,7 +109,7 @@ public class InGameCamera : MonoBehaviour
             mainCamera.orthographicSize = newSize;
             currentSize = newSize;
 
-            await Task.Yield();
+            await UniTask.Yield();
         }
     }
 
@@ -116,7 +120,7 @@ public class InGameCamera : MonoBehaviour
             return;
         }
 
-        await Task.Delay(TimeSpan.FromSeconds(1));
+        await UniTask.Delay(TimeSpan.FromSeconds(1));
 
         float currentSize = mainCamera.orthographicSize;
         float defaultSize = GameConstant.DefaultOrthographicSize;
