@@ -81,7 +81,7 @@ public class PlayWithPartyHelper : MonoBehaviour
     private void OnJoinButtonClicked(string sessionId)
     {
         SessionV2PartySession partySession = PartyEssentialsModels.PartyHelper.CurrentPartySession;
-        if (authWrapper.UserData.user_id == partySession.leaderId)
+        if (partySession != null && authWrapper.UserData.user_id == partySession.leaderId)
         {
             foreach (SessionV2MemberData member in partySession.members.Where(x => x.StatusV2 == SessionV2MemberStatus.JOINED))
             {

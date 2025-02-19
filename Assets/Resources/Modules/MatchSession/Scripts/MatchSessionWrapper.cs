@@ -69,7 +69,7 @@ public class MatchSessionWrapper : GameSessionUtilityWrapper
 
         // Set party members in a team for playing with party feature.
         SessionV2PartySession partySession = PartyEssentialsModels.PartyHelper.CurrentPartySession;
-        if (!string.IsNullOrEmpty(partySession.id))
+        if (partySession != null && !string.IsNullOrEmpty(partySession.id))
         {
             request.teams = new SessionV2TeamData[]
             {

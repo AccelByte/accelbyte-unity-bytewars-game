@@ -82,10 +82,10 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
         }
 
         // Add party session id for playing with party feature.
-        string partySessionId = PartyEssentialsModels.PartyHelper.CurrentPartySession.id;
-        if (!string.IsNullOrEmpty(partySessionId))
+        SessionV2PartySession partySession = PartyEssentialsModels.PartyHelper.CurrentPartySession;
+        if (partySession != null && !string.IsNullOrEmpty(partySession.id))
         {
-            optionalParams.sessionId = partySessionId;
+            optionalParams.sessionId = partySession.id;
         }
 
         matchmakingV2.CreateMatchmakingTicket(matchPool, optionalParams, OnStartMatchmakingComplete);

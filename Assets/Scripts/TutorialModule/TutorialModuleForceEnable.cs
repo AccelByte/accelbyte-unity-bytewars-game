@@ -69,13 +69,16 @@ public static class TutorialModuleForceEnable
 
     private static void CheckJson()
     {
-        var textJson = ReadJson();
-        var cachedJsonString = EditorPrefs.GetString(CachedTutorialModuleConfigJson);
-        if (String.IsNullOrEmpty(cachedJsonString) ||
-            !cachedJsonString.Equals(textJson))
+        string textJson = ReadJson();
+        string cachedJsonString = EditorPrefs.GetString(CachedTutorialModuleConfigJson);
+        if (string.IsNullOrEmpty(cachedJsonString) || !cachedJsonString.Equals(textJson))
         {
             EditorPrefs.SetString(CachedTutorialModuleConfigJson, textJson);
+
             UpdateConfigFromJson(textJson);
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
         }
     }
 
@@ -83,6 +86,7 @@ public static class TutorialModuleForceEnable
     {
         EditorPrefs.DeleteKey(FIRST_TIME);
         EditorPrefs.DeleteKey(CachedTutorialModuleConfigJson);
+        AssetDatabase.SaveAssets();
     }
 
     /// <summary>
@@ -110,12 +114,16 @@ public static class TutorialModuleForceEnable
 
     private static bool UpdateConfigFromJson(string jsonStr)
     {
-        var isReadJsonConfig = ReadJsonConfig(jsonStr) != null ? ReadJsonConfig(jsonStr) : null;
+#if UNITY_EDITOR
+        // Reset tutorial module values to its original Scriptable Object state.
+        // Only do this on editor, since the values are automatically reset when reopening the project and on packaged game.
+        ResetAllModuleState();
+#endif
+
+        string[] isReadJsonConfig = ReadJsonConfig(jsonStr) != null ? ReadJsonConfig(jsonStr) : null;
         if (isReadJsonConfig != null)
         {
-            // GetAllDependencies(isReadJsonConfig);
             isReadJsonConfig.ToList().ForEach(x => ForceEnableModules($"{x}AssetConfig", true));
-
 
             _moduleDependencies = _moduleDictionary.Select(x => x.Key.Replace("AssetConfig", "")).ToArray();
             _moduleDependencies.ToList().ForEach(ForceEnable);
@@ -190,12 +198,14 @@ public static class TutorialModuleForceEnable
 
     private static void ForceEnable(string moduleName)
     {
-        var module = GetTutorialModuleDataObject(moduleName);
+        TutorialModuleData module = GetTutorialModuleDataObject(moduleName);
         if (module == null)
         {
+            BytewarsLogger.LogWarning($"Unable to force enable {moduleName}. Tutorial module is not found.");
             return;
         }
 
+        module.CacheState();
         module.isActive = true;
     }
 
@@ -206,21 +216,19 @@ public static class TutorialModuleForceEnable
             return false;
         }
 
-        var jsonStr = ReadJson();
-        var isReadJsonConfig = ReadJsonConfig(jsonStr, readFromInspector: true) != null ? _forcedModules : null;
-
-        if (isReadJsonConfig == null)
+        string[] overridesModules =
+            ReadJsonConfig(ReadJson(), readFromInspector: true) != null ? _forcedModules : null;
+        if (overridesModules == null || overridesModules.Length <= 0)
         {
+            _moduleDictionary.Clear();
             return false;
         }
 
-        //TODO: Null checcking on moduleName
-        var overrideStatus = false;
-        var overridesModules = isReadJsonConfig;
-        var modulesDictionary = new Dictionary<string, bool>();
+        bool overrideStatus = false;
+        Dictionary<string, bool> modulesDictionary = new Dictionary<string, bool>();
         overridesModules?.ToList().ForEach(x =>
         {
-            var module = GetTutorialModuleDataObject(x);
+            TutorialModuleData module = GetTutorialModuleDataObject(x);
             if (module == null)
             {
                 overrideStatus = false;
@@ -233,6 +241,7 @@ public static class TutorialModuleForceEnable
             {
                 if (IsTargetModuleCurrentSelectedModule())
                 {
+                    _overrideModule.CacheState();
                     _overrideModule.isActive = true;
                     overrideStatus = SetDependenciesToActive();
                 }
@@ -252,19 +261,35 @@ public static class TutorialModuleForceEnable
             CheckDependency(_overrideModule);
         });
         modulesDictionary.TryGetValue(moduleName, out overrideStatus);
+
         return overrideStatus;
+    }
+
+    public static bool IsForceEnableModule(string moduleName)
+    {
+        return _moduleDictionary.ContainsKey(moduleName);
+    }
+
+    private static void ResetAllModuleState()
+    {
+        string[] modulePaths = AssetDatabase.FindAssets("AssetConfig").Select(AssetDatabase.GUIDToAssetPath).ToArray();
+        foreach (string path in modulePaths)
+        {
+            TutorialModuleData module = AssetDatabase.LoadAssetAtPath<TutorialModuleData>(path);
+            module.RevertState();
+        }
     }
 
     private static void DisableRestOfModules(string[] modules)
     {
-        var tutorialModules = AssetDatabase.FindAssets("AssetConfig").Select(AssetDatabase.GUIDToAssetPath);
-        var forceEnableModule = modules.Select(module => AssetDatabase.FindAssets($"{module}AssetConfig").FirstOrDefault()).Select(AssetDatabase.GUIDToAssetPath).ToArray();
-        var tutorialModule = tutorialModules.Except(forceEnableModule);
-        Debug.Log(tutorialModule.Count());
-        foreach (var tutorialModulePath in tutorialModule)
+        string[] modulePaths = AssetDatabase.FindAssets("AssetConfig").Select(AssetDatabase.GUIDToAssetPath).ToArray();
+        string[] modulesToForceEnable = modules.Select(module => AssetDatabase.FindAssets($"{module}AssetConfig").FirstOrDefault()).Select(AssetDatabase.GUIDToAssetPath).ToArray();
+        string[] modulesToDisable = modulePaths.Except(modulesToForceEnable).ToArray();
+        foreach (string tutorialModulePath in modulesToDisable)
         {
-            var tutorialModuleData = AssetDatabase.LoadAssetAtPath<TutorialModuleData>(tutorialModulePath);
-            tutorialModuleData.isActive = false;
+            TutorialModuleData module = AssetDatabase.LoadAssetAtPath<TutorialModuleData>(tutorialModulePath);
+            module.CacheState();
+            module.isActive = false;
         }
     }
 
@@ -282,32 +307,27 @@ public static class TutorialModuleForceEnable
 
     private static bool SetDependenciesToActive()
     {
-        var modulesLength = _overrideModule.moduleDependencies.Length;
-        switch (modulesLength)
+        if (_overrideModule.moduleDependencies.Length <= 0)
         {
-            case 0:
                 return true;
-            case > 0:
-                {
-                    foreach (var dependency in _overrideModule.moduleDependencies.Select((value, index) =>
-                                 (value, index)))
-                    {
-                        if (dependency.value == null)
-                        {
-                            Debug.Log($"this element {dependency.index} is null, please add the dependency value");
-                            return false;
-                        }
-
-                        Debug.Log($"element {dependency.index} {dependency.value.name}");
-                        dependency.value.isActive = true;
-                        dependency.value.isStarterActive = false;
-                    }
-
-                    return true;
-                }
-            default:
-                return false;
         }
+
+        int index = 0;
+        foreach (TutorialModuleData moduleDependency in _overrideModule.moduleDependencies)
+        {
+            if (moduleDependency == null)
+            {
+                BytewarsLogger.Log($"Module dependency on index {index} is null. Please check the module dependency value.");
+                return false;
+            }
+
+            moduleDependency.CacheState();
+            moduleDependency.isActive = true;
+            moduleDependency.isStarterActive = false;
+
+            index++;
+        }
+        return true;
     }
 
     private static TutorialModuleData GetTutorialModuleDataObject(string moduleName)

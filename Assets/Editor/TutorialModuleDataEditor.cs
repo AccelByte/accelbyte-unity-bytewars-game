@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using System.Linq;
@@ -264,7 +268,11 @@ public class TutorialModuleDataEditor : Editor
             AddSeparatorLine();
         }
 
-
+        TutorialModuleData module = (TutorialModuleData)target;
+        if (module != null && GUI.changed) 
+        {
+            module.CacheState();
+        }
 
         serializedObject.ApplyModifiedProperties();
     }
