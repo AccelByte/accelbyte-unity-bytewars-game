@@ -68,12 +68,9 @@ public class RegionPreferencesWrapper : MonoBehaviour
         return false;
     }
 
-    /* To query server region latencies, you need to enable the AMS Server QoS service on Unity SDK config via its GUI or the JSON file:
-     * Via GUI: Go to Unity Editor Toolbar > AccelByte > Edit Client Settings > Service URL Configs > Enable the Use AMS QoS Server URL option.
-     * Via JSON: In AccelByteSDKConfig.json file, enable the "EnableAmsServerQos" property on your target SDK config environment. Ex: {"Default":{"EnableAmsServerQos":true}} */
     public void QueryRegionLatencies(ResultCallback<Dictionary<string, int>> resultCallback) 
     {
-        qosApi.GetServerLatencies(result => 
+        qosApi.GetAllActiveServerLatencies(result => 
         {
             if (result.IsError) 
             {
@@ -188,8 +185,9 @@ public class RegionPreferencesWrapper : MonoBehaviour
             yield return null;
         }
 
-        inGameLatency = (int)NetworkManager.Singleton.NetworkConfig.NetworkTransport.GetCurrentRtt(NetworkManager.ServerClientId);
-        
+        GameManager.Instance.SendPingToServer();
+        inGameLatency = (int)GameManager.Instance.CurrentRoundTripTime;
+
         BytewarsLogger.Log($"Current in-game latency: {inGameLatency} ms");
         OnInGameLatencyUpdated?.Invoke();
 

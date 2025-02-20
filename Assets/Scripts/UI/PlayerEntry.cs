@@ -35,7 +35,9 @@ public class PlayerEntry : MonoBehaviour
 
             CacheHelper.LoadTexture(avatarURL, imageWidth, imageHeight, texture =>
             {
-                if (texture != null)
+                /* After the texture loaded from URL, the game might already in a different state (e.g. changing scene or menu)
+                 * Hence, add safeguard to check whether the component is valid or not.*/
+                if (texture != null && playerAvatar != null)
                 {
                     playerAvatar.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), centerPivot);
                     playerAvatar.color = Color.white;

@@ -51,7 +51,9 @@ public class GameManager : NetworkBehaviour
     public Dictionary<int, TeamState> ConnectedTeamStates => serverHelper.ConnectedTeamStates;
     public Dictionary<ulong, PlayerState> ConnectedPlayerStates => serverHelper.ConnectedPlayerStates;
     public ulong ClientNetworkId => clientHelper.ClientNetworkId;
-    
+    public bool IsDedicatedServer { get { return IsServer && !IsHost && !IsClient; } }
+    public float CurrentRoundTripTime { get; private set; } = 0f;
+
     private const string NotEnoughPlayer = "Not enough players, shutting down DS in: ";
     
     private readonly Dictionary<ulong, GameClientController> connectedClients = new();
@@ -74,9 +76,11 @@ public class GameManager : NetworkBehaviour
     private readonly string TravelingMessage = "Traveling";
     private readonly string StartingGameMessage = "Starting Game";
 
-    private bool isGameStarted = false;
+    private readonly string PingNamedMessage = "PingMessage";
+    private readonly string PongNamedMessage = "PongMessage";
+    private float pingServerRequestTime = 0f;
 
-    public bool IsDedicatedServer { get { return IsServer && !IsHost && !IsClient; } }
+    private bool isGameStarted = false;
 
     #region Initialization and Lifecycle
 
@@ -272,11 +276,21 @@ public class GameManager : NetworkBehaviour
     private void OnServerStarted()
     {
         BytewarsLogger.Log("Server started.");
+
+        if (NetworkManager.Singleton.CustomMessagingManager != null) 
+        {
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(PingNamedMessage, OnReceivePing);
+        }
     }
 
     private void OnServerStopped(bool isHostStopped)
     {
         BytewarsLogger.Log($"Server stopped. Is host: {isHostStopped}");
+
+        if (NetworkManager.Singleton.CustomMessagingManager != null) 
+        {
+            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler(PingNamedMessage);
+        }
 
         if (isHostStopped)
         {
@@ -289,11 +303,21 @@ public class GameManager : NetworkBehaviour
     private void OnClientStarted()
     {
         BytewarsLogger.Log("Client started.");
+
+        if (NetworkManager.Singleton.CustomMessagingManager != null) 
+        {
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(PongNamedMessage, OnReceivePong);
+        }
     }
 
     private void OnClientStopped(bool isHostStopped)
     {
         BytewarsLogger.Log($"Client stopped. Is host: {isHostStopped}"); 
+
+        if (NetworkManager.Singleton.CustomMessagingManager != null) 
+        {
+            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler(PongNamedMessage);
+        }
 
         if (isHostStopped) 
         {
@@ -600,6 +624,53 @@ public class GameManager : NetworkBehaviour
                 $"Client id: {clientNetworkId}. Received time: {receiveTime}. Event type: {networkEvent}.");
 
             NetworkManager.Singleton.DisconnectClient(clientNetworkId, "Network package corrupted. Connection time out.");
+        }
+    }
+
+    public void SendPingToServer() 
+    {
+        pingServerRequestTime = Time.realtimeSinceStartup;
+        using(FastBufferWriter writer = new FastBufferWriter(sizeof(float), Unity.Collections.Allocator.Temp)) 
+        {
+            if (writer.TryBeginWrite(sizeof(float))) 
+            {
+                writer.WriteValue(pingServerRequestTime);
+                if (NetworkManager.Singleton.CustomMessagingManager != null) 
+                {
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(PingNamedMessage, NetworkManager.ServerClientId, writer);
+                }
+            }
+        }
+    }
+
+    private void OnReceivePing(ulong clientId, FastBufferReader reader)
+    {
+        if (!reader.TryBeginRead(sizeof(float)))
+        {
+            return;
+        }
+
+        reader.ReadValue(out float clientTimestamp);
+        using (FastBufferWriter writer = new FastBufferWriter(sizeof(float), Unity.Collections.Allocator.Temp))
+        {
+            if (writer.TryBeginWrite(sizeof(float)))
+            {
+                writer.WriteValue(clientTimestamp);
+                if (NetworkManager.Singleton.CustomMessagingManager != null) 
+                {
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(PongNamedMessage, clientId, writer);
+                }
+            }
+        }
+    }
+
+    private void OnReceivePong(ulong clientId, FastBufferReader reader) 
+    {
+        if (reader.TryBeginRead(sizeof(float)))
+        {
+            // Calculate round-time trip in milliseconds.
+            reader.ReadValue(out float serverResponseTime);
+            CurrentRoundTripTime = (Time.realtimeSinceStartup - serverResponseTime) * 1000;
         }
     }
 
