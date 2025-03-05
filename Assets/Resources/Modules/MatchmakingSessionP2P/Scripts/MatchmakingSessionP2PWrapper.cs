@@ -318,7 +318,7 @@ public class MatchmakingSessionP2PWrapper : MatchmakingSessionWrapper
         OnGetSessionDetailsCompleteEvent -= OnJoiningSessionCompletedAsync;
         BytewarsLogger.Log($"Joined to session : {cachedSessionId} - Waiting DS Status");
 
-        bool isLeader = result.Value.leaderId == GameData.CachedPlayerState.playerId;
+        bool isLeader = result.Value.leaderId == GameData.CachedPlayerState.PlayerId;
         OnMatchmakingWithP2PJoinSessionCompleted?.Invoke(isLeader);
 
         GetP2PStatus(result.Value);
@@ -355,7 +355,7 @@ public class MatchmakingSessionP2PWrapper : MatchmakingSessionWrapper
                 // Wait a moment to ensure the host information is received before connect to the host.
                 await Task.Delay(1000);
                     
-                StartP2PConnection(GameData.CachedPlayerState.playerId, session);
+                StartP2PConnection(GameData.CachedPlayerState.PlayerId, session);
                 UnbindMatchmakingEvent();
                 break;
         }

@@ -48,13 +48,13 @@ public class ServerHelper
         string playerName = "Player " + (playerIndex + 1);
         PlayerState playerState = new PlayerState
         {
-            playerIndex = playerIndex,
-            clientNetworkId = clientNetworkId,
-            playerName = playerName,
-            teamIndex = teamIndex,
-            lives = gameMode.playerStartLives,
-            sessionId = Guid.NewGuid().ToString(),
-            playerId = ""
+            PlayerIndex = playerIndex,
+            ClientNetworkId = clientNetworkId,
+            PlayerName = playerName,
+            TeamIndex = teamIndex,
+            Lives = gameMode.PlayerStartLives,
+            SessionId = Guid.NewGuid().ToString(),
+            PlayerId = ""
         };
         BytewarsLogger.Log($"Added player {playerName} teamIndex:{teamIndex} clientNetworkId:{clientNetworkId}");
 
@@ -69,7 +69,7 @@ public class ServerHelper
         {
             connectedTeamStates.Add(teamIndex, new TeamState
             {
-                teamColour = gameMode.teamColours[teamIndex],
+                teamColour = gameMode.TeamColours[teamIndex],
                 teamIndex = teamIndex
             });
         }
@@ -95,8 +95,8 @@ public class ServerHelper
             disconnectedPlayerStates.Remove(sessionId);
 
             // Since the Unity's client network id is always new, reuse the existing player state with new client network id.
-            connectedPlayerStates.Remove(playerState.clientNetworkId);
-            playerState.clientNetworkId = clientNetworkId;
+            connectedPlayerStates.Remove(playerState.ClientNetworkId);
+            playerState.ClientNetworkId = clientNetworkId;
             connectedPlayerStates.Add(clientNetworkId, playerState);
         }
         // Else, create a new player state.
@@ -107,16 +107,16 @@ public class ServerHelper
         }
 
         // Abort if the team index is not found.
-        connectedTeamStates.TryGetValue(playerState.teamIndex, out TeamState teamState);
+        connectedTeamStates.TryGetValue(playerState.TeamIndex, out TeamState teamState);
         if (teamState == null) 
         {
-            BytewarsLogger.LogWarning($"Unable to add player state to reconnect the player. Team {playerState.teamIndex} is not found in the connected team state.");
+            BytewarsLogger.LogWarning($"Unable to add player state to reconnect the player. Team {playerState.TeamIndex} is not found in the connected team state.");
             return null;            
         }
 
         // Assign player state to the reconnected player.
         Color teamColor = teamState.teamColour;
-        player.SetPlayerState(playerState, gameMode.maxInFlightMissilesPerPlayer, teamColor);
+        player.SetPlayerState(playerState, gameMode.MaxInFlightMissilesPerPlayer, teamColor);
 
         return player;
     }
@@ -137,8 +137,8 @@ public class ServerHelper
         }
 
         // Mark player as disconnected player and store it to cache for player to handle player reconnection later.
-        disconnectedPlayerStates.TryAdd(playerState.sessionId, playerState);
-        disconnectedPlayers.TryAdd(playerState.sessionId, player);
+        disconnectedPlayerStates.TryAdd(playerState.SessionId, playerState);
+        disconnectedPlayers.TryAdd(playerState.SessionId, player);
     }
 
     public void SetTeamAndPlayerState(InGameStateResult states)
@@ -149,7 +149,7 @@ public class ServerHelper
 
     public void UpdatePlayerStates(TeamState[] teamStates, PlayerState[] playerStates)
     {
-        connectedPlayerStates = playerStates.ToDictionary(ps => ps.clientNetworkId, ps => ps);
+        connectedPlayerStates = playerStates.ToDictionary(ps => ps.ClientNetworkId, ps => ps);
         connectedTeamStates = teamStates.ToDictionary(ts => ts.teamIndex, ts => ts);
     }
 
@@ -157,7 +157,7 @@ public class ServerHelper
     {
         if (connectedPlayerStates.Remove(clientNetworkId, out var playerState))
         {
-            RemovePlayerStateDirectly(clientNetworkId, playerState.teamIndex, false);
+            RemovePlayerStateDirectly(clientNetworkId, playerState.TeamIndex, false);
         }
     }
 
@@ -247,16 +247,16 @@ public class ServerHelper
 
     public int GetTeamAssignment(GameModeSO gameMode)
     {
-        BytewarsLogger.Log($"GetTeamAssignment called: target team count {gameMode.teamCount}, target player per team: ${gameMode.playerPerTeamCount}");
+        BytewarsLogger.Log($"GetTeamAssignment called: target team count {gameMode.TeamCount}, target player per team: ${gameMode.PlayerPerTeamCount}");
 
         int teamIndex = NoTeamIndex;
         Dictionary<int, int> teamMemberCount = GetTeamsMemberCount();
 
         // Elimination game mode.
-        if (gameMode.playerPerTeamCount == 1)
+        if (gameMode.PlayerPerTeamCount == 1)
         {
             // Try to assign to an empty team.
-            if (connectedTeamStates.Count >= gameMode.teamCount)
+            if (connectedTeamStates.Count >= gameMode.TeamCount)
             {
                 foreach (KeyValuePair<int, int> team in teamMemberCount)
                 {
@@ -274,12 +274,12 @@ public class ServerHelper
             }
         }
         // Team Deathmatch game mode.
-        else if (gameMode.playerPerTeamCount > 1)
+        else if (gameMode.PlayerPerTeamCount > 1)
         {
             // Try to assign to the least populated team.
-            if (connectedTeamStates.Count >= gameMode.teamCount)
+            if (connectedTeamStates.Count >= gameMode.TeamCount)
             {
-                int leastTeamMemberNum = gameMode.playerPerTeamCount;
+                int leastTeamMemberNum = gameMode.PlayerPerTeamCount;
                 foreach (KeyValuePair<int, int> team in teamMemberCount)
                 {
                     if (team.Value < leastTeamMemberNum)
@@ -305,9 +305,9 @@ public class ServerHelper
         foreach (PlayerState playerState in connectedPlayerStates.Values)
         {
             // Only count players who currently connected to the server.
-            if (playerState.teamIndex == teamIndex && !disconnectedPlayerStates.ContainsKey(playerState.sessionId))
+            if (playerState.TeamIndex == teamIndex && !disconnectedPlayerStates.ContainsKey(playerState.SessionId))
             {
-                result += playerState.lives;
+                result += playerState.Lives;
             }
         }
         return result;
@@ -335,10 +335,10 @@ public class ServerHelper
         }
         foreach (PlayerState playerState in connectedPlayerStates.Values)
         {
-            int teamIndex = playerState.teamIndex;
+            int teamIndex = playerState.TeamIndex;
 
             // Only count players who currently connected to the server.
-            if (teamMemberCount.Keys.Contains(teamIndex) && !disconnectedPlayerStates.ContainsKey(playerState.sessionId))
+            if (teamMemberCount.Keys.Contains(teamIndex) && !disconnectedPlayerStates.ContainsKey(playerState.SessionId))
             {
                 teamMemberCount[teamIndex]++;
             }

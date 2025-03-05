@@ -101,9 +101,9 @@ public class PartyMenu : MenuCanvas
                 PartyMemberEntry memberEntry = Instantiate(memberEntryPrefab, memberEntryContainer);
                 memberEntry.SetPartyMember(new BaseUserInfo 
                 {
-                    userId = currentUser.playerId,
-                    displayName = currentUser.playerName,
-                    avatarUrl = currentUser.avatarUrl
+                    userId = currentUser.PlayerId,
+                    displayName = currentUser.PlayerName,
+                    avatarUrl = currentUser.AvatarUrl
                 }, true);
             }
             // Else, display error message.

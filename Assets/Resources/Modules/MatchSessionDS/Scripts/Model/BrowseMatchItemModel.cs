@@ -80,32 +80,32 @@ public class BrowseMatchItemModel
         string gameSessionName = gameSession.configuration.name;
         if (gameSessionName.Equals(GameSessionConfig.UnitySessionEliminationDS))
         {
-            GameMode = InGameMode.CreateMatchEliminationGameMode;
+            GameMode = InGameMode.CreateMatchElimination;
             SessionServerType = GameSessionServerType.DedicatedServer;
         }
         else if (gameSessionName.Equals(GameSessionConfig.UnitySessionEliminationP2P))
         {
-            GameMode = InGameMode.CreateMatchEliminationGameMode;
+            GameMode = InGameMode.CreateMatchElimination;
             SessionServerType = GameSessionServerType.PeerToPeer;
         }
         else if (gameSessionName.Equals(GameSessionConfig.UnitySessionTeamDeathmatchDS))
         {
-            GameMode = InGameMode.CreateMatchDeathMatchGameMode;
+            GameMode = InGameMode.CreateMatchTeamDeathmatch;
             SessionServerType = GameSessionServerType.DedicatedServer;
         }
         else if (gameSessionName.Equals(GameSessionConfig.UnitySessionTeamDeathmatchP2P))
         {
-            GameMode = InGameMode.CreateMatchDeathMatchGameMode;
+            GameMode = InGameMode.CreateMatchTeamDeathmatch;
             SessionServerType = GameSessionServerType.PeerToPeer;
         }
         else if (gameSessionName.Equals(GameSessionConfig.UnitySessionEliminationDSAMS))
         {
-            GameMode = InGameMode.CreateMatchEliminationGameMode;
+            GameMode = InGameMode.CreateMatchElimination;
             SessionServerType = GameSessionServerType.DedicatedServerAMS;
         }
         else if (gameSessionName.Equals(GameSessionConfig.UnitySessionTeamDeathmatchDSAMS))
         {
-            GameMode = InGameMode.CreateMatchDeathMatchGameMode;
+            GameMode = InGameMode.CreateMatchTeamDeathmatch;
             SessionServerType = GameSessionServerType.DedicatedServerAMS;
         }
     }

@@ -19,7 +19,7 @@ public class PlayerEntry : MonoBehaviour
         string playerName = playerState.GetPlayerName();
         this.playerName.text = isCurrentPlayer ? $"{playerName} (You)" : playerName;
 
-        avatarURL = playerState.avatarUrl;
+        avatarURL = playerState.AvatarUrl;
 
         this.playerName.color = teamState.teamColour;
         playerAvatar.color = teamState.teamColour;

@@ -115,7 +115,7 @@ public class FriendDetailsMenuHandler_Starter : MenuCanvas
 
             isCurrentUserIsLeader =
                 partySession != null &&
-                partySession.leaderId == (currentUser == null ? string.Empty : currentUser.playerId);
+                partySession.leaderId == (currentUser == null ? string.Empty : currentUser.PlayerId);
         }
 
         inviteToPartyButton.gameObject.SetActive(isPartyModuleActive && !isFriendInParty);

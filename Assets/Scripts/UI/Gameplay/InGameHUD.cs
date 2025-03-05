@@ -39,7 +39,7 @@ public class InGameHUD : MonoBehaviour
         }
         foreach (PlayerState playerState in playerStates)
         {
-            teamMemberCount[playerState.teamIndex]++;
+            teamMemberCount[playerState.TeamIndex]++;
         }
 
         foreach (TeamState teamState in teamStates)
@@ -63,12 +63,12 @@ public class InGameHUD : MonoBehaviour
 
     public void UpdateKillsAndScore(PlayerState playerState, PlayerState[] players)
     {
-        PlayerHUD hud = _playerHUDs[playerState.teamIndex];
+        PlayerHUD hud = _playerHUDs[playerState.TeamIndex];
         
-        List<PlayerState> teamPlayers = players.Where(p => p.teamIndex == playerState.teamIndex).ToList();
+        List<PlayerState> teamPlayers = players.Where(p => p.TeamIndex == playerState.TeamIndex).ToList();
         
-        int killCount = teamPlayers.Sum(p => p.killCount);
-        int score = (int)teamPlayers.Sum(p => p.score);
+        int killCount = teamPlayers.Sum(p => p.KillCount);
+        int score = (int)teamPlayers.Sum(p => p.Score);
         
         hud.SetKillsValue(killCount);
         hud.SetScoreValue(score);

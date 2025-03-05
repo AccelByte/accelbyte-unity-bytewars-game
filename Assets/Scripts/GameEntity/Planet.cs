@@ -22,6 +22,17 @@ public class Planet : GameEntityAbs
     private float glowMultiplier = 1.0f;
 #endif
 
+    private PlanetState planetState;
+
+    public PlanetState PlanetState => planetState;
+
+    private void OnEnable()
+    {
+        planetState ??= new PlanetState();
+        planetState.EntityId = gameObject.GetInstanceID().ToString();
+        planetState.Position = transform.position;
+    }
+
     private void Start()
     {
         scale = radius * 2.0f;
@@ -71,14 +82,13 @@ public class Planet : GameEntityAbs
         gameObject.SetActive(false);
     }
 
-    private int _id;
     public override int GetId()
     {
-        return _id;
+        return planetState.Id;
     }
 
     public override void SetId(int id)
     {
-        _id = id;
+        planetState.Id = id;
     }
 }

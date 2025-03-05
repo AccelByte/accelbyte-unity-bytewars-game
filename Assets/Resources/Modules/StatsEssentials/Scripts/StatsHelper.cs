@@ -22,11 +22,20 @@ public class StatsHelper : MonoBehaviour
     {
         statsWrapper = TutorialModuleManager.Instance.GetModuleClass<StatsEssentialsWrapper>();
 
-        GameManager.OnGameOver += UpdateConnectedPlayersStatsOnGameEnds;
+        GameManager.OnGameEnded += UpdateConnectedPlayersStatsOnGameEnds;
     }
 
-    private void UpdateConnectedPlayersStatsOnGameEnds(GameModeEnum gameMode, InGameMode inGameMode, List<PlayerState> playerStates) 
+    private void UpdateConnectedPlayersStatsOnGameEnds(GameManager.GameOverReason reason) 
     {
+        if (reason != GameManager.GameOverReason.MatchEnded) 
+        {
+            return;
+        }
+
+        GameModeEnum gameMode = GameManager.Instance.GameMode;
+        InGameMode inGameMode = GameManager.Instance.InGameMode;
+        List<PlayerState> playerStates = GameManager.Instance.ConnectedPlayerStates.Values.ToList();
+
         // Set the correct statistic code based on game mode.
         string targetStatCode = string.Empty;
         if (gameMode is GameModeEnum.SinglePlayer or GameModeEnum.LocalMultiplayer) 
@@ -37,12 +46,12 @@ public class StatsHelper : MonoBehaviour
         {
             switch (inGameMode)
             {
-                case InGameMode.OnlineEliminationGameMode:
-                case InGameMode.CreateMatchEliminationGameMode:
+                case InGameMode.MatchmakingElimination:
+                case InGameMode.CreateMatchElimination:
                     targetStatCode = EliminationStatCode;
                     break;
-                case InGameMode.OnlineDeathMatchGameMode:
-                case InGameMode.CreateMatchDeathMatchGameMode:
+                case InGameMode.MatchmakingTeamDeathmatch:
+                case InGameMode.CreateMatchTeamDeathmatch:
                     targetStatCode = TeamDeathmatchStatCode;
                     break;
             }
@@ -57,7 +66,7 @@ public class StatsHelper : MonoBehaviour
 #if UNITY_SERVER
         BytewarsLogger.Log($"[Server] Update the stats of connected players when the game ended. Game mode: {gameMode}. In game mode: {inGameMode}");
 
-        Dictionary<string, float> userStats = playerStates.ToDictionary(state => state.playerId, state => state.score);
+        Dictionary<string, float> userStats = playerStates.ToDictionary(state => state.PlayerId, state => state.Score);
         List<UserStatItemUpdate> statItems = new List<UserStatItemUpdate>();
         foreach (KeyValuePair<string, float> userStat in userStats)
         {
@@ -96,7 +105,7 @@ public class StatsHelper : MonoBehaviour
 
         /* Local gameplay only has one valid account, which is the player who logged in to the game.
          * Thus, set the stats based on the highest data.*/
-        float highestLocalScore = playerStates.Count > 0 ? playerStates.OrderByDescending(p => p.score).ToArray()[0].score : 0.0f;
+        float highestLocalScore = playerStates.Count > 0 ? playerStates.OrderByDescending(p => p.Score).ToArray()[0].Score : 0.0f;
         PublicUpdateUserStatItem statItem = new PublicUpdateUserStatItem
         {
             updateStrategy = StatisticUpdateStrategy.MAX,

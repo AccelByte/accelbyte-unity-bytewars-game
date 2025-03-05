@@ -107,7 +107,7 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
 
     private void GetUserPublicData(string receivedUserId)
     {
-        GameData.CachedPlayerState.playerId = receivedUserId;
+        GameData.CachedPlayerState.PlayerId = receivedUserId;
         user.GetUserByUserId(receivedUserId, OnGetUserPublicDataFinished);
     }
 
@@ -142,8 +142,8 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
         {
             PublicUserData publicUserData = result.Value;
             string truncatedUserId = publicUserData.userId[..5];
-            GameData.CachedPlayerState.avatarUrl = publicUserData.avatarUrl;
-            GameData.CachedPlayerState.playerName = string.IsNullOrEmpty(publicUserData.displayName) ?
+            GameData.CachedPlayerState.AvatarUrl = publicUserData.avatarUrl;
+            GameData.CachedPlayerState.PlayerName = string.IsNullOrEmpty(publicUserData.displayName) ?
                 $"Player-{truncatedUserId}" : publicUserData.displayName;
 
             loginHandler.OnLoginCompleted(Result<TokenData,OAuthError>.CreateOk(tokenData));

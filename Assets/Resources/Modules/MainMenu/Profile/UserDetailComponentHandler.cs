@@ -19,9 +19,9 @@ public class UserDetailComponentHandler : MonoBehaviour
     {
         if (GameData.CachedPlayerState != null)
         {
-            DisplayName.text = GameData.CachedPlayerState.playerName;
-            UserId.text = GameData.CachedPlayerState.playerId;
-            LoginPlatform.text = $"Platform: {GameData.CachedPlayerState.platformId}";
+            DisplayName.text = GameData.CachedPlayerState.PlayerName;
+            UserId.text = GameData.CachedPlayerState.PlayerId;
+            LoginPlatform.text = $"Platform: {GameData.CachedPlayerState.PlatformId}";
         }
     }
 }

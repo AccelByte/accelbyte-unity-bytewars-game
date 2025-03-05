@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 92d6f9fbc1bcc8443b0e2d1d46dae3e5, type: 3}
-  m_Name: OnlineEliminationGameMode
+  m_Name: LocalElimination2PlayersGameMode
   m_EditorClassIdentifier: 
-  objectsToSpawn:
+  ObjectsToSpawn:
   - {fileID: 4963548002784054317, guid: ed30550f9d38a5846b8c8f3eda443752, type: 3}
   - {fileID: 4963548002784054317, guid: 5367cd521b082f94283672c8a1db94d5, type: 3}
   - {fileID: 7925705449657071170, guid: 56daa162a54fbd34fac7672f289245a5, type: 3}
@@ -23,29 +23,30 @@ MonoBehaviour:
   - {fileID: 7925705449657071170, guid: 7876cf1697374eb45b5c067931210ef7, type: 3}
   - {fileID: 8002154226984785846, guid: 223aca64456642c4e9aa1eb0474ba839, type: 3}
   - {fileID: 8002154226984785846, guid: a14d846b6efeaf94393352ee426bcd97, type: 3}
-  playerPrefab: {fileID: 5087070364855508547, guid: 42f26524c56b79948a2c26636ba00873,
+  PlayerPrefab: {fileID: 5087070364855508547, guid: 42f26524c56b79948a2c26636ba00873,
     type: 3}
-  bounds:
+  Bounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 15, y: 13, z: 0}
-  numLevelObjectsToSpawn: 7
-  numRetriesToPlaceLevelObject: 5
-  numRetriesToPlacePlayer: 100
-  gameDuration: 300
-  baseKillScore: 500
-  playerStartLives: 3
-  teamColours:
-  - {r: 0.45098042, g: 0.5686275, b: 1, a: 1}
-  - {r: 1, g: 0.43137258, b: 0.50980395, a: 1}
-  - {r: 0.48627454, g: 1, b: 0.4431373, a: 1}
-  - {r: 1, g: 0.9450981, b: 0.37254903, a: 1}
-  gameMode: 3
-  playerPerTeamCount: 1
-  teamCount: 4
-  minimumTeamCountToPlay: 1
-  maxInFlightMissilesPerPlayer: 1
-  lobbyCountdownSecond: 30
-  beforeGameCountdownSecond: 5
-  beforeShutDownCountdownSecond: 30
-  gameOverShutdownCountdown: 30
-  lobbyShutdownCountdown: 30
+  NumLevelObjectsToSpawn: 7
+  NumRetriesToPlaceLevelObject: 5
+  NumRetriesToPlacePlayer: 100
+  GameDuration: 300
+  BaseKillScore: 500
+  PlayerStartLives: 3
+  TeamColours:
+  - {r: 0.4509804, g: 0.5686275, b: 1, a: 1}
+  - {r: 1, g: 0.43137255, b: 0.50980395, a: 1}
+  - {r: 0.4862745, g: 1, b: 0.44313726, a: 1}
+  - {r: 1, g: 0.94509804, b: 0.37254903, a: 1}
+  GameMode: 2
+  InGameMode: 2
+  PlayerPerTeamCount: 1
+  TeamCount: 2
+  MinimumTeamCountToPlay: 2
+  MaxInFlightMissilesPerPlayer: 1
+  LobbyCountdownSecond: -1
+  BeforeGameCountdownSecond: 5
+  BeforeShutDownCountdownSecond: -1
+  GameOverShutdownCountdown: -1
+  LobbyShutdownCountdown: -1

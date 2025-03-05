@@ -142,11 +142,11 @@ public class MatchLobbyMenu : MenuCanvas
 
         // Generate team and its member entries.
         Dictionary<int, TeamEntry> teamEntries = new Dictionary<int, TeamEntry>();
-        foreach (KeyValuePair<ulong, PlayerState> kvp in playerStates.OrderBy(p => p.Value.teamIndex))
+        foreach (KeyValuePair<ulong, PlayerState> kvp in playerStates.OrderBy(p => p.Value.TeamIndex))
         {
             PlayerState playerState = kvp.Value;
-            int playerTeamIndex = playerState.teamIndex;
-            bool isCurrentPlayer = playerState.clientNetworkId == clientNetworkId;
+            int playerTeamIndex = playerState.TeamIndex;
+            bool isCurrentPlayer = playerState.ClientNetworkId == clientNetworkId;
 
             if (!teamStates.ContainsKey(playerTeamIndex))
             {

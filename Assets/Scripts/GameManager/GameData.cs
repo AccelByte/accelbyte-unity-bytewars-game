@@ -69,7 +69,7 @@ public static class SessionCache
         return sessionData.SessionLeaderUserId;
     }
 
-    public static bool IsSessionLeader() => GameData.CachedPlayerState.playerId.Equals(GetJoinedSessionLeaderUserId());
+    public static bool IsSessionLeader() => GameData.CachedPlayerState.PlayerId.Equals(GetJoinedSessionLeaderUserId());
     public static bool IsCreateMatch() => isCreateMatchSession;
     public static void ClearSessionCache()
     {

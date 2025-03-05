@@ -38,7 +38,7 @@ public static class MatchSessionHelper
     public static void GetCurrentUserPublicData(string receivedUserId)
     {
         Init();
-        GameData.CachedPlayerState.playerId = receivedUserId;
+        GameData.CachedPlayerState.PlayerId = receivedUserId;
         user.GetUserByUserId(receivedUserId, OnGetUserPublicDataFinished);
     }
 
@@ -51,9 +51,9 @@ public static class MatchSessionHelper
         else
         {
             PublicUserData publicUserData = result.Value;
-            GameData.CachedPlayerState.playerId = publicUserData.userId;
-            GameData.CachedPlayerState.avatarUrl = publicUserData.avatarUrl;
-            GameData.CachedPlayerState.playerName = publicUserData.displayName;
+            GameData.CachedPlayerState.PlayerId = publicUserData.userId;
+            GameData.CachedPlayerState.AvatarUrl = publicUserData.avatarUrl;
+            GameData.CachedPlayerState.PlayerName = publicUserData.displayName;
         }
     }
 

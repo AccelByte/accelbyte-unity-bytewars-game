@@ -14,10 +14,10 @@ public static class CreateMatchDebug
     private const string EmailsFilePath = "/TestData/emails.ini";
     private static readonly CreateMatchDebugTemplate[] k_Templates = new CreateMatchDebugTemplate[]
     {
-        new CreateMatchDebugTemplate(InGameMode.CreateMatchEliminationGameMode, GameSessionServerType.DedicatedServer),
-        new CreateMatchDebugTemplate(InGameMode.CreateMatchEliminationGameMode, GameSessionServerType.PeerToPeer),
-        new CreateMatchDebugTemplate(InGameMode.CreateMatchDeathMatchGameMode, GameSessionServerType.DedicatedServer),
-        new CreateMatchDebugTemplate(InGameMode.CreateMatchDeathMatchGameMode, GameSessionServerType.PeerToPeer),
+        new CreateMatchDebugTemplate(InGameMode.CreateMatchElimination, GameSessionServerType.DedicatedServer),
+        new CreateMatchDebugTemplate(InGameMode.CreateMatchElimination, GameSessionServerType.PeerToPeer),
+        new CreateMatchDebugTemplate(InGameMode.CreateMatchTeamDeathmatch, GameSessionServerType.DedicatedServer),
+        new CreateMatchDebugTemplate(InGameMode.CreateMatchTeamDeathmatch, GameSessionServerType.PeerToPeer),
     };
 
     private static int _templateIndex = 0;

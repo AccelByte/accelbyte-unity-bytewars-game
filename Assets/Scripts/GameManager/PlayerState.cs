@@ -9,52 +9,57 @@ using UnityEngine;
 [Serializable]
 public class PlayerState : INetworkSerializable
 {
-    public string playerName = string.Empty;
-    public int playerIndex = -1;
-    public int numMissilesFired = 0;
-    public float score = 0;
-    public int killCount = 0;
-    public int numKilledAttemptInSingleLifetime = 0;
-    public int lives = 0;
-    public int teamIndex = -1;
-    public ulong clientNetworkId = 0;
-    public string sessionId = string.Empty;
-    public Vector3 position = Vector3.zero;
-    public string playerId = string.Empty;
-    public string avatarUrl = string.Empty;
-    public string platformId = string.Empty;
+    public int PlayerIndex = -1; // Player unique ID
+    public int TeamIndex = -1; // Player's team ID
+    public ulong ClientNetworkId = 0; // Network object ID
+    public string EntityId = string.Empty; // Owning object instance ID
+    
+    public float Score = 0; // Player's score
+    public int KillCount = 0; // Number of opponents killed
+    public int Lives = 0; // Number of player lives
+    public int NumMissilesFired = 0; // Number of missiles fired by the player
+    public int NumKilledAttemptInSingleLifetime = 0; // Number of attempt player is about to get killed
+    public Vector3 Position = Vector3.zero; // Player ship position
+
+    public string PlayerId = string.Empty; // Cached AccelByte user ID
+    public string PlayerName = string.Empty; // Default player name or AccelByte user's display name if any
+    public string SessionId = string.Empty; // Cached AccelByte's session ID
+    public string PlatformId = string.Empty; // Cached AccelByte user's platform
+    public string AvatarUrl = string.Empty; // Cached AccelByte user's avatar URL
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
-        // Make sure there is no null attributes.
-        playerName = string.IsNullOrEmpty(playerName) ? string.Empty : playerName;
-        sessionId = string.IsNullOrEmpty(sessionId) ? string.Empty : sessionId;
-        playerId = string.IsNullOrEmpty(playerId) ? string.Empty : playerId;
-        avatarUrl = string.IsNullOrEmpty(avatarUrl) ? string.Empty : avatarUrl;
-        platformId = string.IsNullOrEmpty(platformId) ? string.Empty : platformId;
+        // Make sure there is no null string during serialization.
+        EntityId = string.IsNullOrEmpty(EntityId) ? string.Empty : EntityId;
+        PlayerName = string.IsNullOrEmpty(PlayerName) ? string.Empty : PlayerName;
+        PlayerId = string.IsNullOrEmpty(PlayerId) ? string.Empty : PlayerId;
+        SessionId = string.IsNullOrEmpty(SessionId) ? string.Empty : SessionId;
+        PlatformId = string.IsNullOrEmpty(PlatformId) ? string.Empty : PlatformId;
+        AvatarUrl = string.IsNullOrEmpty(AvatarUrl) ? string.Empty : AvatarUrl;
 
-        serializer.SerializeValue(ref playerName);
-        serializer.SerializeValue(ref playerIndex);
-        serializer.SerializeValue(ref numMissilesFired);
-        serializer.SerializeValue(ref score);
-        serializer.SerializeValue(ref killCount);
-        serializer.SerializeValue(ref numKilledAttemptInSingleLifetime);
-        serializer.SerializeValue(ref lives);
-        serializer.SerializeValue(ref teamIndex);
-        serializer.SerializeValue(ref clientNetworkId);
-        serializer.SerializeValue(ref sessionId);
-        serializer.SerializeValue(ref position);
-        serializer.SerializeValue(ref playerId);
-        serializer.SerializeValue(ref avatarUrl);
-        serializer.SerializeValue(ref platformId);
+        serializer.SerializeValue(ref EntityId);
+        serializer.SerializeValue(ref PlayerName);
+        serializer.SerializeValue(ref PlayerIndex);
+        serializer.SerializeValue(ref NumMissilesFired);
+        serializer.SerializeValue(ref Score);
+        serializer.SerializeValue(ref KillCount);
+        serializer.SerializeValue(ref NumKilledAttemptInSingleLifetime);
+        serializer.SerializeValue(ref Lives);
+        serializer.SerializeValue(ref TeamIndex);
+        serializer.SerializeValue(ref ClientNetworkId);
+        serializer.SerializeValue(ref SessionId);
+        serializer.SerializeValue(ref Position);
+        serializer.SerializeValue(ref PlayerId);
+        serializer.SerializeValue(ref AvatarUrl);
+        serializer.SerializeValue(ref PlatformId);
     }
     
     public string GetPlayerName()
     {
-        if (String.IsNullOrEmpty(playerName))
+        if (String.IsNullOrEmpty(PlayerName))
         {
-            return "ByteWarrior " + clientNetworkId;
+            return "ByteWarrior " + ClientNetworkId;
         }
-        return playerName;
+        return PlayerName;
     }
 }

@@ -8,34 +8,34 @@ public class InGamePause
 {
     public event Action<bool> OnPauseStateChanged;
 
-    private readonly MenuManager _menuManager;
-    private readonly InGameHUD _hud;
-    private readonly GameManager _gameManager;
+    private readonly MenuManager menuManager;
+    private readonly InGameHUD hud;
+    private readonly GameManager gameManager;
     
     public bool CanPauseGame()
     {
-        return _gameManager.InGameState is InGameState.Playing or InGameState.ShuttingDown;
+        return gameManager.InGameState is InGameState.Playing or InGameState.ShuttingDown;
     }
     
     public InGamePause(MenuManager menuManager, InGameHUD hud, GameManager gameManager)
     {
-        _menuManager = menuManager;
-        _hud = hud;
-        _gameManager = gameManager;
+        this.menuManager = menuManager;
+        this.hud = hud;
+        this.gameManager = gameManager;
     }
     
     public bool IsPausing()
     {
-        if (GameManager.IsLocalGame())
+        if (GameManager.Instance.IsLocalGame)
         {
-            return _gameManager.InGameState is InGameState.LocalPause;
+            return gameManager.InGameState is InGameState.LocalPause;
         }
         return IsOnlineGamePaused();
     }
 
     private bool IsOnlineGamePaused()
     {
-        MenuCanvas currentMenu = _menuManager.GetCurrentMenu();
+        MenuCanvas currentMenu = menuManager.GetCurrentMenu();
         return currentMenu is PauseMenuCanvas && currentMenu.isActiveAndEnabled;
     }
     
@@ -46,7 +46,7 @@ public class InGamePause
             return;
         }
 
-        if (GameManager.IsLocalGame())
+        if (GameManager.Instance.IsLocalGame)
         {
             ToggleGamePauseLocal();
         }
@@ -58,11 +58,11 @@ public class InGamePause
     
     private void ToggleGamePauseLocal()
     {
-        if (_gameManager.InGameState is InGameState.LocalPause)
+        if (gameManager.InGameState is InGameState.LocalPause)
         {
             ResumeLocalGame();
         }
-        else if (_gameManager.InGameState is InGameState.Playing)
+        else if (gameManager.InGameState is InGameState.Playing)
         {
             PauseLocalGame();
         }
@@ -72,14 +72,14 @@ public class InGamePause
     
     private void ResumeLocalGame()
     {
-        _gameManager.SetInGameState(InGameState.Playing);
-        _menuManager.CloseInGameMenu();
+        gameManager.SetInGameState(InGameState.Playing);
+        menuManager.CloseInGameMenu();
     }
     
     private void PauseLocalGame()
     {
-        _gameManager.SetInGameState(InGameState.LocalPause);
-        _menuManager.ShowInGameMenu(AssetEnum.PauseMenuCanvas);
+        gameManager.SetInGameState(InGameState.LocalPause);
+        menuManager.ShowInGameMenu(AssetEnum.PauseMenuCanvas);
     }
     
     private void ToggleGamePauseOnline()
@@ -99,14 +99,14 @@ public class InGamePause
     
     private void ResumeOnlineGame()
     {
-        _hud.SetVisible(true);
-        _menuManager.CloseInGameMenu();
+        hud.SetVisible(true);
+        menuManager.CloseInGameMenu();
     }
     
     private void PauseOnlineGame()
     {
-        _hud.SetVisible(false);
-        PauseMenuCanvas pauseMenu = _menuManager.ShowInGameMenu(AssetEnum.PauseMenuCanvas) as PauseMenuCanvas;
+        hud.SetVisible(false);
+        PauseMenuCanvas pauseMenu = menuManager.ShowInGameMenu(AssetEnum.PauseMenuCanvas) as PauseMenuCanvas;
 
         if (pauseMenu != null)
         {

@@ -217,7 +217,7 @@ public class GameClientController : NetworkBehaviour
             return;
         }
 
-        MissileFireState missileState = player.FireLocalMissile();
+        MissileState missileState = player.FireLocalMissile();
         if (missileState == null)
         {
             BytewarsLogger.LogWarning($"[Server] Unable to fire missile. Missile state is null.");
@@ -228,7 +228,7 @@ public class GameClientController : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void FireMissileClientRpc(ulong clientNetworkId, MissileFireState missileFireState)
+    private void FireMissileClientRpc(ulong clientNetworkId, MissileState missileState)
     {
         BytewarsLogger.LogWarning($"[Client] Fire missile. Client id: {clientNetworkId}.");
 
@@ -240,7 +240,7 @@ public class GameClientController : NetworkBehaviour
         if (GameManager.Instance.Players.TryGetValue(clientNetworkId, out Player player) && 
             GameManager.Instance.ConnectedPlayerStates.TryGetValue(clientNetworkId, out var playerState))
         {
-            player.FireMissileClient(missileFireState, playerState);
+            player.FireMissileClient(missileState, playerState);
         }
         else 
         {
@@ -270,9 +270,9 @@ public class GameClientController : NetworkBehaviour
         GameManager gameManager = GameManager.Instance;
         if (gameManager.ConnectedPlayerStates.TryGetValue(clientNetworkId, out PlayerState playerState))
         {
-            playerState.avatarUrl = clientPlayerState.avatarUrl;
-            playerState.playerName = clientPlayerState.playerName;
-            playerState.playerId = clientPlayerState.playerId;
+            playerState.AvatarUrl = clientPlayerState.AvatarUrl;
+            playerState.PlayerName = clientPlayerState.PlayerName;
+            playerState.PlayerId = clientPlayerState.PlayerId;
 
             // This function is called on network object spawn.
             // Thus, only broadcast the player state changes if the request was from client.
@@ -289,12 +289,12 @@ public class GameClientController : NetworkBehaviour
     {
         if (player != null)
         {
-            return player.PlayerState.lives > 0;
+            return player.PlayerState.Lives > 0;
         }
         
         if (GameManager.Instance.ConnectedPlayerStates.TryGetValue(OwnerClientId, out PlayerState playerState))
         {
-            return playerState.lives > 0;
+            return playerState.Lives > 0;
         }
         
         return false;

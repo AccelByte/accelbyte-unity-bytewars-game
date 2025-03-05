@@ -8,24 +8,25 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "ScriptableObjects/GameModeSO", order = 1)]
 public class GameModeSO : ScriptableObject
 {
-    public GameEntityAbs[] objectsToSpawn;
-    public GameEntityAbs playerPrefab;
-    public Bounds bounds;
-    public int numLevelObjectsToSpawn;
-    public int numRetriesToPlaceLevelObject;
-    public int numRetriesToPlacePlayer;
-    public int gameDuration;
-    public float baseKillScore;
-    public int playerStartLives;    
-    public Color[] teamColours;
-    public GameModeEnum gameMode;
-    public int playerPerTeamCount;
-    public int teamCount;
-    public int minimumTeamCountToPlay;
-    public int maxInFlightMissilesPerPlayer;
-    public int lobbyCountdownSecond;
-    public int beforeGameCountdownSecond;
-    public int beforeShutDownCountdownSecond;
-    public int gameOverShutdownCountdown;
-    public int lobbyShutdownCountdown;
+    public GameEntityAbs[] ObjectsToSpawn;
+    public GameEntityAbs PlayerPrefab;
+    public Bounds Bounds;
+    public int NumLevelObjectsToSpawn;
+    public int NumRetriesToPlaceLevelObject;
+    public int NumRetriesToPlacePlayer;
+    public int GameDuration;
+    public float BaseKillScore;
+    public int PlayerStartLives;    
+    public Color[] TeamColours;
+    public GameModeEnum GameMode;
+    public InGameMode InGameMode;
+    public int PlayerPerTeamCount;
+    public int TeamCount;
+    public int MinimumTeamCountToPlay;
+    public int MaxInFlightMissilesPerPlayer;
+    public int LobbyCountdownSecond;
+    public int BeforeGameCountdownSecond;
+    public int BeforeShutDownCountdownSecond;
+    public int GameOverShutdownCountdown;
+    public int LobbyShutdownCountdown;
 }

@@ -29,14 +29,14 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
         }
         switch (selectedGameMode)
         {
-            case InGameMode.OnlineDeathMatchGameMode:
-                matchmakingP2PWrapper.StartP2PMatchmaking(InGameMode.OnlineDeathMatchGameMode);
+            case InGameMode.MatchmakingTeamDeathmatch:
+                matchmakingP2PWrapper.StartP2PMatchmaking(InGameMode.MatchmakingTeamDeathmatch);
                 ShowLoading($"Start {teamdeathmatchInfo}...",
                     $"Start {teamdeathmatchInfo} is timed out",
                     matchmakingTimeoutSec);
                 break;
-            case InGameMode.OnlineEliminationGameMode:
-                matchmakingP2PWrapper.StartP2PMatchmaking(InGameMode.OnlineEliminationGameMode);
+            case InGameMode.MatchmakingElimination:
+                matchmakingP2PWrapper.StartP2PMatchmaking(InGameMode.MatchmakingElimination);
                 ShowLoading($"Start {eliminationInfo}...",
                     $"Start {eliminationInfo} is timed out",
                     matchmakingTimeoutSec);
@@ -138,12 +138,12 @@ public class MatchmakingSessionP2PHandler : MenuCanvas
     {
         switch (selectedGameMode)
         {
-            case InGameMode.OnlineDeathMatchGameMode:
+            case InGameMode.MatchmakingTeamDeathmatch:
                 ShowLoading($"Finding {teamdeathmatchInfo}...",
                     $"Finding {teamdeathmatchInfo} is timed out",
                     matchmakingTimeoutSec, CancelP2PMatchmaking);
                 break;
-            case InGameMode.OnlineEliminationGameMode:
+            case InGameMode.MatchmakingElimination:
                 ShowLoading($"Finding {eliminationInfo}...",
                     $"Finding {eliminationInfo} is timed out",
                     matchmakingTimeoutSec, CancelP2PMatchmaking);

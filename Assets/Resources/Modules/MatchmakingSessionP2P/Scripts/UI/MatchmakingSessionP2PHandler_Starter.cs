@@ -72,12 +72,12 @@ public class MatchmakingSessionP2PHandler_Starter : MenuCanvas
     {
         switch (selectedGameMode)
         {
-            case InGameMode.OnlineDeathMatchGameMode:
+            case InGameMode.MatchmakingTeamDeathmatch:
                 ShowLoading($"Finding {teamdeathmatchInfo}...",
                     $"Finding {teamdeathmatchInfo} is timed out",
                     matchmakingTimeoutSec, CancelP2PMatchmaking);
                 break;
-            case InGameMode.OnlineEliminationGameMode:
+            case InGameMode.MatchmakingElimination:
                 ShowLoading($"Finding {eliminationInfo}...",
                     $"Finding {eliminationInfo} is timed out",
                     matchmakingTimeoutSec, CancelP2PMatchmaking);

@@ -95,9 +95,9 @@ public class MatchSessionItem : MonoBehaviour
     {
         switch (gameMode)
         {
-            case InGameMode.CreateMatchDeathMatchGameMode:
+            case InGameMode.CreateMatchTeamDeathmatch:
                 return "Team Deathmatch";
-            case InGameMode.CreateMatchEliminationGameMode:
+            case InGameMode.CreateMatchElimination:
                 return "Elimination";
         }
         return gameMode.ToString();

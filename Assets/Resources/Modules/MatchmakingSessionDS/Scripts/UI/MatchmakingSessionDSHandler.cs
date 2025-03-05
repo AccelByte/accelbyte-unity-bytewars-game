@@ -27,14 +27,14 @@ public class MatchmakingSessionDSHandler : MenuCanvas
         }
         switch (selectedGameMode)
         {
-            case InGameMode.OnlineDeathMatchGameMode:
-                matchmakingSessionDSWrapper.StartDSMatchmaking(InGameMode.OnlineDeathMatchGameMode);
+            case InGameMode.MatchmakingTeamDeathmatch:
+                matchmakingSessionDSWrapper.StartDSMatchmaking(InGameMode.MatchmakingTeamDeathmatch);
                 ShowLoading("Start Team Death Match (Dedicated Server)...",
                 "Start Team Death Match (Dedicated Server) is timed out",
                 matchmakingTimeoutSec);
                 break;
-            case InGameMode.OnlineEliminationGameMode:
-                matchmakingSessionDSWrapper.StartDSMatchmaking(InGameMode.OnlineEliminationGameMode);
+            case InGameMode.MatchmakingElimination:
+                matchmakingSessionDSWrapper.StartDSMatchmaking(InGameMode.MatchmakingElimination);
                 ShowLoading("Start Elimination Match (Dedicated Server)...",
                 "Start Elimination Match (Dedicated Server) is timed out",
                 matchmakingTimeoutSec);
@@ -92,12 +92,12 @@ public class MatchmakingSessionDSHandler : MenuCanvas
     {
         switch (selectedGameMode)
         {
-            case InGameMode.OnlineDeathMatchGameMode:
+            case InGameMode.MatchmakingTeamDeathmatch:
                 ShowLoading("Finding Team Death Match (Dedicated Server)...",
                 "Finding Team Death Match (Dedicated Server) is timed out",
                 matchmakingTimeoutSec, CancelDSMatchmaking);
                 break;
-            case InGameMode.OnlineEliminationGameMode:
+            case InGameMode.MatchmakingElimination:
                 ShowLoading("Finding Elimination Match (Dedicated Server)...",
                 "Elimination Team Death Match (Dedicated Server) is timed out",
                 matchmakingTimeoutSec, CancelDSMatchmaking);

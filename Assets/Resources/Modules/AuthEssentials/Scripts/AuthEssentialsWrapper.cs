@@ -57,7 +57,7 @@ public class AuthEssentialsWrapper : MonoBehaviour
     public void LoginWithUsername(string username, string password, ResultCallback<TokenData, OAuthError> resultCallback)
     {
         BytewarsLogger.Log($"Trying login with email and password");
-        GameData.CachedPlayerState.platformId = "Accelbyte";
+        GameData.CachedPlayerState.PlatformId = "Accelbyte";
         user.LoginWithUsernameV3(username, password, result => OnLoginCompleted(result, resultCallback), false);
     }
 
@@ -188,7 +188,7 @@ public class AuthEssentialsWrapper : MonoBehaviour
         {
             BytewarsLogger.Log($"The user successfully logged in with Device ID: {result.Value.platform_user_id}");
 
-            GameData.CachedPlayerState.playerId = result.Value.user_id;
+            GameData.CachedPlayerState.PlayerId = result.Value.user_id;
             UserData = result.Value;
 
             GetUserProfile();
@@ -197,7 +197,7 @@ public class AuthEssentialsWrapper : MonoBehaviour
         else
         {
             BytewarsLogger.Log($"The user failed to log in with Device ID. Error Message: {result.Error.error}");
-            GameData.CachedPlayerState.platformId = string.Empty;
+            GameData.CachedPlayerState.PlatformId = string.Empty;
         }
 
         customCallback?.Invoke(result);
@@ -298,10 +298,10 @@ public class AuthEssentialsWrapper : MonoBehaviour
             BytewarsLogger.Log("Successfully Retrieved Public Data");
             PublicUserData publicUserData = result.Value;
             string truncatedUserId = publicUserData.userId[..5];
-            GameData.CachedPlayerState.avatarUrl = publicUserData.avatarUrl;
-            GameData.CachedPlayerState.playerName = string.IsNullOrEmpty(publicUserData.displayName) ?
+            GameData.CachedPlayerState.AvatarUrl = publicUserData.avatarUrl;
+            GameData.CachedPlayerState.PlayerName = string.IsNullOrEmpty(publicUserData.displayName) ?
                 $"Player-{truncatedUserId}" : publicUserData.displayName;
-            GameData.CachedPlayerState.platformId = string.IsNullOrEmpty(GameData.CachedPlayerState.platformId) ? UserData.platform_id : GameData.CachedPlayerState.platformId;
+            GameData.CachedPlayerState.PlatformId = string.IsNullOrEmpty(GameData.CachedPlayerState.PlatformId) ? UserData.platform_id : GameData.CachedPlayerState.PlatformId;
         }
         else
         {

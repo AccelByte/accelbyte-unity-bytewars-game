@@ -54,12 +54,12 @@ public class GameSessionUtilityWrapper : SessionEssentialsWrapper
         {
             case EliminationDSMatchPool:
             case EliminationDSAMSMatchPool:
-                initialData.inGameMode = InGameMode.OnlineEliminationGameMode;
+                initialData.inGameMode = InGameMode.MatchmakingElimination;
                 GameManager.Instance.StartAsClient(dsInfo.server.ip, port, initialData);
                 break;
             case TeamDeathmatchDSMatchPool:
             case TeamDeathmatchDSAMSMatchPool:
-                initialData.inGameMode = InGameMode.OnlineDeathMatchGameMode;
+                initialData.inGameMode = InGameMode.MatchmakingTeamDeathmatch;
                 GameManager.Instance.StartAsClient(dsInfo.server.ip, port, initialData);
                 break;
         }

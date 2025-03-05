@@ -16,7 +16,7 @@ public class UserDataHelper
     public static void OnLoginSuccess(TokenData tokenData)
     {
         Init();
-        GameData.CachedPlayerState.playerId = tokenData.user_id;
+        GameData.CachedPlayerState.PlayerId = tokenData.user_id;
         user.GetUserByUserId(tokenData.user_id, OnGetUserPublicDataFinished);
     }
 
@@ -29,9 +29,9 @@ public class UserDataHelper
         else
         {
             var publicUserData = result.Value;
-            GameData.CachedPlayerState.playerId = publicUserData.userId;
-            GameData.CachedPlayerState.avatarUrl = publicUserData.avatarUrl;
-            GameData.CachedPlayerState.playerName = publicUserData.displayName;
+            GameData.CachedPlayerState.PlayerId = publicUserData.userId;
+            GameData.CachedPlayerState.AvatarUrl = publicUserData.avatarUrl;
+            GameData.CachedPlayerState.PlayerName = publicUserData.displayName;
         }
     }
 

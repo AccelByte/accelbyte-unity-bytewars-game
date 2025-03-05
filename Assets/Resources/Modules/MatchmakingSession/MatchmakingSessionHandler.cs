@@ -23,12 +23,12 @@ public class MatchmakingSessionHandler : MenuCanvas
 
     private void OnEliminationButtonClicked()
     {
-        QuickPlayMatchmaking(InGameMode.OnlineEliminationGameMode);
+        QuickPlayMatchmaking(InGameMode.MatchmakingElimination);
     }
 
     private void OnTeamDeathMatchButtonClicked()
     {
-        QuickPlayMatchmaking(InGameMode.OnlineDeathMatchGameMode);
+        QuickPlayMatchmaking(InGameMode.MatchmakingTeamDeathmatch);
     }
 
     private void QuickPlayMatchmaking(InGameMode inGameMode)

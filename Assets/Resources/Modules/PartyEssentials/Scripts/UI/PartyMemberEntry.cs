@@ -33,7 +33,7 @@ public class PartyMemberEntry : MonoBehaviour
         addMemberButton.gameObject.SetActive(false);
 
         // Only set button interaction for non-current user entry.
-        SetInteractable(GameData.CachedPlayerState.playerId != memberUserData.userId);
+        SetInteractable(GameData.CachedPlayerState.PlayerId != memberUserData.userId);
     }
 
     public void ResetPartyMember() 

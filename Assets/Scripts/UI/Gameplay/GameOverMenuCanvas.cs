@@ -37,80 +37,57 @@ public class GameOverMenuCanvas : MenuCanvas
         StartCoroutine(GameManager.Instance.QuitToMainMenu());
     }
 
-    private void UpdateWinnerPlayerUI(List<PlayerState> playerStates, TeamState[] teamStates, InGameMode gameMode)
+    private void UpdateWinnerPlayerUI()
     {
-        switch (gameMode)
+        bool isLocalGame = GameManager.Instance.IsLocalGame;
+        bool isTeamBasedGameMode = GameManager.Instance.InGameMode is
+            InGameMode.MatchmakingTeamDeathmatch or InGameMode.CreateMatchTeamDeathmatch or InGameMode.LocalTeamDeathmatch;
+
+        GameManager.Instance.GetWinner(out TeamState winnerTeam, out PlayerState winnerPlayer);
+
+        // If no winner, then the game is draw.
+        if (winnerTeam == null || winnerPlayer == null) 
         {
-            case InGameMode.OnlineDeathMatchGameMode 
-                    or InGameMode.CreateMatchDeathMatchGameMode
-                    or InGameMode.Local4PlayerDeathMatchGameMode:
-                
-                Dictionary<int, float> teamScores = playerStates.GroupBy(p => p.teamIndex)
-                               .ToDictionary(g => g.Key, g => g.Sum(p => p.score));
-                float maxScore = teamScores.Values.Max();
-                List<int> winningTeams = teamScores.Where(kv => kv.Value == maxScore).Select(kv => kv.Key).ToList();
-                List<int> drawTeams = teamScores.Where(kv => kv.Value == maxScore && winningTeams.Count > 1)
-                                        .Select(kv => kv.Key).ToList();
-                
-                if (drawTeams.Count > 1)
-                {
-                    winnerPlayerTextUI.text = "Game Draw!";
-                }
-                else
-                {
-                    TeamState teamWinner = teamStates[winningTeams[0]];
-                    winnerPlayerTextUI.text = $"Team {teamWinner.teamIndex+1} Wins!";
-                    winnerPlayerTextUI.color = teamWinner.teamColour;
-                }
+            winnerPlayerTextUI.text = "Game Is a Draw!";
+            winnerPlayerTextUI.color = Color.white;
+        }
+        // Display team winner if the game mode is team based. Otherwise, display player winner name.
+        else
+        {
+            bool isLocalPlayer = GameData.CachedPlayerState.PlayerId == winnerPlayer.PlayerId;
 
-                break;
-            default:
-                maxScore = playerStates.Max(p => p.score);
-                List<PlayerState> winners = playerStates.Where(p => p.score == maxScore).ToList();
-                PlayerState winner = winners[0];
-                bool isDraw = winners.Count > 1;
-                
-                if (isDraw)
-                {
-                    winnerPlayerTextUI.text = "Game Draw!";
-                } 
-                else
-                {
-                    winnerPlayerTextUI.text = GameData.CachedPlayerState.playerName == winner.GetPlayerName() ? "You Win!" : $"{winner.GetPlayerName()} Wins!";
-                    winnerPlayerTextUI.color = teamStates[winners[0].teamIndex].teamColour;
-                }
+            string playerWinnerText = isLocalPlayer && !isLocalGame ? "You Win!" : $"{winnerPlayer.GetPlayerName()} Wins!";
+            string teamWinnerText = $"Team {winnerTeam.teamIndex + 1} Wins!";
 
-                break;
+            winnerPlayerTextUI.text = isTeamBasedGameMode ? teamWinnerText : playerWinnerText;
+            winnerPlayerTextUI.color = winnerTeam.teamColour;
         }
     }
 
-    private void GenerateLeaderboardList(List<PlayerState> playerStates, TeamState[] teamStates)
+    private void GenerateLeaderboardList()
     {
+        TeamState[] teamStates = GameManager.Instance.TeamStates;
+
+        List<PlayerState> playerStates = 
+            GameManager.Instance.ConnectedPlayerStates.Values.OrderByDescending(p => p.Score).ThenBy(p => p.TeamIndex).ToList();
+
         foreach (PlayerState playerState in playerStates)
         {
-            LeaderboardEntryController playerEntry = Instantiate(
-                leaderboardEntryPrefab, 
-                Vector3.zero, 
-                Quaternion.identity,
-                leaderboardList);
+            LeaderboardEntryController playerEntry = 
+                Instantiate(leaderboardEntryPrefab, Vector3.zero, Quaternion.identity, leaderboardList);
 
-                playerEntry.SetDetails(playerState.GetPlayerName(), teamStates[playerState.teamIndex].teamColour, 
-                playerState.killCount, (int)playerState.score);
-                playerEntry.gameObject.SetActive(true);
+            playerEntry.SetDetails(playerState.GetPlayerName(), teamStates[playerState.TeamIndex].teamColour, 
+            playerState.KillCount, (int)playerState.Score);
+            playerEntry.gameObject.SetActive(true);
         }
     }
 
     private void OnEnable()
     {
-        if (GameManager.Instance != null && 
-            GameManager.Instance.InGameState == InGameState.GameOver)
+        if (GameManager.Instance != null && GameManager.Instance.InGameState == InGameState.GameOver)
         {
-            InGameMode gameMode = GameManager.Instance.InGameMode;
-            List<PlayerState> playerStates = GameManager.Instance.ConnectedPlayerStates.Values.ToList();
-            TeamState[] teamStates = GameManager.Instance.TeamStates;
-            playerStates.OrderByDescending(p => p.score).ThenBy(p => p.teamIndex);
-            UpdateWinnerPlayerUI(playerStates, teamStates, gameMode);
-            GenerateLeaderboardList(playerStates, teamStates);
+            UpdateWinnerPlayerUI();
+            GenerateLeaderboardList();
         }
 
         playAgainBtn.gameObject.SetActive(!NetworkManager.Singleton.IsListening); 

@@ -358,10 +358,10 @@ public class PresenceEssentialsWrapper : MonoBehaviour
 
             GameModeStatus = "Game Mode: " + GameManager.Instance.InGameMode switch
             {
-                InGameMode.OnlineEliminationGameMode => PresenceHelper.ActivityStatus[PresenceActivity.Elimination],
-                InGameMode.CreateMatchEliminationGameMode => PresenceHelper.ActivityStatus[PresenceActivity.Elimination],
-                InGameMode.OnlineDeathMatchGameMode => PresenceHelper.ActivityStatus[PresenceActivity.TeamDeathmatch],
-                InGameMode.CreateMatchDeathMatchGameMode => PresenceHelper.ActivityStatus[PresenceActivity.TeamDeathmatch],
+                InGameMode.MatchmakingElimination => PresenceHelper.ActivityStatus[PresenceActivity.Elimination],
+                InGameMode.CreateMatchElimination => PresenceHelper.ActivityStatus[PresenceActivity.Elimination],
+                InGameMode.MatchmakingTeamDeathmatch => PresenceHelper.ActivityStatus[PresenceActivity.TeamDeathmatch],
+                InGameMode.CreateMatchTeamDeathmatch => PresenceHelper.ActivityStatus[PresenceActivity.TeamDeathmatch],
                 _ => PresenceHelper.ActivityStatus[PresenceActivity.Singleplayer]
             };
         }

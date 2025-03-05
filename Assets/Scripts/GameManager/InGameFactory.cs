@@ -22,17 +22,17 @@ public class InGameFactory
     {
         List<LevelObject> levelObjects = new List<LevelObject>();
 
-        float boundMinX = gameModeSo.bounds.min.x;
-        float boundMaxX = gameModeSo.bounds.max.x;
-        float boundMinY = gameModeSo.bounds.min.y;
-        float boundMaxY = gameModeSo.bounds.max.y;
+        float boundMinX = gameModeSo.Bounds.min.x;
+        float boundMaxX = gameModeSo.Bounds.max.x;
+        float boundMinY = gameModeSo.Bounds.min.y;
+        float boundMaxY = gameModeSo.Bounds.max.y;
 
         // Spawn planets.
-        for(int i = 0; i < gameModeSo.numLevelObjectsToSpawn; i++)
+        for(int i = 0; i < gameModeSo.NumLevelObjectsToSpawn; i++)
         {
-            GameEntityAbs objectToSpawn = gameModeSo.objectsToSpawn[Random.Range(0, gameModeSo.objectsToSpawn.Length)];
+            GameEntityAbs objectToSpawn = gameModeSo.ObjectsToSpawn[Random.Range(0, gameModeSo.ObjectsToSpawn.Length)];
 
-            for (int j = 0; j < gameModeSo.numRetriesToPlaceLevelObject; j++)
+            for (int j = 0; j < gameModeSo.NumRetriesToPlaceLevelObject; j++)
             {
                 Vector3 spawnPosition = new Vector3(
                     Random.Range(boundMinX, boundMaxX), 
@@ -40,7 +40,7 @@ public class InGameFactory
                     0.0f);
 
                 // Check for valid position before spawn the level object. On last try, spawn the level object anyway.
-                bool isLastTry = j >= gameModeSo.numRetriesToPlaceLevelObject;
+                bool isLastTry = j >= gameModeSo.NumRetriesToPlaceLevelObject;
                 if (isLastTry || !GameUtility.IsTooCloseToOtherObject(instantiatedGEs, spawnPosition, objectToSpawn.GetRadius()))
                 {
                     GameEntityAbs gameEntity = objectPooling.Get(objectToSpawn);
@@ -85,10 +85,10 @@ public class InGameFactory
     {
         List<Vector3> positions = new List<Vector3>();
         
-        float boundMinX = gameModeSo.bounds.min.x;
-        float boundMaxX = gameModeSo.bounds.max.x;
-        float boundMinY = gameModeSo.bounds.min.y;
-        float boundMaxY = gameModeSo.bounds.max.y;
+        float boundMinX = gameModeSo.Bounds.min.x;
+        float boundMaxX = gameModeSo.Bounds.max.x;
+        float boundMinY = gameModeSo.Bounds.min.y;
+        float boundMaxY = gameModeSo.Bounds.max.y;
 
         float posX = boundMinX;
         float posY = boundMinY;
@@ -137,31 +137,31 @@ public class InGameFactory
         foreach (PlayerState playerState in playerStates.Values)
         {
             Vector3 spawnPosition = GetPlayerSpawnPosition(gameModeSo, instantiatedGEs, instantiatedShips, availablePos);
-            playerState.position = spawnPosition;
+            playerState.Position = spawnPosition;
 
             Player newPlayer = SpawnLocalPlayer(
                 gameModeSo,
                 objectPooling,
-                teamStates[playerState.teamIndex].teamColour,
+                teamStates[playerState.TeamIndex].teamColour,
                 playerState);
 
             if (newPlayer != null)
             {
                 players.Add(newPlayer);
-                instantiatedShips.Add(playerState.clientNetworkId, newPlayer);
+                instantiatedShips.Add(playerState.ClientNetworkId, newPlayer);
                 levelObjects.Add(new LevelObject()
                 {
-                    PrefabName = gameModeSo.playerPrefab.name,
+                    PrefabName = gameModeSo.PlayerPrefab.name,
                     Position = spawnPosition,
                     Rotation = Quaternion.identity,
-                    ID = levelObjects.Count + playerState.playerIndex
+                    ID = levelObjects.Count + playerState.PlayerIndex
                 });
 
-                BytewarsLogger.Log($"Player-{playerState.playerIndex} from Team-{playerState.teamIndex} is placed at {spawnPosition}");
+                BytewarsLogger.Log($"Player-{playerState.PlayerIndex} from Team-{playerState.TeamIndex} is placed at {spawnPosition}");
             }
             else 
             {
-                BytewarsLogger.LogWarning($"Unable to spawn Player-{playerState.playerIndex} from Team-{playerState.teamIndex}. Player instance is null.");
+                BytewarsLogger.LogWarning($"Unable to spawn Player-{playerState.PlayerIndex} from Team-{playerState.TeamIndex}. Player instance is null.");
             }
         }
 
@@ -176,9 +176,9 @@ public class InGameFactory
         Vector4 color, 
         PlayerState playerState)
     {
-        GameEntityAbs newShip = objectPooling.Get(gameModeSo.playerPrefab);
+        GameEntityAbs newShip = objectPooling.Get(gameModeSo.PlayerPrefab);
         Player player = newShip as Player;
-        player.SetPlayerState(playerState, gameModeSo.maxInFlightMissilesPerPlayer, color);
+        player.SetPlayerState(playerState, gameModeSo.MaxInFlightMissilesPerPlayer, color);
         return player;
     }
 
@@ -193,20 +193,20 @@ public class InGameFactory
 
         // Spawn the player on a new position.
         Vector3 newPosition = GetPlayerSpawnPosition(gameModeSo, instantiatedGEs, instantiatedShips, availablePositions);
-        Color teamColor = gameModeSo.teamColours[playerToRespawn.PlayerState.teamIndex];
-        playerToRespawn.PlayerState.position = newPosition;
-        playerToRespawn.Initialize(gameModeSo.maxInFlightMissilesPerPlayer, teamColor);
+        Color teamColor = gameModeSo.TeamColours[playerToRespawn.PlayerState.TeamIndex];
+        playerToRespawn.PlayerState.Position = newPosition;
+        playerToRespawn.Initialize(gameModeSo.MaxInFlightMissilesPerPlayer, teamColor);
 
         // Add old position to available positions.
         availablePositions.Add(oldPosition);
 
-        BytewarsLogger.Log($"Player {playerToRespawn.PlayerState.playerId} is respawned on the coord: {playerToRespawn.PlayerState.position}.");
+        BytewarsLogger.Log($"Player {playerToRespawn.PlayerState.PlayerId} is respawned on the coord: {playerToRespawn.PlayerState.Position}.");
 
         // Broadcast to connected game clients.
         GameManager.Instance.RepositionPlayerClientRpc(
-            playerToRespawn.PlayerState.clientNetworkId,
+            playerToRespawn.PlayerState.ClientNetworkId,
             newPosition,
-            gameModeSo.maxInFlightMissilesPerPlayer,
+            gameModeSo.MaxInFlightMissilesPerPlayer,
             teamColor,
             playerToRespawn.transform.rotation);
     }
@@ -219,7 +219,7 @@ public class InGameFactory
     {
         // Check for valid position to spawn the player's ship.
         int spawnPosIndex = 0;
-        for (int i = 0; i < gameModeSo.numRetriesToPlacePlayer; i++) 
+        for (int i = 0; i < gameModeSo.NumRetriesToPlacePlayer; i++) 
         {
             spawnPosIndex = Random.Range(0, availablePositions.Count);
             if (!GameUtility.HasLineOfSightToOtherShip(instantiatedGEs, availablePositions[spawnPosIndex], instantiatedShips))
@@ -239,25 +239,25 @@ public class InGameFactory
         InGameStateResult result = new InGameStateResult();
 
         int playerIndex = 0;
-        for (int i = 0; i < gameModeSo.teamCount; i++)
+        for (int i = 0; i < gameModeSo.TeamCount; i++)
         {
             result.TeamStates.Add(i, new TeamState()
             {
                 teamIndex = i,
-                teamColour = gameModeSo.teamColours[i]
+                teamColour = gameModeSo.TeamColours[i]
             });
 
-            for (int j = 0; j < gameModeSo.playerPerTeamCount; j++)
+            for (int j = 0; j < gameModeSo.PlayerPerTeamCount; j++)
             {
                 string playerName = $"Player {playerIndex + 1}";
                 result.PlayerStates.Add((ulong)playerIndex, new PlayerState()
                 {
-                    playerIndex = playerIndex,
-                    playerName = playerName,
-                    teamIndex = i,
-                    lives = gameModeSo.playerStartLives,
-                    clientNetworkId = (ulong)playerIndex,
-                    playerId = GameData.CachedPlayerState.playerId
+                    PlayerIndex = playerIndex,
+                    PlayerName = playerName,
+                    TeamIndex = i,
+                    Lives = gameModeSo.PlayerStartLives,
+                    ClientNetworkId = (ulong)playerIndex,
+                    PlayerId = GameData.CachedPlayerState.PlayerId
                 });
                 playerIndex++;
             }
@@ -271,11 +271,11 @@ public class InGameFactory
         Player player = null;
         if (serverHelper.ConnectedPlayerStates.TryGetValue(clientNetworkId, out var playerState))
         {
-            Color teamColor = serverHelper.ConnectedTeamStates[playerState.teamIndex].teamColour;
-            GameEntityAbs newShip = objectPooling.Get(GameData.GameModeSo.playerPrefab);
+            Color teamColor = serverHelper.ConnectedTeamStates[playerState.TeamIndex].teamColour;
+            GameEntityAbs newShip = objectPooling.Get(GameData.GameModeSo.PlayerPrefab);
 
             player = newShip as Player;
-            player.SetPlayerState(playerState, GameData.GameModeSo.maxInFlightMissilesPerPlayer, teamColor);
+            player.SetPlayerState(playerState, GameData.GameModeSo.MaxInFlightMissilesPerPlayer, teamColor);
         }
 
         return player;

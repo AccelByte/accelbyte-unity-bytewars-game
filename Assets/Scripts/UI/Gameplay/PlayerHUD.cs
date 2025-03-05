@@ -65,9 +65,9 @@ public class PlayerHUD : MonoBehaviour
         int lives = 0;
         foreach (var pState in pStates)
         {
-            if (pState.teamIndex == teamState.teamIndex)
+            if (pState.TeamIndex == teamState.teamIndex)
             {
-                lives += pState.lives;
+                lives += pState.Lives;
             }
         }
         SetLivesValue(lives);

@@ -32,12 +32,12 @@ public class MatchSessionHandler : MenuCanvas
 
     private void OnEliminationButtonClicked()
     {
-        SetMatchSessionGameMode(InGameMode.CreateMatchEliminationGameMode);
+        SetMatchSessionGameMode(InGameMode.CreateMatchElimination);
     }
 
     private void OnTeamDeathMatchButtonClicked()
     {
-        SetMatchSessionGameMode(InGameMode.CreateMatchDeathMatchGameMode);
+        SetMatchSessionGameMode(InGameMode.CreateMatchTeamDeathmatch);
     }
 
     private void SetMatchSessionGameMode(InGameMode inGameMode)

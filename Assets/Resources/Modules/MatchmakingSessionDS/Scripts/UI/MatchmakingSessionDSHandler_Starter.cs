@@ -42,12 +42,12 @@ public class MatchmakingSessionDSHandler_Starter : MenuCanvas
     {
         switch (selectedGameMode)
         {
-            case InGameMode.OnlineDeathMatchGameMode:
+            case InGameMode.MatchmakingTeamDeathmatch:
                 ShowLoading("Finding Team Death Match (Dedicated Server)...",
                 "Finding Team Death Match (Dedicated Server) is timed out",
                 matchmakingTimeoutSec, CancelDSMatchmaking);
                 break;
-            case InGameMode.OnlineEliminationGameMode:
+            case InGameMode.MatchmakingElimination:
                 ShowLoading("Finding Elimination Match (Dedicated Server)...",
                 "Elimination Team Death Match (Dedicated Server) is timed out",
                 matchmakingTimeoutSec, CancelDSMatchmaking);

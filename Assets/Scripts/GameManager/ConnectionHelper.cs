@@ -2,15 +2,12 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-using System;
-using System.Threading.Tasks;
+using System.Linq;
 using Unity.Netcode;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class ConnectionHelper
 {
-    private static int ServerClaimedMaxWaitSec = 7;
     public ConnectionApprovalResult ConnectionApproval(
         NetworkManager.ConnectionApprovalRequest request,
         NetworkManager.ConnectionApprovalResponse response, 
@@ -20,108 +17,65 @@ public class ConnectionHelper
         InGameMode inGameMode, 
         ServerHelper serverHelper)
     {
-        ConnectionApprovalResult result = null;
+        ConnectionApprovalResult result = new ConnectionApprovalResult();
+        GameModeSO requestedGameModeSo = null;
+
         InitialConnectionData initialData = GameUtility.FromByteArray<InitialConnectionData>(request.Payload);
-        
-        int clientRequestedGameModeIndex = (int)initialData.inGameMode;
-        BytewarsLogger.Log($"ConnectionApprovalCallback IsServer:{isServer} requested game mode:{clientRequestedGameModeIndex} clientNetworkId{request.ClientNetworkId}");
-
-        bool isNewPlayer = string.IsNullOrEmpty(initialData.sessionId);
-
-        // Reject the player if the player and server have mismatch session id.
-        if (isNewPlayer &&
-            !string.IsNullOrEmpty(initialData.serverSessionId) &&
-            !initialData.serverSessionId.Equals(GameData.ServerSessionID))
+        if (initialData == null)
         {
-            string reason = $"Invalid session id between client's session id ({initialData.serverSessionId}) and server's session id ({GameData.ServerSessionID})";
-            RejectConnection(response, reason);
+            RejectConnection(response, $"Connection data is invalid.");
             return null;
         }
 
-        // Set server game mode if none.
-        GameModeSO gameModeSo = availableInGameMode[clientRequestedGameModeIndex];
-        if (inGameMode == InGameMode.None)
+        bool isNewPlayer = string.IsNullOrEmpty(initialData.sessionId);
+        InGameMode requestedInGameMode = initialData.inGameMode;
+        BytewarsLogger.Log($"Processing connection approval for clientNetworkId: {request.ClientNetworkId}. Requested game mode: {requestedInGameMode}. IsServer: {isServer}.");
+
+        // Reject the player if the player and server have mismatch session id.
+        if (!ValidateSessionId(initialData, out string sessionValidationError))
         {
-            result = new ConnectionApprovalResult()
-            {
-                InGameMode = (InGameMode)clientRequestedGameModeIndex,
-                GameModeSo = gameModeSo
-            };
-        }
-        // Reject the player is the request game mode is different from the server.
-        else
-        {
-            InGameMode requestedGameMode = (InGameMode)clientRequestedGameModeIndex;
-            if (inGameMode != requestedGameMode)
-            {
-                string reason = $"Mismatch requested game mode {requestedGameMode.ToString()} by client {request.ClientNetworkId}. The available game mode is {inGameMode.ToString()}";
-                RejectConnection(response, reason);
-                return null;
-            }
+            RejectConnection(response, sessionValidationError);
+            return null;
         }
 
-        // If the game has not yet started, there is no reconnection and player are always treated as new player.
-        bool isGameScene = SceneManager.GetActiveScene().buildIndex == GameConstant.GameSceneBuildIndex;
-        if (isNewPlayer || !isGameScene)
+        // Reject if the requested game mode is invalid.
+        if (!ValidateRequestedGameMode(
+            requestedInGameMode, 
+            inGameMode, 
+            availableInGameMode, 
+            out requestedGameModeSo, 
+            out string gameModeValidationError)) 
         {
-            // Create a new player state for the new player, reject if failed.
-            if (serverHelper.CreateNewPlayerState(request.ClientNetworkId, gameModeSo) == null)
-            {
-                string reason = "Game is full. No avaiable team for the player.";
-                RejectConnection(response, reason);
-                return null;
-            }
-        }
-        // Handle player reconnection.
-        else
-        {
-            if (inGameState != InGameState.GameOver)
-            {
-                BytewarsLogger.Log($"Player sessionId : {initialData.sessionId} try to reconnect");
-
-                Player player = serverHelper.AddReconnectPlayerState(initialData.sessionId, 
-                    request.ClientNetworkId, 
-                    availableInGameMode[clientRequestedGameModeIndex]);
-                if (player)
-                {
-                    if (result == null)
-                    {
-                        result = new ConnectionApprovalResult()
-                        {
-                            reconnectPlayer = player
-                        };
-                    }
-                    else
-                    {
-                        result.reconnectPlayer = player;
-                    }
-                    BytewarsLogger.Log($"Player reconnect success sessionId:{initialData.sessionId}");
-                }
-                else
-                {
-                    string reason = $"Failed to reconnect. Client network id {request.ClientNetworkId} is already claimed by other player in the game with session id {initialData.sessionId}";
-                    RejectConnection(response, reason);
-                    return result;
-                }
-            }
-            else
-            {
-                string reason = $"Failed to reconnect. Game with session id {initialData.sessionId} is already over.";
-                RejectConnection(response, reason);
-                return result;
-            }
+            RejectConnection(response, gameModeValidationError);
+            return null;
         }
 
-        // Approve connection
+        // Reject if player connection is invalid.
+        if (!ValidatePlayerConnection(
+            request.ClientNetworkId, 
+            initialData, 
+            requestedGameModeSo, 
+            inGameState, 
+            serverHelper, 
+            out Player reconnectedPlayer, 
+            out string playerValidationError)) 
+        {
+            RejectConnection(response, playerValidationError);
+            return null;
+        }
+
+        // Set connection result and approve the connection.
+        result.InGameMode = requestedInGameMode;
+        result.GameModeSo = requestedGameModeSo;
+        result.ReconnectPlayer = reconnectedPlayer;
         response.CreatePlayerObject = true;
         response.Approved = true;
         response.Pending = false;
+
         return result;
     }
 
-    private void RejectConnection(
-        NetworkManager.ConnectionApprovalResponse response, 
-        string reason)
+    private void RejectConnection(NetworkManager.ConnectionApprovalResponse response, string reason)
     {
         BytewarsLogger.Log($"Reject client connection with reason: {reason}");
         response.Reason = reason;
@@ -129,11 +83,96 @@ public class ConnectionHelper
         response.Pending = false;
     }
     
+    private bool ValidateSessionId(InitialConnectionData initialData, out string rejectReason) 
+    {
+        bool isNewPlayer = string.IsNullOrEmpty(initialData.sessionId);
+        if (isNewPlayer && !string.IsNullOrEmpty(initialData.serverSessionId) && !initialData.serverSessionId.Equals(GameData.ServerSessionID))
+        {
+            rejectReason = $"Invalid session id between client's session id ({initialData.serverSessionId}) and server's session id ({GameData.ServerSessionID})";
+            return false;
+        }
+        
+        rejectReason = string.Empty;
+        return true;
+    }
+
+    private bool ValidateRequestedGameMode(
+        InGameMode requestedInGameMode, 
+        InGameMode currentInGameMode, 
+        GameModeSO[] availableGameMode, 
+        out GameModeSO validatedGameModeSo, 
+        out string rejectReason) 
+    {
+        validatedGameModeSo = availableGameMode.FirstOrDefault(x => x.InGameMode == requestedInGameMode);
+        rejectReason = string.Empty;
+
+        // Reject invalid game mode.
+        if (validatedGameModeSo == null)
+        {
+            rejectReason = $"Requested game mode {requestedInGameMode.ToString()} is invalid.";
+            return false;
+        }
+
+        // Reject if requested game mode is missmatched.
+        if (currentInGameMode != InGameMode.None && currentInGameMode != requestedInGameMode)
+        {
+            rejectReason = $"Mismatch requested game mode {requestedInGameMode.ToString()} by client. The server game mode is {currentInGameMode.ToString()}";
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool ValidatePlayerConnection(
+        ulong clientNetworkId,
+        InitialConnectionData initialData,
+        GameModeSO requestedGameModeSo, 
+        InGameState currentInGameState, 
+        ServerHelper serverHelper,
+        out Player reconnectedPlayer,
+        out string rejectReason) 
+    {
+        bool isNewPlayer = string.IsNullOrEmpty(initialData.sessionId);
+        bool isGameScene = SceneManager.GetActiveScene().buildIndex == GameConstant.GameSceneBuildIndex;
+
+        reconnectedPlayer = null;
+        rejectReason = string.Empty;
+
+        // Reject if the game is over.
+        if (currentInGameState == InGameState.GameOver)
+        {
+            rejectReason = $"Failed to validate player connection as the game is already ended.";
+            return false;
+        }
+
+        // If the game has not yet started (e.g. in match lobby), player are always treated as new player.
+        if (isNewPlayer || !isGameScene)
+        {
+            // Create a new player state for the new player, reject if failed.
+            if (serverHelper.CreateNewPlayerState(clientNetworkId, requestedGameModeSo) == null)
+            {
+                rejectReason = "Cannot accept new player connection. Game is already full.";
+                return false;
+            }
+        }
+        // Handle player reconnection.
+        else
+        {
+            reconnectedPlayer = serverHelper.AddReconnectPlayerState(initialData.sessionId, clientNetworkId, requestedGameModeSo);
+            if (reconnectedPlayer == null)
+            {
+                rejectReason = $"Cannot reconnect player. Game is already full.";
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
 
 public class ConnectionApprovalResult
 {
     public InGameMode InGameMode;
     public GameModeSO GameModeSo;
-    public Player reconnectPlayer;
+    public Player ReconnectPlayer;
 }

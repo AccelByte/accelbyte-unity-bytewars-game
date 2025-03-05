@@ -5,7 +5,6 @@
 //Auto-generated from AssetNameEnumGenerator
 public enum AssetEnum
 {
-	AnalyticsAssetConfig,
 	AuthEssentialsAssetConfig,
 	BlockedPlayerEntryComponent,
 	BlockedPlayersMenuCanvas,
@@ -40,6 +39,7 @@ public enum AssetEnum
 	FriendsMenuCanvas_Starter,
 	GameOverMenuCanvas,
 	GameSessionAssetConfig,
+	GameTelemetryAssetConfig,
 	HelpAndOptionsMenuCanvas,
 	HelpMenuCanvas,
 	InfoMenuCanvas,

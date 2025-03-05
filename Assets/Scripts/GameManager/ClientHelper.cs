@@ -50,9 +50,9 @@ public class ClientHelper
                 {
                     ulong clientNetworkId = playersClientIds[playerClientIdIndex];
                     PlayerState playerState = serverHelper.ConnectedPlayerStates[clientNetworkId];
-                    Color teamColour = serverHelper.ConnectedTeamStates[playerState.teamIndex].teamColour;
+                    Color teamColour = serverHelper.ConnectedTeamStates[playerState.TeamIndex].teamColour;
 
-                    player.SetPlayerState(playerState, GameData.GameModeSo.maxInFlightMissilesPerPlayer, teamColour);
+                    player.SetPlayerState(playerState, GameData.GameModeSo.MaxInFlightMissilesPerPlayer, teamColour);
                     isValidEntity = players.TryAdd(clientNetworkId, player);
 
                     playerClientIdIndex++;

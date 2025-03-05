@@ -125,10 +125,10 @@ public class Reconnect : MonoBehaviour
         var game = GameManager.Instance;
         if (isOwner && isServer)
         {
-            if (GameData.GameModeSo.lobbyCountdownSecond > -1)
+            if (GameData.GameModeSo.LobbyCountdownSecond > -1)
             {
                 serverHelper.StartCoroutineCountdown(this,
-                    GameData.GameModeSo.lobbyCountdownSecond,
+                    GameData.GameModeSo.LobbyCountdownSecond,
                     game.OnLobbyCountdownServerUpdated);
             }
             //most variable exists only on IsServer bracket
@@ -201,7 +201,7 @@ public class Reconnect : MonoBehaviour
                     var initialData = new InitialConnectionData()
                     {
                         inGameMode = inGameMode,
-                        sessionId = playerState.sessionId
+                        sessionId = playerState.SessionId
                     };
                     if (!isIntentionallyDisconnect)
                     {
@@ -252,7 +252,7 @@ public class Reconnect : MonoBehaviour
         if (connectedClientCount < 1)
         {
             if (GameData.GameModeSo != null &&
-                GameData.GameModeSo.lobbyShutdownCountdown > -1)
+                GameData.GameModeSo.LobbyShutdownCountdown > -1)
             {
                 return true;
             }

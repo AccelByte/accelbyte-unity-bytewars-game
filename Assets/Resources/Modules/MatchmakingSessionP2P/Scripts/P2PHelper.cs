@@ -28,8 +28,6 @@ public class P2PHelper
     {
         GameManager.Instance.ShowTravelingLoading(() =>
         {
-            BytewarsLogger.Log($"Start P2P Host");
-
             GameManager.Instance.ResetCache();
             GameData.ServerType = ServerType.OnlinePeer2Peer;
 

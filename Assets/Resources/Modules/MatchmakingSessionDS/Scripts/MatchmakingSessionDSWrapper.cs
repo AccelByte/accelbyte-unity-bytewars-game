@@ -362,7 +362,7 @@ public class MatchmakingSessionDSWrapper : MatchmakingSessionWrapper
 
     private async void OnDSStatusUpdateCallback(Result<SessionV2DsStatusUpdatedNotification> result)
     {
-        BytewarsLogger.Log($"{GameData.CachedPlayerState.playerId}");
+        BytewarsLogger.Log($"{GameData.CachedPlayerState.PlayerId}");
         if (!result.IsError)
         {
             SessionV2GameSession session = result.Value.session;

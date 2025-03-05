@@ -36,7 +36,7 @@ public class GameSessionConfig
                             } 
                         }
                     },
-                    { InGameMode.OnlineEliminationGameMode, new Dictionary<GameSessionServerType,
+                    { InGameMode.MatchmakingElimination, new Dictionary<GameSessionServerType,
                         SessionV2GameSessionCreateRequest>()
                         {
                             {
@@ -70,7 +70,7 @@ public class GameSessionConfig
                             }
                         }
                     },
-                    { InGameMode.OnlineDeathMatchGameMode, new Dictionary<GameSessionServerType,
+                    { InGameMode.MatchmakingTeamDeathmatch, new Dictionary<GameSessionServerType,
                         SessionV2GameSessionCreateRequest>()
                         {
                             {
@@ -104,7 +104,7 @@ public class GameSessionConfig
                             }
                         }
                     },
-                    { InGameMode.CreateMatchEliminationGameMode, new Dictionary<GameSessionServerType, 
+                    { InGameMode.CreateMatchElimination, new Dictionary<GameSessionServerType, 
                         SessionV2GameSessionCreateRequest>() 
                         {
                             {
@@ -138,7 +138,7 @@ public class GameSessionConfig
                             }
                         }
                     },
-                    { InGameMode.CreateMatchDeathMatchGameMode, new Dictionary<GameSessionServerType, SessionV2GameSessionCreateRequest>(){
+                    { InGameMode.CreateMatchTeamDeathmatch, new Dictionary<GameSessionServerType, SessionV2GameSessionCreateRequest>(){
                             {
                                 GameSessionServerType.DedicatedServer, new SessionV2GameSessionCreateRequest()
                                 {

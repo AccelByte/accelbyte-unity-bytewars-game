@@ -25,7 +25,7 @@ public class QuickPlayGameMenu : MenuCanvas
         MenuManager.Instance.ShowLoading("Finding Elimination Match...", null, ClickCancelMatchmakingElimination);
         //call dummy Accelbyte Game Services for matchmaking to get server ip address and port
 #if !UNITY_WEBGL
-        matchmaking.StartMatchmaking(InGameMode.OnlineEliminationGameMode, OnMatchmakingFinished);
+        matchmaking.StartMatchmaking(InGameMode.MatchmakingElimination, OnMatchmakingFinished);
 #endif
 
     }
@@ -92,7 +92,7 @@ public class QuickPlayGameMenu : MenuCanvas
         MenuManager.Instance.ShowLoading("Finding Team Death-match ...", null, ClickCancelMatchmakingElimination);
         //call dummy Accelbyte Game Services for matchmaking to get server ip address and port
 #if !UNITY_WEBGL
-        matchmaking.StartMatchmaking(InGameMode.OnlineDeathMatchGameMode,
+        matchmaking.StartMatchmaking(InGameMode.MatchmakingTeamDeathmatch,
             OnMatchmakingFinished);
 #endif
     }
