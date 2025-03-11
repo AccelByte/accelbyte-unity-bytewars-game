@@ -22,7 +22,7 @@ public class GameTelemetryModels
                 result = $"{GameEntityType.Planet.ToString()}:{planetState?.EntityId}";
                 break;
             case GameEntityDestroyReason.MissileHit:
-                result = $"{GameEntityType.Missile.ToString()}:{missileState?.EntityId}";
+                result = $"{GameEntityType.Missile.ToString()}:{playerState?.EntityId}";
                 break;
         }
         return result;

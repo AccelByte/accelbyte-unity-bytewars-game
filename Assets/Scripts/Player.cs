@@ -100,10 +100,9 @@ public class Player : GameEntityAbs
         int maxMissilesInFlight, 
         Color teamColor)
     {
-        playerState.EntityId = gameObject.GetInstanceID().ToString();
+        gameObject.name = $"{InGameFactory.PlayerInstancePrefix}Player{playerState.PlayerIndex + 1}";
+        playerState.EntityId = AccelByteWarsUtility.GenerateObjectEntityId(gameObject);
         this.playerState = playerState;
-
-        gameObject.name = $"{InGameFactory.PlayerInstancePrefix}Player{this.playerState.PlayerIndex + 1}";
 
         Initialize(maxMissilesInFlight, teamColor);
     }

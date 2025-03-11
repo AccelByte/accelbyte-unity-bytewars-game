@@ -29,7 +29,7 @@ public class Planet : GameEntityAbs
     private void OnEnable()
     {
         planetState ??= new PlanetState();
-        planetState.EntityId = gameObject.GetInstanceID().ToString();
+        planetState.EntityId = AccelByteWarsUtility.GenerateObjectEntityId(gameObject);
         planetState.Position = transform.position;
     }
 

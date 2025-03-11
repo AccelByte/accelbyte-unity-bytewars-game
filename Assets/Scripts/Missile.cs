@@ -86,7 +86,7 @@ public class Missile : GameEntityAbs
         this.owningPlayerState = owningPlayerState;
 
         missileState.Id = GetId();
-        missileState.EntityId = gameObject.GetInstanceID().ToString();
+        missileState.EntityId = AccelByteWarsUtility.GenerateObjectEntityId(gameObject);
         this.missileState = missileState;
         
         isAlive = true;

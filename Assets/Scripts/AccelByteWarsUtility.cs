@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using UnityEngine;
 
 public class AccelByteWarsUtility
 {
@@ -16,5 +17,10 @@ public class AccelByteWarsUtility
     {
         // Return first five digit of the user id with "player" prefix.
         return $"Player-{(string.IsNullOrEmpty(userId) ? "Unknown" : userId[..5])}";
+    }
+
+    public static string GenerateObjectEntityId(GameObject gameObject) 
+    {
+        return $"{gameObject.name}_{Mathf.Abs(gameObject.GetInstanceID())}";
     }
 }
