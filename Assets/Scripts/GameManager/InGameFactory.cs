@@ -8,9 +8,11 @@ using UnityEngine;
 
 public class InGameFactory
 {
-    private const float AvailablePosDistance = 1;
     public const char PlayerInstancePrefix = 's';
     public const char PlanetInstancePrefix = 'P';
+
+    private const float AvailablePosDistance = 1;
+    private const string DefaultLocalPlayerUserId = "00000000000000000000000000000000";
 
     public static LevelCreationResult CreateLevel(
         GameModeSO gameModeSo,
@@ -249,6 +251,9 @@ public class InGameFactory
 
             for (int j = 0; j < gameModeSo.PlayerPerTeamCount; j++)
             {
+                // If first player, use AccelByte user ID. Otherwise, use default local user ID.
+                string playerId = playerIndex == 0 ? GameData.CachedPlayerState.PlayerId : DefaultLocalPlayerUserId;
+
                 string playerName = $"Player {playerIndex + 1}";
                 result.PlayerStates.Add((ulong)playerIndex, new PlayerState()
                 {
@@ -257,7 +262,7 @@ public class InGameFactory
                     TeamIndex = i,
                     Lives = gameModeSo.PlayerStartLives,
                     ClientNetworkId = (ulong)playerIndex,
-                    PlayerId = GameData.CachedPlayerState.PlayerId
+                    PlayerId = playerId
                 });
                 playerIndex++;
             }
