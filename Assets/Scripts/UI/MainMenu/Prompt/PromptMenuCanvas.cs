@@ -11,13 +11,17 @@ using UnityEngine.UI;
 
 public class PromptMenuCanvas : MenuCanvas
 {
-    [SerializeField] private PlayerInput playerInput;
-    private const float FadeSpeed = 0.05f;
-    private const float UnblurDelay = 0.2f;
-    private const float BlurMenuAlpha = 0.5f;
-    private const int PlaneDistanceWhenBlurred = 10;
+    private const float BackgroundAlpha = 0.5f; // The target alpha intensity of the fade background.
+    private const float AlphaFadeIncrement = 0.05f; // The rate of the fade background animation.
+    private const float FadeSpeed = 0.02f; // The speed of the background fade animation
 
-    [Header("Prompt Components"), SerializeField] private Image background;
+    private const float BlurMenuAlpha = 0.1f; // The alpha intensity is the overlayed blured menu.
+    private const int PlaneDistanceWhenBlurred = 10; // Distance between the camera to the canvas.
+    private const float UnblurDelay = 0.2f; // The delay before the overlayed blured menu return to normal view.
+
+    [Header("Prompt Components")]
+    [SerializeField] private PlayerInput playerInput;
+    [SerializeField] private Image background;
     [SerializeField] private Transform promptPanel;
     [SerializeField] private Transform loadingPanel;
     [SerializeField] private TMP_Text promptHeaderText;
@@ -28,7 +32,6 @@ public class PromptMenuCanvas : MenuCanvas
     [SerializeField] private Button loadingButton;
 
     private bool shouldBlur = false;
-    private float backgroundAlpha = 0.9f;
     private MenuCanvas currentActiveMenu;
 
     private Action confirmButtonClicked = null;
@@ -46,7 +49,8 @@ public class PromptMenuCanvas : MenuCanvas
 
     private void Awake()
     {
-        backgroundAlpha = background.color.a;
+        // Set background alpha to the initial state.
+        background.color = new Color(background.color.r, background.color.g, background.color.b, BackgroundAlpha);
 
         MenuManager.OnMenuChanged += OnActiveMenuChanged;
     }
@@ -319,7 +323,7 @@ public class PromptMenuCanvas : MenuCanvas
         canvasGroup.interactable = true;
         while (canvasGroup != null && canvasGroup.alpha < 1f)
         {
-            canvasGroup.alpha += 0.1f;
+            canvasGroup.alpha += AlphaFadeIncrement;
             await UniTask.Delay(TimeSpan.FromSeconds(FadeSpeed));
         }
     }
@@ -331,16 +335,16 @@ public class PromptMenuCanvas : MenuCanvas
     private async void StartFadeInAnimation(Action onComplete = null)
     {
         background.color = new Color(background.color.r, background.color.g, background.color.b, 0f);
-        while (background != null && background.color.a < backgroundAlpha)
+        while (background != null && background.color.a < BackgroundAlpha)
         {
             background.color = new Color(background.color.r, background.color.g, background.color.b,
-                background.color.a + 0.1f);
+                background.color.a + AlphaFadeIncrement);
 
             await UniTask.Delay(TimeSpan.FromSeconds(FadeSpeed));
         }
 
         // Snap to backgroundAlpha to prevent flickering.
-        background.color = new Color(background.color.r, background.color.g, background.color.b, backgroundAlpha);
+        background.color = new Color(background.color.r, background.color.g, background.color.b, BackgroundAlpha);
         onComplete?.Invoke();
     }
 
@@ -349,7 +353,7 @@ public class PromptMenuCanvas : MenuCanvas
         while (background != null && background.color.a > 0f)
         {
             background.color = new Color(background.color.r, background.color.g, background.color.b,
-                background.color.a - 0.1f);
+                background.color.a - AlphaFadeIncrement);
 
             await UniTask.Delay(TimeSpan.FromSeconds(FadeSpeed));
         }
@@ -366,7 +370,7 @@ public class PromptMenuCanvas : MenuCanvas
             return false;
         }
 
-        return background.color.a != 0f && background.color.a != backgroundAlpha;
+        return background.color.a != 0f && background.color.a != BackgroundAlpha;
     }
 
     #endregion Fade Animation Methods

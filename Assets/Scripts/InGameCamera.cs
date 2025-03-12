@@ -19,8 +19,10 @@ public class InGameCamera : MonoBehaviour
     private Vector2 maxCameraFrameExtents = new();
     private Vector2 furthestMissilePositionToFrame = new();
     
-    private const float cameraLerpTolerance = 0.01f;
-    private const float cameraClipPlaneDistance = 200f;
+    private const float CameraLerpTolerance = 0.01f;
+    private const float NearCameraClipPlaneDistance = 1f;
+    private const float FarCameraClipPlaneDistance = 200f;
+
     private float cameraAspectRatio = 16.0f / 9.0f;
     private float largestWidthToFrame = 0;
     
@@ -75,8 +77,8 @@ public class InGameCamera : MonoBehaviour
         maxCameraFrameExtents = minCameraFrameExtents * minMaxSizeMultiplier;
         furthestMissilePositionToFrame = minCameraFrameExtents;
 
-        mainCamera.nearClipPlane = -cameraClipPlaneDistance;
-        mainCamera.farClipPlane = cameraClipPlaneDistance;
+        mainCamera.nearClipPlane = NearCameraClipPlaneDistance;
+        mainCamera.farClipPlane = FarCameraClipPlaneDistance;
 
 #if UNITY_SERVER
         mainCamera.orthographicSize = maxCameraFrameExtents.y;
@@ -98,7 +100,7 @@ public class InGameCamera : MonoBehaviour
 
         while (true)
         {
-            bool isCloseEnough = Math.Abs(currentSize - defaultSize) < cameraLerpTolerance;
+            bool isCloseEnough = Math.Abs(currentSize - defaultSize) < CameraLerpTolerance;
             if (isCloseEnough)
             {
                 return;
@@ -125,7 +127,7 @@ public class InGameCamera : MonoBehaviour
         float currentSize = mainCamera.orthographicSize;
         float defaultSize = GameConstant.DefaultOrthographicSize;
 
-        bool isCloseEnough = Math.Abs(currentSize - defaultSize) < cameraLerpTolerance;
+        bool isCloseEnough = Math.Abs(currentSize - defaultSize) < CameraLerpTolerance;
         if (isCloseEnough)
         {
             return;
