@@ -40,6 +40,8 @@ public class LoginHandler : MenuCanvas
     [SerializeField] private Button loginWithSteamButton;
     private AuthEssentialsWrapper authWrapper;
     private LoginType lastLoginMethod;
+    private String username = String.Empty;
+    private String password = String.Empty;
         
     #region LoginView enum
     public enum LoginView
@@ -126,7 +128,29 @@ public class LoginHandler : MenuCanvas
         CurrentView = LoginView.LoginLoading;
         lastLoginMethod = loginMethod;
         OnRetryLoginClicked = OnRetryLoginButtonClicked;
-        authWrapper.LoginWithDeviceId(OnLoginCompleted);
+
+        switch (loginMethod)
+        {
+            case LoginType.Username:
+                // Try login with the username and password specified with command-line arguments
+                if (username != string.Empty && password != string.Empty)
+                {
+                    CurrentView = LoginView.LoginLoading;
+                    authWrapper.LoginWithUsername(username, password, OnLoginCompleted);
+                }
+                else
+                {
+                    failedMessageText.text = $"Login Failed:\n Email and Password fields cannot be empty.";
+                    failedMessageText.alignment = TextAlignmentOptions.Center;
+                    CurrentView = LoginView.LoginFailed;
+                    StartCoroutine(SetSelectedGameObject(retryLoginButton.gameObject));
+                    retryLoginButton.gameObject.SetActive(false);
+                }
+                break;
+            case LoginType.DeviceId:
+                authWrapper.LoginWithDeviceId(OnLoginCompleted);
+                break;
+        }
     }
 
     public void OnLoginCompleted(Result<TokenData, OAuthError> result)
@@ -168,9 +192,9 @@ public class LoginHandler : MenuCanvas
             return;
         }
 
-        string username = string.Empty;
-        string password = string.Empty;
-
+        // Retrieve username / email and password from launch param
+        username = string.Empty;
+        password = string.Empty;
         foreach (string cmdArg in cmdArgs)
         {
             if (cmdArg.Contains("-AUTH_LOGIN="))
@@ -184,20 +208,7 @@ public class LoginHandler : MenuCanvas
             }
         }
 
-        // Try login with the username and password specified with command-line arguments
-        if (username != string.Empty && password != string.Empty)
-        {
-            CurrentView = LoginView.LoginLoading;
-            authWrapper.LoginWithUsername(username, password, OnLoginCompleted);
-        }
-        else
-        {
-            failedMessageText.text = $"Login Failed:\n Email and Password fields cannot be empty.";
-            failedMessageText.alignment = TextAlignmentOptions.Center;
-            CurrentView = LoginView.LoginFailed;
-            StartCoroutine(SetSelectedGameObject(retryLoginButton.gameObject));
-            retryLoginButton.gameObject.SetActive(false);
-        }
+        Login(LoginType.Username);
     }
     
     private void OnLoginWithDeviceIdButtonClicked()
@@ -212,19 +223,11 @@ public class LoginHandler : MenuCanvas
         {
             CurrentView = LoginView.LoginLoading;
 
-            urlParams.TryGetValue("-AUTH_LOGIN", out string email);
-            urlParams.TryGetValue("-AUTH_PASSWORD", out string password);
+            // Retrieve username / email and password from URL
+            urlParams.TryGetValue("-AUTH_LOGIN", out username);
+            urlParams.TryGetValue("-AUTH_PASSWORD", out password);
 
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-            {
-                failedMessageText.text = $"Login Failed:\n Email and Password fields cannot be empty.";
-                CurrentView = LoginView.LoginFailed;
-                StartCoroutine(SetSelectedGameObject(retryLoginButton.gameObject));
-                retryLoginButton.gameObject.SetActive(false);
-                return;
-            }
-
-            authWrapper.LoginWithUsername(email, password, OnLoginCompleted);
+            Login(LoginType.Username);
         }
         else 
         {

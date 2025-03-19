@@ -5,5 +5,6 @@
 public enum LoginType
 {
     DeviceId,
-    Steam
+    Steam,
+    Username
 }
