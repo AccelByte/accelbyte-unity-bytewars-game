@@ -3,10 +3,9 @@
 // and restrictions contact your company contract manager.
 
 using System;
-using System.Threading.Tasks;
-using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
+using Cysharp.Threading.Tasks;
 using Extensions;
 using TMPro;
 using UnityEngine;
@@ -280,14 +279,14 @@ public class FindFriendsMenuHandler : MenuCanvas
     
     private async void OnFriendCodeCopyButtonClicked()
     {
-        GUIUtility.systemCopyBuffer = friendCode.text;
+        AccelByteWarsUtility.CopyToClipboard(friendCode.text);
         TMP_Text buttonText = friendCodeCopyButton.GetComponentInChildren<TMP_Text>();
         
         string originalText = buttonText.text;
         buttonText.SetText(FriendsHelper.FriendCodeCopiedMessage);
         friendCodeCopyButton.interactable = false;
         
-        await Task.Delay(TimeSpan.FromSeconds(2));
+        await UniTask.Delay(TimeSpan.FromSeconds(2));
         
         buttonText.SetText(originalText);
         friendCodeCopyButton.interactable = true;

@@ -5,9 +5,31 @@
 using System;
 using System.Globalization;
 using UnityEngine;
+using System.Runtime.InteropServices;
 
 public class AccelByteWarsUtility
 {
+#if UNITY_WEBGL && !UNITY_EDITOR
+    [DllImport("__Internal")]
+    private static extern void JSCopyToClipboard(string text);
+#endif
+
+    public static void CopyToClipboard(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            BytewarsLogger.LogWarning("Attempted to copy an empty string.");
+            return;
+        }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        JSCopyToClipboard(text);
+#else
+        GUIUtility.systemCopyBuffer = text;
+#endif
+        BytewarsLogger.Log($"Copied to clipboard: {text}");
+    }
+
     public static string GetNowDate()
     {
         return DateTime.Now.ToString("MM/dd/yyyy hh:mm:ss.F", CultureInfo.InvariantCulture);
