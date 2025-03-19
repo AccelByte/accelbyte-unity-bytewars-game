@@ -62,7 +62,11 @@ public class MatchmakingSessionDSWrapperServer: MatchmakingSessionWrapper
 
     private void OnBackfillProposalReceived(MatchmakingV2BackfillProposalNotification proposal, bool isStopBackfilling)
     {
-        matchmakingV2Server.AcceptBackfillProposal(proposal, isStopBackfilling, result =>
+        AcceptBackfillProposalOptionalParams param = new AcceptBackfillProposalOptionalParams()
+        {
+            StopBackfilling = isStopBackfilling
+        };
+        matchmakingV2Server.AcceptBackfillProposal(proposal, param, result =>
         {
             if (!result.IsError)
             {
