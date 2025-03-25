@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c946b292dbcfa2418ef1a2b2e60b8b7, type: 3}
+  m_Name: PeriodicLeaderboardEssentialsAssetConfig
+  m_EditorClassIdentifier: 
+  defaultMenuUIPrefab: {fileID: 814906144202775787, guid: ae127d03757add948a9aa57a3b465a91,
+    type: 3}
+  defaultAdditionalMenuUIPrefabs: []
+  defaultModuleScript: {fileID: 11500000, guid: fe8f4a3e4c1d70046986c382ed2934b3,
+    type: 3}
+  type: 13
+  isActive: 1
+  additionalScripts: 1
+  additionalPrefab: 0
+  defaultHelperScripts:
+  - {fileID: 11500000, guid: 673f18cda7d1c524a89628941c82e9c1, type: 3}
+  starterHelperScripts:
+  - {fileID: 11500000, guid: edbd41581ca958f4295c8687bf004870, type: 3}
+  starterScript: {fileID: 11500000, guid: 1a4b1f28514d91b4f8c094ed5261638a, type: 3}
+  starterMenuUIPrefab: {fileID: 814906144202775787, guid: ae127d03757add948a9aa57a3b465a91,
+    type: 3}
+  starterAdditionalMenuUIPrefabs: []
+  isStarterActive: 0
+  moduleDependencies:
+  - {fileID: 11400000, guid: 36fe6534bcd4dfd4bbca52b4e7a7d0ba, type: 2}
