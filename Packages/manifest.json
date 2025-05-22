@@ -1,7 +1,7 @@
 ﻿{
   "dependencies": {
-    "com.accelbyte.networking": "https://github.com/AccelByte/accelbyte-unity-networking.git#0.3.15",
-    "com.accelbyte.unitysdk": "https://github.com/AccelByte/accelbyte-unity-sdk.git#17.6.0",
+    "com.accelbyte.networking": "https://github.com/AccelByte/accelbyte-unity-networking.git#0.3.16",
+    "com.accelbyte.unitysdk": "https://github.com/AccelByte/accelbyte-unity-sdk.git#17.7.0",
     "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
     "com.rlabrecque.steamworks.net": "https://github.com/rlabrecque/Steamworks.NET.git?path=/com.rlabrecque.steamworks.net#20.2.0",
     "com.unity.ai.navigation": "1.1.5",

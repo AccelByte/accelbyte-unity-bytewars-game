@@ -87,9 +87,9 @@ public class PartyMenu : MenuCanvas
             // Instantiate party members.
             if (!result.IsError) 
             {
-                foreach (BaseUserInfo memberInfo in result.Value.MemberUserInfos)
+                foreach (AccountUserPlatformData memberInfo in result.Value.MemberUserInfos)
                 {
-                    bool isLeader = memberInfo.userId == result.Value.PartySession.leaderId;
+                    bool isLeader = memberInfo.UserId == result.Value.PartySession.leaderId;
                     PartyMemberEntry memberEntry = Instantiate(memberEntryPrefab, memberEntryContainer);
                     memberEntry.SetPartyMember(memberInfo, isLeader);
                 }
@@ -99,11 +99,11 @@ public class PartyMenu : MenuCanvas
             else if (partyWrapper.CurrentPartySession == null) 
             {
                 PartyMemberEntry memberEntry = Instantiate(memberEntryPrefab, memberEntryContainer);
-                memberEntry.SetPartyMember(new BaseUserInfo 
+                memberEntry.SetPartyMember(new AccountUserPlatformData
                 {
-                    userId = currentUser.PlayerId,
-                    displayName = currentUser.PlayerName,
-                    avatarUrl = currentUser.AvatarUrl
+                    UserId = currentUser.PlayerId,
+                    DisplayName = currentUser.PlayerName,
+                    AvatarUrl = currentUser.AvatarUrl
                 }, true);
             }
             // Else, display error message.

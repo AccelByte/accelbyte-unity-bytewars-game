@@ -16,30 +16,35 @@ public class MissileTrail : FxEntity
     [SerializeField] private float fadeRate = 10f;
     [SerializeField] private TrailRenderer trailRenderer;
 
+    private float initialTime = 0f;
     private float currentAlpha = 1f;
     private float wantedAlpha = 1f;
     private float timeWithoutMissile = 0f;
-    private GameObject parentMissile;
-    private bool parentMissileDestroyed = false;
 
-    public void Init(GameObject missile, Vector3 pos, Quaternion rot, Color color)
+    public void Init(Missile missile)
     {
-        transform.SetPositionAndRotation(pos, rot);
-
-        parentMissile = missile;
-        parentMissileDestroyed = false;
         wantedAlpha = WantedAlphaStart;
 
+        transform.SetPositionAndRotation(missile.transform.position, missile.transform.rotation);
+
+        Color.RGBToHSV(missile.MissileState.Color, out float hue, out float saturation, out float value);
+        saturation = Math.Min(1f, saturation + 0.5f);
+        
+        Color color = Color.HSVToRGB(hue, saturation, value);
         trailRenderer.colorGradient = new()
         {
             alphaKeys = new GradientAlphaKey[] { new(1.0f, 0.0f), new(0.0f, 1.0f)},
             colorKeys = new GradientColorKey[] { new(color, 0.0f), new(color, 1.0f) }
         };
         trailRenderer.material.SetFloat("_Alpha", CurrentAlphaStart);
-        
-        trailRenderer.Clear();
 
-        SceneManager.activeSceneChanged += OnSceneChanged;
+        gameObject.SetActive(true);
+    }
+
+    private void Awake()
+    {
+        initialTime = trailRenderer.time;
+        SceneManager.activeSceneChanged -= OnSceneChanged;
     }
 
     public void OnDestroy()
@@ -47,38 +52,32 @@ public class MissileTrail : FxEntity
         SceneManager.activeSceneChanged -= OnSceneChanged;
     }
 
-    public void TriggerFadeOut()
+    public void OnDisable()
     {
-        wantedAlpha = 0.0f;
+        Reset();
     }
 
     private void Update()
     {
-        bool hasParentMissile = parentMissile && parentMissile.activeSelf;
-        if (hasParentMissile && !parentMissileDestroyed)
+        // When the missile is destroyed, trigger the fade out alpha animation.
+        if (transform.parent == null && 
+            (timeWithoutMissile += Time.deltaTime) > fadeDelayAfterMissileDestruct)
         {
-            transform.SetPositionAndRotation(parentMissile.transform.position,
-                parentMissile.transform.rotation);
-        }
-        else
-        {
-            parentMissileDestroyed = true;
-            timeWithoutMissile += Time.deltaTime;
-            if (timeWithoutMissile > fadeDelayAfterMissileDestruct)
-            {
-                TriggerFadeOut();
-            }
+            wantedAlpha = 0.0f;
         }
 
+        // Abort if the fade out alpha animation is not triggered.
         bool isTrailOpaque = Math.Abs(wantedAlpha - WantedAlphaStart) < 0.1f;
         if (isTrailOpaque)
         {
             return;
         }
-
+        
+        // Trigger the fade out alpha animation.
         currentAlpha = Mathf.Lerp(currentAlpha, wantedAlpha, fadeRate * Time.deltaTime);
         trailRenderer.material.SetFloat("_Alpha", currentAlpha);
 
+        // When totaly fade out, reset the missile trail.
         float fadeOutTolerance = 0.05f;
         bool objectIsFadedOut = currentAlpha < fadeOutTolerance;
         if (objectIsFadedOut)
@@ -94,13 +93,17 @@ public class MissileTrail : FxEntity
 
     public override void Reset()
     {
+        // Clear all trail dots by resetting the component and the trail lifetime.
         trailRenderer.Clear();
+        trailRenderer.time = -1f;
+        trailRenderer.time = initialTime;
 
+        // Reset helper values.
         currentAlpha = CurrentAlphaStart;
         wantedAlpha = WantedAlphaStart;
-        parentMissile = null;
         timeWithoutMissile = 0;
 
+        // Reset game object.
         trailRenderer.material.SetFloat("_Alpha", CurrentAlphaStart);
         gameObject.SetActive(false);
     }

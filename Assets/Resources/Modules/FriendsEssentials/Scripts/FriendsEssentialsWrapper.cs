@@ -160,9 +160,9 @@ public class FriendsEssentialsWrapper : MonoBehaviour
         });
     }
 
-    public void GetBulkUserInfo(string[] userIds, ResultCallback<ListBulkUserInfoResponse> resultCallback)
+    public void GetBulkUserInfo(string[] userIds, ResultCallback<AccountUserPlatformInfosResponse> resultCallback)
     {
-        user.BulkGetUserInfo(userIds, result =>
+        user.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", userIds, result => 
         {
             if (result.IsError)
             {
@@ -243,42 +243,36 @@ public class FriendsEssentialsWrapper : MonoBehaviour
 
     #region Search for Players
 
-    public void GetUserByFriendCode(string friendCode, ResultCallback<PublicUserData> resultCallback)
+    public void GetUserByFriendCode(string friendCode, ResultCallback<AccountUserPlatformData> resultCallback)
     {
         userProfiles.GetUserProfilePublicInfoByPublicId(friendCode, result =>
         {
             if (result.IsError)
             {
-                BytewarsLogger.LogWarning("Error getting user profile public info by public id, " +
+                BytewarsLogger.LogWarning(
+                    $"Error getting user profile public info by public id. " +
                     $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
-
-                resultCallback?.Invoke(Result<PublicUserData>.CreateError(result.Error.Code, result.Error.Message));
-
+                resultCallback?.Invoke(Result<AccountUserPlatformData>.CreateError(result.Error.Code, result.Error.Message));
                 return;
             }
 
-            BytewarsLogger.Log("Successfully retrieved user profile public info by public id.");
-            CachedFriendUserIds.Add(result.Value.userId);
-
-            GetUserByUserId(result.Value.userId, resultCallback);
-        });
-    }
-
-    private void GetUserByUserId(string userId, ResultCallback<PublicUserData> resultCallback)
-    {
-        user.GetUserByUserId(userId, result =>
-        {
-            if (result.IsError)
+            GetBulkUserInfo(new string[] { result.Value.userId }, result =>
             {
-                BytewarsLogger.LogWarning("Error getting user by user id, " +
-                    $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
-            }
-            else
-            {
-                BytewarsLogger.Log("Successfully retrieved user by user id.");
-            }
+                if (result.IsError) 
+                {
+                    BytewarsLogger.LogWarning(
+                        $"Error getting user profile public info by public id. " +
+                        $"Error Code: {result.Error.Code} Error Message: {result.Error.Message}");
+                    resultCallback?.Invoke(Result<AccountUserPlatformData>.CreateError(result.Error.Code, result.Error.Message));
+                    return;
+                }
 
-            resultCallback?.Invoke(result);
+                BytewarsLogger.Log("Successfully retrieved user profile public info by public id.");
+
+                AccountUserPlatformData userData = result.Value.Data[0];
+                CachedFriendUserIds.Add(userData.UserId);
+                resultCallback?.Invoke(Result<AccountUserPlatformData>.CreateOk(userData));
+            });
         });
     }
 

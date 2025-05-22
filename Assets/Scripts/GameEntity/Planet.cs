@@ -13,14 +13,12 @@ public class Planet : GameEntityAbs
     [SerializeField] private float mass;
     [SerializeField] private float radius;
     [SerializeField] private float scale = 1.0f;
-
-#if !UNITY_SERVER
     [SerializeField] private float glowPulseRate = 2.0f;
     [SerializeField] private float glowPulseScale = 3.0f;
+
     private float baseGlowMin = 0.8f;
     private float baseGlowMax = 1.0f;
     private float glowMultiplier = 1.0f;
-#endif
 
     private PlanetState planetState;
 

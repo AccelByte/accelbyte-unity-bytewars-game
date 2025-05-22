@@ -10,10 +10,10 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using System.Collections;
-using Unity.Netcode;
 
 public class RegionPreferencesWrapper : MonoBehaviour
 {
+#if !UNITY_SERVER
     public event Action OnInGameLatencyUpdated;
     public event Action OnMinimumRegionCountWarning;
 
@@ -272,4 +272,5 @@ public class RegionPreferencesWrapper : MonoBehaviour
         }
     }
     #endregion
+#endif
 }

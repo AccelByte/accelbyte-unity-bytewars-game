@@ -7,6 +7,7 @@ using AccelByte.Core;
 using AccelByte.Models;
 using AccelByte.Server;
 using UnityEngine;
+using WebSocketSharp;
 
 public class MultiplayerDSAMSWrapper_Starter: MonoBehaviour
 {

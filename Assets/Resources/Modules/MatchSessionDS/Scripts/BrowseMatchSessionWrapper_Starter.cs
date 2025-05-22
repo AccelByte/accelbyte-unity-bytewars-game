@@ -1,4 +1,4 @@
-// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -114,10 +114,9 @@ public class BrowseMatchSessionWrapper_Starter : MatchSessionWrapper
 
     #region GetUserDisplayname
 
-    public static void GetUserDisplayName(string userId, ResultCallback<PublicUserData> onPublicUserDataRetrieved)
+    public static void GetUserDisplayName(string userId, ResultCallback<AccountUserPlatformInfosResponse> onPublicUserDataRetrieved)
     {
-        AccelByteSDK.GetClientRegistry().GetApi().GetUser()
-            .GetUserByUserId(userId, onPublicUserDataRetrieved);
+        AccelByteSDK.GetClientRegistry().GetApi().GetUser().GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { userId }, onPublicUserDataRetrieved);
     }
 
     #endregion

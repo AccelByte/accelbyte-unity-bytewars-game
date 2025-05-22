@@ -30,7 +30,7 @@ public class PartyEssentialsModels
     public struct PartyDetailsModel
     {
         public SessionV2PartySession PartySession;
-        public BaseUserInfo[] MemberUserInfos;
+        public AccountUserPlatformData[] MemberUserInfos;
     }
 
     /// <summary>

@@ -67,12 +67,6 @@ public class FriendsMenuHandler : MenuCanvas
             return;
         }
 
-        if (CurrentView == FriendsView.Loading)
-        {
-            BytewarsLogger.Log("Already loading friend list");
-            return;
-        }
-
         LoadFriendList();
     }
     
@@ -152,17 +146,18 @@ public class FriendsMenuHandler : MenuCanvas
         GetBulkUserInfo(result.Value);
     }
 
-    private void OnGetBulkUserInfoCompleted(Result<ListBulkUserInfoResponse> result)
+    private void OnGetBulkUserInfoCompleted(Result<AccountUserPlatformInfosResponse> result)
     {
         if (result.IsError)
         {
+            CurrentView = FriendsView.LoadFailed;
             return;
         }
 
         ClearFriendList();
         CurrentView = FriendsView.LoadSuccess;
 
-        PopulateFriendList(result.Value.data);
+        PopulateFriendList(result.Value.Data);
     }
 
     private void OnGetAvatarCompleted(Result<Texture2D> result, string userId)
@@ -214,11 +209,11 @@ public class FriendsMenuHandler : MenuCanvas
         return Instantiate(playerEntryPrefab, shouldPlaceOnRightPanel ? resultColumnRightPanel : resultColumnLeftPanel);
     }
     
-    private void PopulateFriendList(params BaseUserInfo[] userInfo)
+    private void PopulateFriendList(params AccountUserPlatformData[] userInfo)
     {
-        foreach (BaseUserInfo baseUserInfo in userInfo)
+        foreach (AccountUserPlatformData baseUserInfo in userInfo)
         {
-            CreateFriendEntry(baseUserInfo.userId, baseUserInfo.displayName);
+            CreateFriendEntry(baseUserInfo.UserId, baseUserInfo.DisplayName);
         }
     }
     

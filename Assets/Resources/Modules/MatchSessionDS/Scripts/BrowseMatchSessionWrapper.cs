@@ -130,10 +130,9 @@ public class BrowseMatchSessionWrapper : MatchSessionWrapper
 
     #region GetUserDisplayname
 
-    public static void GetUserDisplayName(string userId, ResultCallback<PublicUserData> onPublicUserDataRetrieved)
+    public static void GetUserDisplayName(string userId, ResultCallback<AccountUserPlatformInfosResponse> onPublicUserDataRetrieved)
     {
-        AccelByteSDK.GetClientRegistry().GetApi().GetUser()
-            .GetUserByUserId(userId, onPublicUserDataRetrieved);
+        AccelByteSDK.GetClientRegistry().GetApi().GetUser().GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] {userId}, onPublicUserDataRetrieved);
     }
 
     #endregion

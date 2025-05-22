@@ -144,7 +144,7 @@ public class BlockedPlayersMenuHandler : MenuCanvas
         GetBulkUserInfo(blockedPlayerIds.ToArray());
     }
     
-    private void OnGetBulkUserInfoCompleted(Result<ListBulkUserInfoResponse> result)
+    private void OnGetBulkUserInfoCompleted(Result<AccountUserPlatformInfosResponse> result)
     {
         if (result.IsError)
         {
@@ -155,7 +155,7 @@ public class BlockedPlayersMenuHandler : MenuCanvas
 
         ClearBlockedPlayers();
 
-        PopulateBlockedPlayers(result.Value.data);
+        PopulateBlockedPlayers(result.Value.Data);
     }
     
     private void OnUnblockPlayerCompleted(string userId, Result<UnblockPlayerResponse> result)
@@ -205,11 +205,11 @@ public class BlockedPlayersMenuHandler : MenuCanvas
         blockedPlayers.Clear();
     }
     
-    private void PopulateBlockedPlayers(params BaseUserInfo[] userInfo)
+    private void PopulateBlockedPlayers(params AccountUserPlatformData[] userInfo)
     {
-        foreach (BaseUserInfo baseUserInfo in userInfo)
+        foreach (AccountUserPlatformData baseUserInfo in userInfo)
         {
-            CreatePlayerEntry(baseUserInfo.userId, baseUserInfo.displayName);
+            CreatePlayerEntry(baseUserInfo.UserId, baseUserInfo.DisplayName);
         }
     }
     

@@ -279,13 +279,13 @@ public class PartyEssentialsWrapper : MonoBehaviour
 
             SessionV2PartySession partySession = result.Value;
             string[] memberIds = result.Value.members.Where(x => x.StatusV2 == SessionV2MemberStatus.JOINED).Select(x => x.id).ToArray();
-            userApi.BulkGetUserInfo(memberIds, (Result<ListBulkUserInfoResponse> userDataResult) =>
+            userApi.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", memberIds, (Result<AccountUserPlatformInfosResponse> userDataResult) =>
             {
                 if (userDataResult.IsError)
                 {
                     string errorMessage = $"Failed to get party details. Error {userDataResult.Error.Code}: {userDataResult.Error.Message}";
                     BytewarsLogger.LogWarning(errorMessage);
-                    onComplete?.Invoke(Result<PartyEssentialsModels.PartyDetailsModel>.CreateError(ErrorCode.None, errorMessage)); 
+                    onComplete?.Invoke(Result<PartyEssentialsModels.PartyDetailsModel>.CreateError(ErrorCode.None, errorMessage));
                     return;
                 }
 
@@ -295,7 +295,7 @@ public class PartyEssentialsWrapper : MonoBehaviour
                 PartyEssentialsModels.PartyDetailsModel partyDetails = new PartyEssentialsModels.PartyDetailsModel
                 {
                     PartySession = CurrentPartySession,
-                    MemberUserInfos = userDataResult.Value.data
+                    MemberUserInfos = userDataResult.Value.Data
                 };
                 onComplete?.Invoke(Result<PartyEssentialsModels.PartyDetailsModel>.CreateOk(partyDetails));
             });
@@ -316,11 +316,15 @@ public class PartyEssentialsWrapper : MonoBehaviour
         BytewarsLogger.Log($"Receives party invitation from {result.Value.senderId}");
 
         // Display push notification.
-        userApi.GetUserByUserId(senderId, (Result<PublicUserData> userDataResult) =>
+        userApi.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { senderId }, (Result<AccountUserPlatformInfosResponse> userDataResult) =>
         {
-            string senderName = userDataResult.IsError || string.IsNullOrEmpty(userDataResult.Value.displayName) ?
-                AccelByteWarsUtility.GetDefaultDisplayNameByUserId(senderId) : userDataResult.Value.displayName;
-            string senderAvatarUrl = userDataResult.IsError ? string.Empty : userDataResult.Value.avatarUrl;
+            AccountUserPlatformData senderInfo = userDataResult.IsError ? null : userDataResult.Value.Data[0];
+
+            string senderName =
+                userDataResult.IsError || string.IsNullOrEmpty(senderInfo.DisplayName) ?
+                AccelByteWarsUtility.GetDefaultDisplayNameByUserId(senderId) : 
+                senderInfo.DisplayName;
+            string senderAvatarUrl = userDataResult.IsError ? string.Empty : senderInfo.AvatarUrl;
 
             MenuManager.Instance.PushNotification(new PushNotificationModel
             {
@@ -378,11 +382,13 @@ public class PartyEssentialsWrapper : MonoBehaviour
         BytewarsLogger.Log($"Party invitation is rejected by user: {rejecterId}");
 
         // Display push notification.
-        userApi.GetUserByUserId(rejecterId, (Result<PublicUserData> userDataResult) =>
+        userApi.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { rejecterId }, (Result<AccountUserPlatformInfosResponse> userDataResult) =>
         {
-            string rejecterName = userDataResult.IsError || string.IsNullOrEmpty(userDataResult.Value.displayName) ? 
-                AccelByteWarsUtility.GetDefaultDisplayNameByUserId(rejecterId) : userDataResult.Value.displayName;
-            string rejecterAvatarUrl = userDataResult.IsError ? string.Empty : userDataResult.Value.avatarUrl;
+            AccountUserPlatformData senderInfo = userDataResult.IsError ? null : userDataResult.Value.Data[0];
+            
+            string rejecterName = userDataResult.IsError || string.IsNullOrEmpty(senderInfo.DisplayName) ? 
+                AccelByteWarsUtility.GetDefaultDisplayNameByUserId(rejecterId) : senderInfo.DisplayName;
+            string rejecterAvatarUrl = userDataResult.IsError ? string.Empty : senderInfo.AvatarUrl;
 
             MenuManager.Instance.PushNotification(new PushNotificationModel
             {
@@ -410,11 +416,13 @@ public class PartyEssentialsWrapper : MonoBehaviour
             string newLeaderId = partyUpdateNotif.leaderId;
             CurrentPartySession.leaderId = newLeaderId;
 
-            userApi.GetUserByUserId(newLeaderId, (Result<PublicUserData> userDataResult) =>
+            userApi.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { newLeaderId }, (Result<AccountUserPlatformInfosResponse> userDataResult) =>
             {
-                string leaderName = userDataResult.IsError || string.IsNullOrEmpty(userDataResult.Value.displayName) ?
-                    AccelByteWarsUtility.GetDefaultDisplayNameByUserId(newLeaderId) : userDataResult.Value.displayName;
-                string leaderAvatarUrl = userDataResult.IsError ? string.Empty : userDataResult.Value.avatarUrl;
+                AccountUserPlatformData senderInfo = userDataResult.IsError ? null : userDataResult.Value.Data[0];
+
+                string leaderName = userDataResult.IsError || string.IsNullOrEmpty(senderInfo.DisplayName) ?
+                    AccelByteWarsUtility.GetDefaultDisplayNameByUserId(newLeaderId) : senderInfo.DisplayName;
+                string leaderAvatarUrl = userDataResult.IsError ? string.Empty : senderInfo.AvatarUrl;
 
                 MenuManager.Instance.PushNotification(new PushNotificationModel
                 {
@@ -483,7 +491,7 @@ public class PartyEssentialsWrapper : MonoBehaviour
         // Query user information and display the push notification based on member status.
         if (updatedMemberStatus.Count > 0) 
         {
-            userApi.BulkGetUserInfo(updatedMemberStatus.Keys.ToArray(), (Result<ListBulkUserInfoResponse> userDataResult) =>
+            userApi.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", updatedMemberStatus.Keys.ToArray(), (Result<AccountUserPlatformInfosResponse> userDataResult) =>
             {
                 if (userDataResult.IsError)
                 {
@@ -493,18 +501,18 @@ public class PartyEssentialsWrapper : MonoBehaviour
                     return;
                 }
 
-                foreach (BaseUserInfo memberInfo in userDataResult.Value.data)
+                foreach (AccountUserPlatformData memberInfo in userDataResult.Value.Data)
                 {
-                    if (!updatedMemberStatus.ContainsKey(memberInfo.userId))
+                    if (!updatedMemberStatus.ContainsKey(memberInfo.UserId))
                     {
                         continue;
                     }
 
-                    string memberName = string.IsNullOrEmpty(memberInfo.displayName) ?
-                        AccelByteWarsUtility.GetDefaultDisplayNameByUserId(memberInfo.userId) : memberInfo.displayName;
+                    string memberName = string.IsNullOrEmpty(memberInfo.DisplayName) ?
+                        AccelByteWarsUtility.GetDefaultDisplayNameByUserId(memberInfo.UserId) : memberInfo.DisplayName;
 
                     string pushNotifMessage = string.Empty;
-                    switch (updatedMemberStatus[memberInfo.userId])
+                    switch (updatedMemberStatus[memberInfo.UserId])
                     {
                         case SessionV2MemberStatus.JOINED:
                             pushNotifMessage = $"{memberName} {PartyEssentialsModels.PartyMemberJoinedMessage}";
@@ -520,7 +528,7 @@ public class PartyEssentialsWrapper : MonoBehaviour
                     MenuManager.Instance.PushNotification(new PushNotificationModel
                     {
                         Message = pushNotifMessage,
-                        IconUrl = memberInfo.avatarUrl,
+                        IconUrl = memberInfo.AvatarUrl,
                         UseDefaultIconOnEmpty = true
                     });
                 }

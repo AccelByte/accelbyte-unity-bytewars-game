@@ -62,6 +62,7 @@ public class RegionPreferencesMenu : MenuCanvas
         return AssetEnum.RegionPreferencesMenu;
     }
 
+#if !UNITY_SERVER
     private void Awake()
     {
         refreshButton.onClick.AddListener(QueryRegionPreferences);
@@ -173,4 +174,5 @@ public class RegionPreferencesMenu : MenuCanvas
     {
         MenuManager.Instance.OnBackPressed();
     }
+#endif
 }

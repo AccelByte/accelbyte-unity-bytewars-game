@@ -53,13 +53,21 @@ public class PlayerState : INetworkSerializable
         serializer.SerializeValue(ref AvatarUrl);
         serializer.SerializeValue(ref PlatformId);
     }
-    
+
     public string GetPlayerName()
     {
-        if (String.IsNullOrEmpty(PlayerName))
+        if (!string.IsNullOrEmpty(PlayerName))
         {
-            return "ByteWarrior " + ClientNetworkId;
+            return PlayerName;
         }
-        return PlayerName;
+
+        // Return "Player {index}", e.g., "Player 1".
+        if (string.IsNullOrEmpty(PlayerId) || GameManager.Instance.IsLocalGame)
+        {
+            return $"Player {PlayerIndex + 1}";
+        }
+
+        // Return the first five characters of the AccelByte user ID.
+        return $"Player-{PlayerId[..5]}";
     }
 }

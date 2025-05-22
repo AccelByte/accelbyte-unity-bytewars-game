@@ -127,7 +127,7 @@ public class SentFriendRequestsMenuHandler : MenuCanvas
         GetBulkUserInfo(result.Value);
     }
 
-    private void OnGetBulkUserInfoCompleted(Result<ListBulkUserInfoResponse> result)
+    private void OnGetBulkUserInfoCompleted(Result<AccountUserPlatformInfosResponse> result)
     {
         if (result.IsError)
         {
@@ -138,7 +138,7 @@ public class SentFriendRequestsMenuHandler : MenuCanvas
         ClearFriendRequestList();
         CurrentView = SentFriendRequestsView.LoadSuccess;
 
-        PopulateFriendRequestList(result.Value.data);
+        PopulateFriendRequestList(result.Value.Data);
     }
 
     private void OnGetAvatarCompleted(Result<Texture2D> result, string userId)
@@ -195,11 +195,11 @@ public class SentFriendRequestsMenuHandler : MenuCanvas
         friendRequests.Clear();
     }
 
-    private void PopulateFriendRequestList(params BaseUserInfo[] userInfo)
+    private void PopulateFriendRequestList(params AccountUserPlatformData[] userInfo)
     {
-        foreach (BaseUserInfo baseUserInfo in userInfo)
+        foreach (AccountUserPlatformData baseUserInfo in userInfo)
         {
-            CreateFriendEntry(baseUserInfo.userId, baseUserInfo.displayName);
+            CreateFriendEntry(baseUserInfo.UserId, baseUserInfo.DisplayName);
         }
     }
 

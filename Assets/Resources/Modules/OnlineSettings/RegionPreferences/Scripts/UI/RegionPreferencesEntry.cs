@@ -14,6 +14,7 @@ public class RegionPreferencesEntry : MonoBehaviour
     [SerializeField] private TMP_Text optButtonText;
     [SerializeField] private Button optButton;
 
+#if !UNITY_SERVER
     public void Init(RegionPreferenceInfo regionInfo) 
     {
         if (regionInfo == null) 
@@ -59,4 +60,5 @@ public class RegionPreferencesEntry : MonoBehaviour
             DisplayPreferenceRegionInfo(regionPreferencesWrapper.FindRegionInfo(regionInfo.RegionCode));
         }
     }
+#endif
 }

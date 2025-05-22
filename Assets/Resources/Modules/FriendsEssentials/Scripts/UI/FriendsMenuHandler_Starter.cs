@@ -55,12 +55,6 @@ public class FriendsMenuHandler_Starter : MenuCanvas
     {
         // TODO: Define Module Wrappers and Load Friends here.
 
-        if (CurrentView == FriendsView.Loading)
-        {
-            BytewarsLogger.Log("Already loading friend list");
-            return;
-        }
-
         LoadFriendList();
     }
 

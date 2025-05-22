@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -12,10 +11,12 @@ using UnityEngine;
 
 public class AuthEssentialsWrapper : MonoBehaviour
 {
-
-    public static event Action<UserProfile> OnUserProfileReceived = delegate { };
     public TokenData UserData;
+    public static event Action<UserProfile> OnUserProfileReceived = delegate { };
     public UserProfile UserProfile { get; private set; }
+    
+    // Optional Parameters
+    public LoginV4OptionalParameters OptionalParameters = new();
 
     // AGS Game SDK references
     private ApiClient apiClient;
@@ -46,7 +47,18 @@ public class AuthEssentialsWrapper : MonoBehaviour
     public void LoginWithDeviceId(ResultCallback<TokenData, OAuthError> resultCallback)
     {
         BytewarsLogger.Log($"Trying to login with Device ID");
-        user.LoginWithDeviceId(result => OnLoginCompleted(result, resultCallback));
+
+        // Casting doesn't work properly, manually transfer the data instead.
+        LoginWithDeviceIdV4OptionalParameters deviceIdOptionParameters = new LoginWithDeviceIdV4OptionalParameters
+        {
+            OnQueueUpdatedEvent = OptionalParameters.OnQueueUpdatedEvent,
+            OnCancelledEvent = OptionalParameters.OnCancelledEvent,
+            CancellationToken = OptionalParameters.CancellationToken
+        };
+        
+        user.LoginWithDeviceIdV4(
+            deviceIdOptionParameters,
+            result => OnLoginCompleted(result, resultCallback));
     }
 
     public bool GetActiveUser()
@@ -57,8 +69,21 @@ public class AuthEssentialsWrapper : MonoBehaviour
     public void LoginWithUsername(string username, string password, ResultCallback<TokenData, OAuthError> resultCallback)
     {
         BytewarsLogger.Log($"Trying login with email and password");
+        
+        // Casting doesn't work properly, manually transfer the data instead.
+        LoginWithEmailV4OptionalParameters emailOptionParameters = new LoginWithEmailV4OptionalParameters
+        {
+            OnQueueUpdatedEvent = OptionalParameters.OnQueueUpdatedEvent,
+            OnCancelledEvent = OptionalParameters.OnCancelledEvent,
+            CancellationToken = OptionalParameters.CancellationToken
+        };
+        
         GameData.CachedPlayerState.PlatformId = "Accelbyte";
-        user.LoginWithUsernameV3(username, password, result => OnLoginCompleted(result, resultCallback), false);
+        user.LoginWithEmailV4(
+            username, 
+            password,
+            emailOptionParameters,
+            result => OnLoginCompleted(result, resultCallback));
     }
 
     public void CheckLobbyConnection()
@@ -70,11 +95,6 @@ public class AuthEssentialsWrapper : MonoBehaviour
             lobby.Disconnecting += OnLobbyDisconnecting;
             lobby.Connect();
         }
-    }
-
-    public void GetUserByUserId(string userId, ResultCallback<PublicUserData> resultCallback)
-    {
-        user.GetUserByUserId(userId, result => OnGetUserByUserId(result, resultCallback));
     }
 
     public void Logout(Action action)
@@ -93,16 +113,6 @@ public class AuthEssentialsWrapper : MonoBehaviour
         {
             BytewarsLogger.Log($"Logout failed. Error message: {result.Error.Message}");
         }
-    }
-
-    /// <summary>
-    /// Get user info of some users in bulk
-    /// </summary>
-    /// <param name="userIds">an array of user id from the desired users</param>
-    /// <param name="resultCallback">callback function to get result from other script</param>
-    public void BulkGetUserInfo(string[] userIds, ResultCallback<ListBulkUserInfoResponse> resultCallback)
-    {
-        user.BulkGetUserInfo(userIds, result => OnBulkGetUserInfoCompleted(result, resultCallback));
     }
 
     public void GetUserAvatar(string userId, ResultCallback<Texture2D> resultCallback)
@@ -203,39 +213,6 @@ public class AuthEssentialsWrapper : MonoBehaviour
         customCallback?.Invoke(result);
     }
 
-    private void OnGetUserByUserId(Result<PublicUserData> result, ResultCallback<PublicUserData> customCallback = null)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log("Successfully get the user public data!");
-        }
-        else
-        {
-            BytewarsLogger.Log($"Unable to get the user public data. Message: {result.Error.Message}");
-        }
-
-        customCallback?.Invoke(result);
-    }
-
-    /// <summary>
-    /// Default Callback for BulkGetUserInfo() function
-    /// </summary>
-    /// <param name="result">result of the BulkGetUserInfo() function call</param>
-    /// <param name="customCallback">additional callback function that can be customized from other script</param>
-    private void OnBulkGetUserInfoCompleted(Result<ListBulkUserInfoResponse> result, ResultCallback<ListBulkUserInfoResponse> customCallback = null)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log("Successfully bulk get the user info!");
-        }
-        else
-        {
-            BytewarsLogger.Log($"Unable to bulk get the user info. Message: {result.Error.Message}");
-        }
-
-        customCallback?.Invoke(result);
-    }
-
     private void OnGetUserAvatarCompleted(Result<Texture2D> result, ResultCallback<Texture2D> customCallback = null)
     {
         if (!result.IsError)
@@ -288,19 +265,19 @@ public class AuthEssentialsWrapper : MonoBehaviour
 
     private void GetUserPublicData(string receivedUserId)
     {
-        user.GetUserByUserId(receivedUserId, OnGetUserPublicDataFinished);
+        user.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { receivedUserId }, OnGetUserPublicDataFinished);
     }
 
-    private void OnGetUserPublicDataFinished(Result<PublicUserData> result)
+    private void OnGetUserPublicDataFinished(Result<AccountUserPlatformInfosResponse> result)
     {
         if (!result.IsError)
         {
             BytewarsLogger.Log("Successfully Retrieved Public Data");
-            PublicUserData publicUserData = result.Value;
-            string truncatedUserId = publicUserData.userId[..5];
-            GameData.CachedPlayerState.AvatarUrl = publicUserData.avatarUrl;
-            GameData.CachedPlayerState.PlayerName = string.IsNullOrEmpty(publicUserData.displayName) ?
-                $"Player-{truncatedUserId}" : publicUserData.displayName;
+            AccountUserPlatformData publicUserData = result.Value.Data[0];
+            string truncatedUserId = publicUserData.UserId[..5];
+            GameData.CachedPlayerState.AvatarUrl = publicUserData.AvatarUrl;
+            GameData.CachedPlayerState.PlayerName = string.IsNullOrEmpty(publicUserData.DisplayName) ?
+                $"Player-{truncatedUserId}" : publicUserData.DisplayName;
             GameData.CachedPlayerState.PlatformId = string.IsNullOrEmpty(GameData.CachedPlayerState.PlatformId) ? UserData.platform_id : GameData.CachedPlayerState.PlatformId;
         }
         else

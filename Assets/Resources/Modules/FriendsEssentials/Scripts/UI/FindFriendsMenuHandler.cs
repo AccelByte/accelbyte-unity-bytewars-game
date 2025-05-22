@@ -143,7 +143,7 @@ public class FindFriendsMenuHandler : MenuCanvas
         CreateFriendEntry(result.Value.userId, result.Value.displayName);
     }
     
-    private void OnUsersFriendCodeFound(Result<PublicUserData> result, string query, Action fallbackAction = null)
+    private void OnUsersFriendCodeFound(Result<AccountUserPlatformData> result, string query, Action fallbackAction = null)
     {
         friendSearchBar.enabled = true;
         
@@ -161,8 +161,8 @@ public class FindFriendsMenuHandler : MenuCanvas
             return;
         }
         
-        PublicUserData userData = result.Value;
-        if (userData.userId == friendsEssentialsWrapper.PlayerUserId)
+        AccountUserPlatformData userData = result.Value;
+        if (userData.UserId == friendsEssentialsWrapper.PlayerUserId)
         {
             BytewarsLogger.Log("Found friend code with self entry");
             
@@ -171,8 +171,8 @@ public class FindFriendsMenuHandler : MenuCanvas
             return;
         }
 
-        SendFriendInvitation(userData.userId, usingFriendCode: true);
-        CreateFriendEntry(userData.userId, userData.displayName);
+        SendFriendInvitation(userData.UserId, usingFriendCode: true);
+        CreateFriendEntry(userData.UserId, userData.DisplayName);
     }
     
     private void OnSendRequestComplete(IResult result, bool usingFriendCode = false)

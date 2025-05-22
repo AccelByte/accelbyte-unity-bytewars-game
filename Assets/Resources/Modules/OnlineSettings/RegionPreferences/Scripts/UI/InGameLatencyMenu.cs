@@ -12,6 +12,7 @@ public class InGameLatencyMenu : MonoBehaviour
 
     private RegionPreferencesWrapper regionPreferencesWrapper;
 
+#if !UNITY_SERVER
     private void Awake()
     {
         regionPreferencesWrapper = TutorialModuleManager.Instance.GetModuleClass<RegionPreferencesWrapper>();
@@ -59,4 +60,5 @@ public class InGameLatencyMenu : MonoBehaviour
         regionCodeText.text = regionPreferencesWrapper.CurrentServerRegion;
         latencyText.text = $"Ping: {regionPreferencesWrapper.InGameLatency} ms";
     }
+#endif
 }

@@ -10,15 +10,18 @@ using UnityEngine;
 
 public class SinglePlatformAuthWrapper_Starter : MonoBehaviour
 {
+    public static event Action<UserProfile> OnUserProfileReceived = delegate { };
+    
+    // Optional Parameters
+    public LoginV4OptionalParameters OptionalParameters = new();
+    
     private const string ClassName = "SinglePlatformAuthWrapper_Starter";
     private User user;
     private LoginHandler loginHandler = null;
     private SteamHelper steamHelper;
-    private const PlatformType PlatformType = AccelByte.Models.PlatformType.Steam;
+    private LoginPlatformType platformType = new LoginPlatformType(AccelByte.Models.PlatformType.Steam);
     private ResultCallback<TokenData, OAuthError> platformLoginCallback;
     private TokenData tokenData;
-
-    public static event Action<UserProfile> OnUserProfileReceived = delegate { };
 
     private void Start()
     {

@@ -20,6 +20,7 @@ public class Missile : GameEntityAbs
     [SerializeField] private ParticleSystem missileParticleSystem;
     [SerializeField] private AudioClip travelSoundClip;
     [SerializeField] private AudioClip fireSoundClip;
+    [SerializeField] private MissileTrail missileTrailPrefab;
     [SerializeField] private InGamePopupTextUI popupScoreTextPrefab;
 
     [Header("Missile Attributes"), SerializeField] private float mass = 1f;
@@ -40,6 +41,7 @@ public class Missile : GameEntityAbs
     private IList<Player> nearHitPlayers = new List<Player>();
     private bool isAlive = false;
 
+    private MissileTrail missileTrail;
     private AudioSource travelAudioSource;
     private AudioSource fireAudioSource;
 
@@ -139,6 +141,10 @@ public class Missile : GameEntityAbs
         {
             travelAudioSource.Stop();
         }
+
+        missileTrail = GameManager.Instance.Pool.Get(missileTrailPrefab);
+        missileTrail.Init(this);
+        missileTrail.transform.SetParent(transform);
     }
 
     private void InitColor(Color color)
@@ -394,18 +400,17 @@ public class Missile : GameEntityAbs
             GameManager.Instance.ActiveGEs.Remove(this);
         }
 
+#if !UNITY_SERVER
+        travelAudioSource?.Stop();
+        missileTrail?.transform.SetParent(null);
+#endif
+
         timeSkimmingPlanetReward = 0;
         scoreIncrement = ScoreIncrement;
         timeAlive = 0;
-        gameObject.SetActive(false);
         nearHitPlayers.Clear();
 
-#if !UNITY_SERVER
-        if (travelAudioSource)
-        {
-            travelAudioSource.Stop();
-        }
-#endif
+        gameObject.SetActive(false);
     }
 
     public override void SetId(int id)

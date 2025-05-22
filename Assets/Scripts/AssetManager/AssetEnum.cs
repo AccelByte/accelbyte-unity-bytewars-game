@@ -1,4 +1,4 @@
-// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -60,6 +60,9 @@ public enum AssetEnum
 	LoginLoadingPanel,
 	LoginMenuCanvas,
 	LoginMenuCanvas_Starter,
+	LoginQueueAssetConfig,
+	LoginQueueMenu,
+	LoginQueueMenu_Starter,
 	LoginStatePanel,
 	MainMenuCanvas,
 	MainMenuUiConfig,
@@ -105,7 +108,6 @@ public enum AssetEnum
 	PromptMenuCanvas,
 	PushNotificationEntry,
 	PushNotificationMenu,
-	QuickPlayGameMenu,
 	RankingEntryPanel,
 	RegionPreferenceEntry,
 	RegionPreferencesAssetConfig,
@@ -114,7 +116,6 @@ public enum AssetEnum
 	SentFriendRequestsEntryComponent,
 	SentFriendRequestsMenuCanvas,
 	SentFriendRequestsMenuCanvas_Starter,
-	ServerTypeSelection,
 	SessionEssentialsAssetConfig,
 	SessionEssentialsMenuCanvas,
 	SessionEssentialsMenuCanvas_Starter,

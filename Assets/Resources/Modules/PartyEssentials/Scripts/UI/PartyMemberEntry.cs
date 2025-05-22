@@ -17,23 +17,23 @@ public class PartyMemberEntry : MonoBehaviour
     [SerializeField] private Color leaderColor;
     [SerializeField] private Color memberColor;
 
-    private AccelByte.Models.BaseUserInfo cachedMemberUserData = null;
+    private AccelByte.Models.AccountUserPlatformData cachedMemberUserData = null;
 
-    public void SetPartyMember(AccelByte.Models.BaseUserInfo memberUserData, bool isLeader)
+    public void SetPartyMember(AccelByte.Models.AccountUserPlatformData memberUserData, bool isLeader)
     {
         cachedMemberUserData = memberUserData;
 
         SetPartyMemberColor(isLeader ? leaderColor : memberColor);
-        memberNameText.text = string.IsNullOrEmpty(memberUserData.displayName) ?
-            AccelByteWarsUtility.GetDefaultDisplayNameByUserId(memberUserData.userId) : memberUserData.displayName;
-        avatarImage.LoadImage(memberUserData.avatarUrl);
+        memberNameText.text = string.IsNullOrEmpty(memberUserData.DisplayName) ?
+            AccelByteWarsUtility.GetDefaultDisplayNameByUserId(memberUserData.UserId) : memberUserData.DisplayName;
+        avatarImage.LoadImage(memberUserData.AvatarUrl);
 
         // Switch view to display member information.
         memberButton.gameObject.SetActive(true);
         addMemberButton.gameObject.SetActive(false);
 
         // Only set button interaction for non-current user entry.
-        SetInteractable(GameData.CachedPlayerState.PlayerId != memberUserData.userId);
+        SetInteractable(GameData.CachedPlayerState.PlayerId != memberUserData.UserId);
     }
 
     public void ResetPartyMember() 
@@ -91,7 +91,7 @@ public class PartyMemberEntry : MonoBehaviour
         }
         if (menuCanvas.gameObject.TryGetComponent(out FriendDetailsMenuHandler friendDetailsMenu))
         {
-            friendDetailsMenu.UserId = cachedMemberUserData.userId;
+            friendDetailsMenu.UserId = cachedMemberUserData.UserId;
             friendDetailsMenu.FriendImage.sprite = avatarImage.GetCurrentImage();
             friendDetailsMenu.FriendDisplayName.text = memberNameText.text;
             friendDetailsMenu.FriendPresence.text = "Online";

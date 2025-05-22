@@ -6,6 +6,8 @@ using System;
 using AccelByte.Core;
 using AccelByte.Models;
 using AccelByte.Server;
+using UnityEngine;
+using WebSocketSharp;
 
 public class MultiplayerDSAMSWrapper : GameSessionUtilityWrapper
 {
@@ -127,8 +129,32 @@ public class MultiplayerDSAMSWrapper : GameSessionUtilityWrapper
 
     private void OnAMSDrainReceived()
     {
-        BytewarsLogger.Log($"DS received drain signal from AMS.");
-        OnAMSDrainSignalReceived?.Invoke();
+        // Retrieve delay config from launch param.
+        const string keyword = "-DrainLogicDelayInSecs=";
+        string delayInString = TutorialModuleUtil.GetLaunchParamValue(keyword);
+        if (!float.TryParse(delayInString, out float delay))
+        {
+            BytewarsLogger.Log("Given launch param value can't be parse to float. Using the default 5 seconds delay.");
+            delay = 5.0f;
+        }
+        
+        // Execute drain logic after a delay to accomodate session info update delay.
+        BytewarsLogger.Log($"DS received drain signal from AMS. Delaying {delay} seconds to execute drain logic.");
+        Invoke(nameof(ExecuteDrainSignal), delay);
+    }
+
+    private void ExecuteDrainSignal()
+    {
+        // Only execute if current session isn't active
+        if (GameData.ServerSessionID.IsNullOrEmpty())
+        {
+            BytewarsLogger.Log("ServerSessionID is empty, executing drain logic now!");
+            OnAMSDrainSignalReceived?.Invoke();
+        }
+        else
+        {
+            BytewarsLogger.Log("ServerSessionID is not empty, drain ignored.");
+        }
     }
 
     #endregion

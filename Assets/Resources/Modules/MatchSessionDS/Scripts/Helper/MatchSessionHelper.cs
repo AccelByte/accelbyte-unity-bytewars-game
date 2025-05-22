@@ -39,21 +39,21 @@ public static class MatchSessionHelper
     {
         Init();
         GameData.CachedPlayerState.PlayerId = receivedUserId;
-        user.GetUserByUserId(receivedUserId, OnGetUserPublicDataFinished);
+        user.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { receivedUserId }, OnGetUserPublicDataFinished);
     }
 
-    private static void OnGetUserPublicDataFinished(Result<PublicUserData> result)
+    private static void OnGetUserPublicDataFinished(Result<AccountUserPlatformInfosResponse> result)
     {
         if (result.IsError)
         {
-            BytewarsLogger.LogWarning($"error OnGetUserPublicDataFinished:{result.Error.Message}");
+            BytewarsLogger.LogWarning($"Failed to get user public data info. Error: {result.Error.Message}");
         }
         else
         {
-            PublicUserData publicUserData = result.Value;
-            GameData.CachedPlayerState.PlayerId = publicUserData.userId;
-            GameData.CachedPlayerState.AvatarUrl = publicUserData.avatarUrl;
-            GameData.CachedPlayerState.PlayerName = publicUserData.displayName;
+            AccountUserPlatformData publicUserData = result.Value.Data[0];
+            GameData.CachedPlayerState.PlayerId = publicUserData.UserId;
+            GameData.CachedPlayerState.AvatarUrl = publicUserData.AvatarUrl;
+            GameData.CachedPlayerState.PlayerName = publicUserData.DisplayName;
         }
     }
 

@@ -54,8 +54,15 @@ public class P2PHelper
     private static void SetP2PNetworkTransport(InGameMode gameMode, string matchSessionId)
     {
         Init();
-        InitialConnectionData data = new InitialConnectionData() { inGameMode = gameMode, serverSessionId = matchSessionId };
-        networkManager.NetworkConfig.ConnectionData = GameUtility.ToByteArray(data);
+        
+        InitialConnectionData initialData = new InitialConnectionData() 
+        { 
+            inGameMode = gameMode, 
+            serverSessionId = matchSessionId,
+            userId = GameData.CachedPlayerState.PlayerId
+        };
+
+        networkManager.NetworkConfig.ConnectionData = GameUtility.ToByteArray(initialData);
         networkManager.NetworkConfig.NetworkTransport = transportManager;
     }
 }

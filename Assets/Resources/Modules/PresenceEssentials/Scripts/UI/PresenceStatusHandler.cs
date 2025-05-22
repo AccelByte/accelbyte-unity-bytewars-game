@@ -135,7 +135,7 @@ public class PresenceStatusHandler : MonoBehaviour
     
     private void OnBulkUserStatusReceived(BulkUserStatusNotif bulkUserStatusNotif)
     {
-        if (bulkUserStatusNotif.data.Length <= 0)
+        if (bulkUserStatusNotif == null || bulkUserStatusNotif.data.Length <= 0)
         {
             BytewarsLogger.LogWarning("Bulk user status data is empty");
             return;

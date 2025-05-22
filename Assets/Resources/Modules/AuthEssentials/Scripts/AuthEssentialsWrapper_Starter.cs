@@ -1,11 +1,9 @@
-// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -16,6 +14,9 @@ public class AuthEssentialsWrapper_Starter : MonoBehaviour
     //TODO: Copy UserData here
     public UserProfile UserProfile { get; private set; }
     public static event Action<UserProfile> OnUserProfileReceived = delegate { };
+    
+    // Optional Parameters
+    public LoginV4OptionalParameters OptionalParameters = new();
 
     // AGS Game SDK references
     private ApiClient apiClient;
@@ -54,11 +55,6 @@ public class AuthEssentialsWrapper_Starter : MonoBehaviour
         }
     }
 
-    public void GetUserByUserId(string userId, ResultCallback<PublicUserData> resultCallback)
-    {
-        user.GetUserByUserId(userId, result => OnGetUserByUserId(result, resultCallback));
-    }
-
     public void Logout(Action action)
     {
         user.Logout(result => OnLogoutComplete(result, action));
@@ -75,16 +71,6 @@ public class AuthEssentialsWrapper_Starter : MonoBehaviour
         {
             BytewarsLogger.Log($"Logout failed. Error message: {result.Error.Message}");
         }
-    }
-
-    /// <summary>
-    /// Get user info of some users in bulk
-    /// </summary>
-    /// <param name="userIds">an array of user id from the desired users</param>
-    /// <param name="resultCallback">callback function to get result from other script</param>
-    public void BulkGetUserInfo(string[] userIds, ResultCallback<ListBulkUserInfoResponse> resultCallback)
-    {
-        user.BulkGetUserInfo(userIds, result => OnBulkGetUserInfoCompleted(result, resultCallback));
     }
 
     public void GetUserAvatar(string userId, ResultCallback<Texture2D> resultCallback)
@@ -159,39 +145,6 @@ public class AuthEssentialsWrapper_Starter : MonoBehaviour
 
     #region Callback Functions
 
-    private void OnGetUserByUserId(Result<PublicUserData> result, ResultCallback<PublicUserData> customCallback = null)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log("Successfully get the user public data!");
-        }
-        else
-        {
-            BytewarsLogger.Log($"Unable to get the user public data. Message: {result.Error.Message}");
-        }
-
-        customCallback?.Invoke(result);
-    }
-
-    /// <summary>
-    /// Default Callback for BulkGetUserInfo() function
-    /// </summary>
-    /// <param name="result">result of the BulkGetUserInfo() function call</param>
-    /// <param name="customCallback">additional callback function that can be customized from other script</param>
-    private void OnBulkGetUserInfoCompleted(Result<ListBulkUserInfoResponse> result, ResultCallback<ListBulkUserInfoResponse> customCallback = null)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log("Successfully bulk get the user info!");
-        }
-        else
-        {
-            BytewarsLogger.Log($"Unable to bulk get the user info. Message: {result.Error.Message}");
-        }
-
-        customCallback?.Invoke(result);
-    }
-
     private void OnGetUserAvatarCompleted(Result<Texture2D> result, ResultCallback<Texture2D> customCallback = null)
     {
         if (!result.IsError)
@@ -244,19 +197,19 @@ public class AuthEssentialsWrapper_Starter : MonoBehaviour
 
     private void GetUserPublicData(string receivedUserId)
     {
-        user.GetUserByUserId(receivedUserId, OnGetUserPublicDataFinished);
+        user.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { receivedUserId }, OnGetUserPublicDataFinished);
     }
 
-    private void OnGetUserPublicDataFinished(Result<PublicUserData> result)
+    private void OnGetUserPublicDataFinished(Result<AccountUserPlatformInfosResponse> result)
     {
         if (!result.IsError)
         {
             BytewarsLogger.Log("Successfully Retrieved Public Data");
-            PublicUserData publicUserData = result.Value;
-            string truncatedUserId = publicUserData.userId[..5];
-            GameData.CachedPlayerState.AvatarUrl = publicUserData.avatarUrl;
-            GameData.CachedPlayerState.PlayerName = string.IsNullOrEmpty(publicUserData.displayName) ?
-                $"Player-{truncatedUserId}" : publicUserData.displayName;
+            AccountUserPlatformData publicUserData = result.Value.Data[0];
+            string truncatedUserId = publicUserData.UserId[..5];
+            GameData.CachedPlayerState.AvatarUrl = publicUserData.AvatarUrl;
+            GameData.CachedPlayerState.PlayerName = string.IsNullOrEmpty(publicUserData.DisplayName) ?
+                $"Player-{truncatedUserId}" : publicUserData.DisplayName;
         }
         else
         {

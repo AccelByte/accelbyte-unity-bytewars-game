@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
+
 using System;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -43,7 +47,7 @@ public class BrowseMatchItemModel
         OnDataUpdated?.Invoke(this);
     }
 
-    private void OnPublicUserDataRetrieved(Result<PublicUserData> result)
+    private void OnPublicUserDataRetrieved(Result<AccountUserPlatformInfosResponse> result)
     {
         if (result.IsError)
         {
@@ -51,12 +55,12 @@ public class BrowseMatchItemModel
         }
         else
         {
-            PublicUserData publicUserData = result.Value;
-            string truncatedUserId = publicUserData.userId[..5];
-            string displayName = string.IsNullOrEmpty(publicUserData.displayName) ?
-                $"Player-{truncatedUserId}" : publicUserData.displayName;
+            AccountUserPlatformData publicUserData = result.Value.Data[0];
+            string truncatedUserId = publicUserData.UserId[..5];
+            string displayName = string.IsNullOrEmpty(publicUserData.DisplayName) ?
+                $"Player-{truncatedUserId}" : publicUserData.DisplayName;
             MatchCreatorName = $"{displayName}'s match";
-            MatchCreatorAvatarURL = publicUserData.avatarUrl;
+            MatchCreatorAvatarURL = publicUserData.AvatarUrl;
             OnDataUpdated?.Invoke(this);
         }
     }

@@ -1,4 +1,4 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -17,21 +17,21 @@ public class UserDataHelper
     {
         Init();
         GameData.CachedPlayerState.PlayerId = tokenData.user_id;
-        user.GetUserByUserId(tokenData.user_id, OnGetUserPublicDataFinished);
+        user.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { tokenData.user_id }, OnGetUserPublicDataFinished);
     }
 
-    private static void OnGetUserPublicDataFinished(Result<PublicUserData> result)
+    private static void OnGetUserPublicDataFinished(Result<AccountUserPlatformInfosResponse> result)
     {
         if (result.IsError)
         {
-            Debug.Log($"{ClassName} error OnGetUserPublicDataFinished:{result.Error.Message}");
+            BytewarsLogger.LogWarning($"Failed to get user public data info. Error:{result.Error.Message}");
         }
         else
         {
-            var publicUserData = result.Value;
-            GameData.CachedPlayerState.PlayerId = publicUserData.userId;
-            GameData.CachedPlayerState.AvatarUrl = publicUserData.avatarUrl;
-            GameData.CachedPlayerState.PlayerName = publicUserData.displayName;
+            AccountUserPlatformData publicUserData = result.Value.Data[0];
+            GameData.CachedPlayerState.PlayerId = publicUserData.UserId;
+            GameData.CachedPlayerState.AvatarUrl = publicUserData.AvatarUrl;
+            GameData.CachedPlayerState.PlayerName = publicUserData.DisplayName;
         }
     }
 

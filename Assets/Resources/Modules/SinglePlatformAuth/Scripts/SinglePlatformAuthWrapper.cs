@@ -12,19 +12,21 @@ using UnityEngine;
 
 public class SinglePlatformAuthWrapper : MonoBehaviour
 {
+    public UserProfile UserProfile { get; private set; }
+    public static event Action<UserProfile> OnUserProfileReceived = delegate { };
+    
+    // Optional Parameters
+    public LoginV4OptionalParameters OptionalParameters = new();
+    
     private const string ClassName = "SinglePlatformAuthWrapper";
     private User user;
     private UserProfiles userProfiles;
     private Lobby lobby;
     private LoginHandler loginHandler = null;
     private SteamHelper steamHelper;
-    private const PlatformType PlatformType = AccelByte.Models.PlatformType.Steam;
+    private LoginPlatformType platformType = new LoginPlatformType(AccelByte.Models.PlatformType.Steam);
     private ResultCallback<TokenData, OAuthError> platformLoginCallback;
-
     private TokenData tokenData;
-    public UserProfile UserProfile { get; private set; }
-
-    public static event Action<UserProfile> OnUserProfileReceived = delegate { };
     
     private void Start()
     {
@@ -108,7 +110,7 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
     private void GetUserPublicData(string receivedUserId)
     {
         GameData.CachedPlayerState.PlayerId = receivedUserId;
-        user.GetUserByUserId(receivedUserId, OnGetUserPublicDataFinished);
+        user.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { receivedUserId }, OnGetUserPublicDataFinished);
     }
 
     private void GetUserProfile()
@@ -130,21 +132,23 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
         userProfiles.CreateUserProfile(createUserProfileRequest, result => OnCreateUserProfileCompleted(result));
     }
     
-    private void OnGetUserPublicDataFinished(Result<PublicUserData> result)
+    private void OnGetUserPublicDataFinished(Result<AccountUserPlatformInfosResponse> result)
     {
         if (result.IsError)
         {
-            BytewarsLogger.Log($"[{ClassName}] error OnGetUserPublicDataFinished:{result.Error.Message}");
+            BytewarsLogger.LogWarning($"Failed to get user public data info. Error: {result.Error.Message}");
             loginHandler.OnRetryLoginClicked = () => GetUserPublicData(tokenData.user_id);
             loginHandler.OnLoginCompleted(CreateLoginErrorResult(result.Error.Code, result.Error.Message));
         }
         else
         {
-            PublicUserData publicUserData = result.Value;
-            string truncatedUserId = publicUserData.userId[..5];
-            GameData.CachedPlayerState.AvatarUrl = publicUserData.avatarUrl;
-            GameData.CachedPlayerState.PlayerName = string.IsNullOrEmpty(publicUserData.displayName) ?
-                $"Player-{truncatedUserId}" : publicUserData.displayName;
+            AccountUserPlatformData publicUserData = result.Value.Data[0];
+            string truncatedUserId = publicUserData.UserId[..5];
+            GameData.CachedPlayerState.AvatarUrl = publicUserData.AvatarUrl;
+            GameData.CachedPlayerState.PlayerName = string.IsNullOrEmpty(publicUserData.DisplayName) ?
+                $"Player-{truncatedUserId}" : publicUserData.DisplayName;
+            GameData.CachedPlayerState.PlatformId = string.IsNullOrEmpty(GameData.CachedPlayerState.PlatformId) ? 
+                tokenData.platform_id : GameData.CachedPlayerState.PlatformId;
 
             loginHandler.OnLoginCompleted(Result<TokenData,OAuthError>.CreateOk(tokenData));
         }
@@ -161,9 +165,20 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
         }
         else
         {
+            // Casting doesn't work properly, manually transfer the data instead.
+            LoginWithOtherPlatformV4OptionalParameters platformOptionParameters = new LoginWithOtherPlatformV4OptionalParameters
+            {
+                OnQueueUpdatedEvent = OptionalParameters.OnQueueUpdatedEvent,
+                OnCancelledEvent = OptionalParameters.OnCancelledEvent,
+                CancellationToken = OptionalParameters.CancellationToken
+            };
+            
             // Login with platform token
-            user.LoginWithOtherPlatform(PlatformType, 
-                steamAuthSessionTicket, OnLoginWithOtherPlatformCompleted);
+            user.LoginWithOtherPlatformV4(
+                platformType,
+                steamAuthSessionTicket,
+                platformOptionParameters,
+                OnLoginWithOtherPlatformCompleted);
         }
     }
 

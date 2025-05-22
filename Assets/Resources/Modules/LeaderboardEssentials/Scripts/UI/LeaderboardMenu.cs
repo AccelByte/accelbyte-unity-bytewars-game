@@ -49,7 +49,6 @@ public class LeaderboardMenu : MenuCanvas
     private PlayerState currentUserData;
 
     private LeaderboardEssentialsWrapper leaderboardWrapper;
-    private AuthEssentialsWrapper authWrapper;
 
     private string currentLeaderboardCode;
     private LeaderboardCycleMenu.LeaderboardCycleType currentCycleType;
@@ -70,9 +69,8 @@ public class LeaderboardMenu : MenuCanvas
     private void OnEnable()
     {
         leaderboardWrapper = TutorialModuleManager.Instance.GetModuleClass<LeaderboardEssentialsWrapper>();
-        authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
 
-        if (!leaderboardWrapper || !authWrapper)
+        if (!leaderboardWrapper)
         {
             return;
         }
@@ -134,7 +132,7 @@ public class LeaderboardMenu : MenuCanvas
         CurrentView = LeaderboardMenuView.Default;
     }
 
-    private void OnBulkGetUserInfoCompleted(Result<ListBulkUserInfoResponse> result, Dictionary<string, float> userRankInfos)
+    private void OnBulkGetUserInfoCompleted(Result<AccountUserPlatformInfosResponse> result, Dictionary<string, float> userRankInfos)
     {
         if (result.IsError)
         {
@@ -146,13 +144,13 @@ public class LeaderboardMenu : MenuCanvas
         // Populate leaderboard ranking entries.
         int rankOrder = 0;
         Dictionary<string, string> userDisplayNames = 
-            result.Value.data.ToDictionary(userInfo => userInfo.userId, userInfo => userInfo.displayName);
+            result.Value.Data.ToDictionary(userInfo => userInfo.UserId, userInfo => userInfo.DisplayName);
         foreach (string userId in userRankInfos.Keys)
         {
             rankOrder += 1;
             InstantiateRankingEntry(userId, rankOrder, userDisplayNames[userId], userRankInfos[userId]);
 
-            if (userId.Equals(currentUserData.PlayerName))
+            if (userId.Equals(currentUserData.PlayerId))
             {
                 userRankingPanel.SetRankingDetails(
                     userId,
@@ -193,9 +191,10 @@ public class LeaderboardMenu : MenuCanvas
             result.Value.data.ToDictionary(userPoint => userPoint.userId, userPoint => userPoint.point);
 
         // Get the players' display name from the provided user ids
-        authWrapper.BulkGetUserInfo(
-            userRankInfos.Keys.ToArray(),
-            authResult => OnBulkGetUserInfoCompleted(authResult, userRankInfos));
+        AccelByteSDK.GetClientRegistry().GetApi().GetUser().GetUserOtherPlatformBasicPublicInfo(
+            "ACCELBYTE", 
+            userRankInfos.Keys.ToArray(), 
+            result => OnBulkGetUserInfoCompleted(result, userRankInfos));
     }
 
     private void DisplayRankingList()

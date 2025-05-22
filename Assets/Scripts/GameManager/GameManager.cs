@@ -22,7 +22,10 @@ public class GameManager : NetworkBehaviour
     }
 
     public static GameManager Instance { get; private set; }
-    
+
+    public delegate void OnClientAuthenticationCompleteDelegate(ulong clientNetworkId, bool isAuthenticated);
+    public delegate void OnClientConnectedAuthenticationDelegate(ulong clientNetworkId, OnClientAuthenticationCompleteDelegate callback);
+
     public delegate void OnGameEndedDelegate(GameOverReason reason);
     public delegate void OnGameStateChangedDelegate(InGameState newGameState);
     public delegate void OnPlayerEnterGameDelegate(PlayerState playerState);
@@ -40,6 +43,8 @@ public class GameManager : NetworkBehaviour
         GameEntityDestroyReason destroyReason,
         PlayerState killerPlayerState,
         MissileState missileState);
+
+    public static event OnClientConnectedAuthenticationDelegate OnClientConnectedAuthentication;
 
     public static event Action OnGameStarted = delegate { };
     public static event OnGameEndedDelegate OnGameEnded = delegate { };
@@ -390,8 +395,45 @@ public class GameManager : NetworkBehaviour
     {
         BytewarsLogger.Log($"Client connected. Client id: {clientNetworkId}");
 
-        reconnect.OnClientConnected(clientNetworkId, IsOwner, IsServer, IsClient, IsHost, serverHelper,
-                                    InGameMode, connectedClients, InGameState, GameData.ServerType, Players, gameTimeLeft, clientHelper);
+        if (IsClient && clientNetworkId == NetworkManager.Singleton.LocalClientId) 
+        {
+            MenuManager.Instance.ShowLoading("Verifying");
+        }
+
+        // Invoke authentication method if any.
+        if (IsServer) 
+        {
+            if (OnClientConnectedAuthentication.GetInvocationList().Length > 0)
+            {
+                OnClientConnectedAuthentication.Invoke(clientNetworkId, OnClientConnectedAuthenticationComplete);
+            }
+            else
+            {
+                OnClientConnectedAuthenticationComplete(clientNetworkId, true);
+            }
+        }
+    }
+
+    private void OnClientConnectedAuthenticationComplete(ulong clientNetworkId, bool isAuthenticated) 
+    {
+        // Kick player if not authenticated.
+        if (!isAuthenticated)
+        {
+            BytewarsLogger.LogWarning($"Client is not authenticated. Disconnecting the player. Client id: {clientNetworkId}");
+            NetworkManager.Singleton.DisconnectClient(clientNetworkId, "Player is not authenticated.");
+            return;
+        }
+
+        BytewarsLogger.Log($"Client is authenticated. Client id: {clientNetworkId}");
+
+        reconnect.OnClientConnected(
+            clientNetworkId,
+            IsOwner, IsServer, IsClient, IsHost,
+            serverHelper, InGameMode,
+            connectedClients, InGameState,
+            GameData.ServerType, Players,
+            gameTimeLeft,
+            clientHelper);
 
         // Broadcast on player enter game event.
         if (IsLocalGame || IsServer) 
@@ -467,7 +509,8 @@ public class GameManager : NetworkBehaviour
                         $"Current active team count: {serverHelper.GetActiveTeamsCount()}. " +
                         $"Minimum team required: {GameData.GameModeSo.MinimumTeamCountToPlay}");
 
-                    SetInGameState(InGameState.ShuttingDown);
+                    // Check the game over condition when player left the game instead of shuting down
+                    CheckForGameOverCondition();
                 }
             }
         }
@@ -1705,7 +1748,6 @@ public class GameManager : NetworkBehaviour
         InGameMode = inGameMode;
         GameData.GameModeSo = availableInGameMode.FirstOrDefault(x => x.InGameMode == InGameMode);
         GameData.ServerType = serverType;
-        GameData.CachedPlayerState = playerStates.FirstOrDefault(x => x.ClientNetworkId == NetworkManager.Singleton.LocalClientId);
 
         if (!isInGameScene)
         {

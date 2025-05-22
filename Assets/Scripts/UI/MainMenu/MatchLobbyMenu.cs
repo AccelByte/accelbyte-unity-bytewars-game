@@ -117,6 +117,10 @@ public class MatchLobbyMenu : MenuCanvas
     {
         GenerateTeamEntries();
 
+        BytewarsLogger.Log($"Refresh match lobby. " +
+            $"Is match session: {SessionCache.IsCreateMatch()}, Is session leader: {SessionCache.IsSessionLeader()}, " +
+            $"Server type: {GameData.ServerType}, Is host: {NetworkManager.Singleton.IsHost}");
+        
         if (SessionCache.IsCreateMatch())
         {
             startButton.gameObject.SetActive(SessionCache.IsSessionLeader());
@@ -127,7 +131,7 @@ public class MatchLobbyMenu : MenuCanvas
             * Otherwise, always show the start button on other server mode. */
             startButton.gameObject.SetActive(
                 GameData.ServerType.Equals(ServerType.OnlinePeer2Peer) ?
-                GameManager.Instance.IsHost :
+                NetworkManager.Singleton.IsHost :
                 true);
         }
     }

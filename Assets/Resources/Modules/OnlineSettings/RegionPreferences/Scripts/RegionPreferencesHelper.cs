@@ -49,6 +49,10 @@ public class RegionPreferencesHelper
 {
     public static List<RegionPreferenceInfo> GetEnabledRegions() 
     {
+#if UNITY_SERVER
+        BytewarsLogger.LogWarning("Bad request. Only game client is allowed to call this function.");
+        return null;
+#else
         List<RegionPreferenceInfo> enabledRegions = new List<RegionPreferenceInfo>();
 
         ModuleModel module = TutorialModuleManager.Instance.GetModule(TutorialType.RegionPreferences);
@@ -76,10 +80,15 @@ public class RegionPreferencesHelper
 
             return regionPreferencesWrapper.GetEnabledRegions();
         }
+#endif
     }
 
     public static List<SessionV2GameSession> FilterEnabledRegionGameSession(List<SessionV2GameSession> gameSessions)
     {
+#if UNITY_SERVER
+        BytewarsLogger.LogWarning("Bad request. Only game client is allowed to call this function.");
+        return gameSessions;
+#else
         ModuleModel module = TutorialModuleManager.Instance.GetModule(TutorialType.RegionPreferences);
         if (module == null || !module.isActive)
         {
@@ -105,5 +114,6 @@ public class RegionPreferencesHelper
 
             return regionPreferencesWrapper.FilterEnabledRegionGameSession(gameSessions);
         }
+#endif
     }
 }
