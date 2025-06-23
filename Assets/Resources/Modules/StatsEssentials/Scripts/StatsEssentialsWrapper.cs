@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using System.Collections.Generic;
+using System.Linq;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -11,15 +12,18 @@ using UnityEngine;
 
 public class StatsEssentialsWrapper : MonoBehaviour
 {
-    // AccelByte's Multi Registry references
+    // AGS Game SDK references
     private Statistic statistic;
     private ServerStatistic serverStatistic;
     
-    // Start is called before the first frame update
     void Start()
     {
         statistic = AccelByteSDK.GetClientRegistry().GetApi().GetStatistic();
+#if UNITY_SERVER
         serverStatistic = AccelByteSDK.GetServerRegistry().GetApi().GetStatistic();
+#endif
+
+        GameManager.OnGameEnded += UpdateConnectedPlayersStatsOnGameEnds;
     }
 
     #region AB Service Functions
@@ -31,12 +35,10 @@ public class StatsEssentialsWrapper : MonoBehaviour
     /// <param name="statItem">stat item containing desired new stat value</param>
     /// <param name="additionalKey">additional custom key that will be added to the slot</param>
     /// <param name="resultCallback">callback function to get result from other script</param>
-    public void UpdateUserStatsFromClient(string statCode, PublicUpdateUserStatItem statItem, string additionalKey, ResultCallback<UpdateUserStatItemValueResponse> resultCallback = null)
-    {        
-        statistic.UpdateUserStatItemsValue(
-            statCode,
-            additionalKey,
-            statItem,
+    public void UpdateUserStatsFromClient(List<StatItemUpdate> statItems, ResultCallback<StatItemOperationResult[]> resultCallback = null)
+    {
+        statistic.UpdateUserStatItems(
+            statItems.ToArray(),
             result => OnUpdateUserStatsFromClientCompleted(result, resultCallback)
         );
     }
@@ -47,7 +49,7 @@ public class StatsEssentialsWrapper : MonoBehaviour
     /// <param name="statCode">stat code of the desired stat item</param>
     /// <param name="statItems">a list of stat item containing desired new stat value and the target user ID</param>
     /// /// <param name="resultCallback">callback function to get result from other script</param>
-    public void UpdateManyUserStatsFromServer(string statCode, List<UserStatItemUpdate> statItems, ResultCallback<StatItemOperationResult[]> resultCallback)
+    public void UpdateManyUserStatsFromServer(List<UserStatItemUpdate> statItems, ResultCallback<StatItemOperationResult[]> resultCallback)
     {   
         serverStatistic.UpdateManyUsersStatItems(
             statItems.ToArray(),
@@ -144,7 +146,7 @@ public class StatsEssentialsWrapper : MonoBehaviour
     /// </summary>
     /// <param name="result">result of the GetUserStatItems() function call</param>
     /// <param name="customCallback">additional callback function that can be customized from other script</param>
-    private void OnUpdateUserStatsFromClientCompleted(Result<UpdateUserStatItemValueResponse> result, ResultCallback<UpdateUserStatItemValueResponse> customCallback = null)
+    private void OnUpdateUserStatsFromClientCompleted(Result<StatItemOperationResult[]> result, ResultCallback<StatItemOperationResult[]> customCallback = null)
     {
         if (!result.IsError)
         {
@@ -253,5 +255,136 @@ public class StatsEssentialsWrapper : MonoBehaviour
         customCallback?.Invoke(result);
     }
 
+    #endregion
+
+    #region Helper Functions
+    private void UpdateConnectedPlayersStatsOnGameEnds(GameManager.GameOverReason reason)
+    {
+        if (reason != GameManager.GameOverReason.MatchEnded)
+        {
+            return;
+        }
+
+        GameModeEnum gameMode = GameManager.Instance.GameMode;
+        InGameMode inGameMode = GameManager.Instance.InGameMode;
+        StatsEssentialsModels.GameStatsData gameStatsData = StatsEssentialsModels.GetGameStatsDataByGameMode(inGameMode);
+        List<PlayerState> playerStates = GameManager.Instance.ConnectedPlayerStates.Values.ToList();
+
+        // Store statistics to update.
+        List<UserStatItemUpdate> statItems = new();
+        Dictionary<int, (bool isWinner, int score, int kills, int deaths)> teamStats = new();
+        GameManager.Instance.GetWinner(out TeamState winnerTeam, out PlayerState winnerPlayer);
+        foreach (PlayerState playerState in playerStates)
+        {
+            if (!teamStats.ContainsKey(playerState.TeamIndex))
+            {
+                List<PlayerState> teamPlayers = playerStates.Where(p => p.TeamIndex == playerState.TeamIndex).ToList();
+                teamStats.Add(playerState.TeamIndex, new()
+                {
+                    isWinner = winnerTeam != null ? playerState.TeamIndex == winnerTeam.teamIndex : false,
+                    score = (int)teamPlayers.Sum(p => p.Score),
+                    kills = teamPlayers.Sum(p => p.KillCount),
+                    deaths = (GameData.GameModeSo.PlayerStartLives * teamPlayers.Count) - teamPlayers.Sum(p => p.Lives)
+                });
+            }
+
+            (bool isWinner, int score, int kills, int deaths) = teamStats[playerState.TeamIndex];
+
+            // Highest score statistic
+            statItems.Add(new()
+            {
+                updateStrategy = StatisticUpdateStrategy.MAX,
+                statCode = gameStatsData.HighestScoreStats.StatCode,
+                userId = playerState.PlayerId,
+                value = score
+            });
+
+            // Total score statistic
+            statItems.Add(new()
+            {
+                updateStrategy = StatisticUpdateStrategy.INCREMENT,
+                statCode = gameStatsData.TotalScoreStats.StatCode,
+                userId = playerState.PlayerId,
+                value = score
+            });
+
+            // Matches played statistic
+            statItems.Add(new()
+            {
+                updateStrategy = StatisticUpdateStrategy.INCREMENT,
+                statCode = gameStatsData.MatchesPlayedStats.StatCode,
+                userId = playerState.PlayerId,
+                value = 1
+            });
+
+            // Matches won statistic
+            statItems.Add(new()
+            {
+                updateStrategy = StatisticUpdateStrategy.INCREMENT,
+                statCode = gameStatsData.MatchesWonStats.StatCode,
+                userId = playerState.PlayerId,
+                value = isWinner ? 1 : 0
+            });
+
+            // Kill count statistic
+            statItems.Add(new()
+            {
+                updateStrategy = StatisticUpdateStrategy.INCREMENT,
+                statCode = gameStatsData.KillCountStats.StatCode,
+                userId = playerState.PlayerId,
+                value = kills
+            });
+
+            // Death statistic
+            statItems.Add(new()
+            {
+                updateStrategy = StatisticUpdateStrategy.INCREMENT,
+                statCode = gameStatsData.DeathStats.StatCode,
+                userId = playerState.PlayerId,
+                value = deaths
+            });
+        }
+
+#if UNITY_SERVER
+        BytewarsLogger.Log($"[Server] Update the stats of connected players when the game ended. Game mode: {gameMode}. In game mode: {inGameMode}");
+        UpdateManyUserStatsFromServer(statItems, (Result<StatItemOperationResult[]> result) =>
+        {
+            if (!result.IsError)
+            {
+                BytewarsLogger.Log("[Server] Successfully updated the stats of connected players when the game ended.");
+            }
+            else
+            {
+                BytewarsLogger.LogWarning($"[Server] Failed to update the stats of connected players when the game ended. Error: {result.Error.Message}");
+            }
+        });
+#else
+        BytewarsLogger.Log($"[Client] Update the stats of local connected players when the game ended. Game mode: {gameMode}. In game mode: {inGameMode}");
+
+        /* Local gameplay only has one valid account, which is the player who logged in to the game.
+         * Thus, we can only update the stats based on that player's user ID. */
+        List<StatItemUpdate> localPlayerStatItems = statItems
+            .Where(x => x.userId == GameData.CachedPlayerState.PlayerId)
+            .Select(x => new StatItemUpdate
+            {
+                updateStrategy = x.updateStrategy,
+                value = x.value,
+                statCode = x.statCode,
+                additionalData = x.additionalData
+            }).ToList();
+
+        UpdateUserStatsFromClient(localPlayerStatItems, (Result<StatItemOperationResult[]> result) =>
+        {
+            if (!result.IsError)
+            {
+                BytewarsLogger.Log("[Client] Successfully updated the stats of connected players when the game ended.");
+            }
+            else
+            {
+                BytewarsLogger.LogWarning($"[Client] Failed to update the stats of connected players when the game ended. Error: {result.Error.Message}");
+            }
+        });
+#endif
+    }
     #endregion
 }

@@ -7,37 +7,89 @@ using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
+#if !UNITY_WEBGL
+using Steamworks;
+#endif
 
 public class SinglePlatformAuthWrapper_Starter : MonoBehaviour
 {
-    public static event Action<UserProfile> OnUserProfileReceived = delegate { };
-    
     // Optional Parameters
     public LoginV4OptionalParameters OptionalParameters = new();
-    
-    private const string ClassName = "SinglePlatformAuthWrapper_Starter";
-    private User user;
-    private LoginHandler loginHandler = null;
-    private SteamHelper steamHelper;
-    private LoginPlatformType platformType = new LoginPlatformType(AccelByte.Models.PlatformType.Steam);
-    private ResultCallback<TokenData, OAuthError> platformLoginCallback;
-    private TokenData tokenData;
 
-    private void Start()
+    // AGS Game SDK references
+    private User user;
+    private UserProfiles userProfiles;
+    private Lobby lobby;
+
+    private void Awake()
     {
-        BytewarsLogger.Log($"[{ClassName}] is started");
-        steamHelper = new SteamHelper();
-        var apiClient = AccelByteSDK.GetClientRegistry().GetApi();
-        user = apiClient.GetApi<User, UserApi>();
-        SetLoginWithSteamButtonClickCallback();
+        AssignSinglePlatformAuthButtonCallback();
+        user = AccelByteSDK.GetClientRegistry().GetApi().GetUser();
+        userProfiles = AccelByteSDK.GetClientRegistry().GetApi().GetUserProfiles();
+        lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
+
+        // TODO: Add the tutorial module code here.
     }
+
+    void OnDestroy()
+    {
+        // TODO: Add the tutorial module code here.
+    }
+
+    private async void AssignSinglePlatformAuthButtonCallback()
+    {
+        while (!(MenuManager.Instance?.IsInitiated ?? false) ||
+            MenuManager.Instance?.GetCurrentMenu()?.GetAssetEnum() != AssetEnum.LoginMenu_Starter)
+        {
+            await UniTask.Yield();
+        }
+
+        LoginMenu_Starter loginMenu = MenuManager.Instance.GetCurrentMenu() as LoginMenu_Starter;
+        Button loginButton = loginMenu?.GetLoginButton(AuthEssentialsModels.LoginType.SinglePlatformAuth);
+        TMP_Text loginButtonText = loginButton?.GetComponentInChildren<TMP_Text>();
+        if (!loginMenu || !loginButton || !loginButtonText)
+        {
+            return;
+        }
+
+        // Here, it set Steam as the default single platform auth. You can add more third-party integration if needed.
+        PlatformType targetPlatformType = PlatformType.Steam;
+        loginButtonText.text = $"Login with {targetPlatformType.ToString()}";
+        loginButton.gameObject.SetActive(true);
+        switch (targetPlatformType)
+        {
+#if !UNITY_WEBGL
+            case PlatformType.Steam:
+                loginButton.onClick.AddListener(OnLoginWithSteamButtonClicked);
+                loginButton.gameObject.SetActive(SteamManager.Initialized);
+                if (GConfig.GetSteamAutoLogin())
+                {
+                    loginButton.onClick.Invoke();
+                }
+                break;
+#endif
+            default:
+                loginButton.gameObject.SetActive(false);
+                break;
+        }
+    }
+
+#if !UNITY_WEBGL
+    #region Steam Functions
+
+    // TODO: Declare your get Steam auth ticket function here.
+
     private void OnLoginWithSteamButtonClicked()
     {
-        // TODO: login to steam platform and pass the steam ticket over to AGS login
+        // TODO: Add the tutorial module code here.
     }
 
-    private void SetLoginWithSteamButtonClickCallback()
-    {
-        // TODO: this function will get login with steam button reference and assign onClick callback to it
-    }
+    #endregion
+#endif
+
+    // TODO: Declare the tutorial module functions here.
 }

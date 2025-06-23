@@ -63,7 +63,12 @@ public class PartyMemberEntry : MonoBehaviour
     private void AddPartyMember()
     {
         // Open friend list menu to add new party members.
-        MenuManager.Instance.ChangeToMenu(AssetEnum.FriendsMenuCanvas);
+        ModuleModel friendEssentials = TutorialModuleManager.Instance.GetModule(TutorialType.FriendsEssentials);
+        if (friendEssentials != null)
+        {
+            AssetEnum menuAssetEnum = friendEssentials.isStarterActive ? AssetEnum.FriendsMenu_Starter : AssetEnum.FriendsMenu;
+            MenuManager.Instance.ChangeToMenu(menuAssetEnum);
+        }
     }
 
     private void OpenPlayerActionMenu()
@@ -82,20 +87,28 @@ public class PartyMemberEntry : MonoBehaviour
         }
 
         // Open friend details menu to perform party actions (e.g. promote to leader, kick, etc.)
-        AssetEnum menuAssetEnum = friendEssentials.isStarterActive ? AssetEnum.FindFriendsMenuCanvas_Starter : AssetEnum.FriendDetailsMenuCanvas;
+        AssetEnum menuAssetEnum = friendEssentials.isStarterActive ? AssetEnum.FriendDetailsMenu_Starter : AssetEnum.FriendDetailsMenu;
         MenuManager.Instance.InstantiateCanvas(menuAssetEnum);
         if (!MenuManager.Instance.AllMenu.TryGetValue(menuAssetEnum, out MenuCanvas menuCanvas))
         {
             BytewarsLogger.LogWarning($"Failed to open player action menu. Unable to find {menuAssetEnum} in menu manager.");
             return;
         }
-        if (menuCanvas.gameObject.TryGetComponent(out FriendDetailsMenuHandler friendDetailsMenu))
+        if (menuCanvas.gameObject.TryGetComponent(out FriendDetailsMenu friendDetailsMenu))
         {
             friendDetailsMenu.UserId = cachedMemberUserData.UserId;
             friendDetailsMenu.FriendImage.sprite = avatarImage.GetCurrentImage();
             friendDetailsMenu.FriendDisplayName.text = memberNameText.text;
             friendDetailsMenu.FriendPresence.text = "Online";
         }
+        else if (menuCanvas.gameObject.TryGetComponent(out FriendDetailsMenu_Starter friendDetailsMenuStarter))
+        {
+            friendDetailsMenuStarter.UserId = cachedMemberUserData.UserId;
+            friendDetailsMenuStarter.FriendImage.sprite = avatarImage.GetCurrentImage();
+            friendDetailsMenuStarter.FriendDisplayName.text = memberNameText.text;
+            friendDetailsMenuStarter.FriendPresence.text = "Online";
+        }
+
         MenuManager.Instance.ChangeToMenu(menuAssetEnum);
     }
 

@@ -3,287 +3,266 @@
 // and restrictions contact your company contract manager.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
+#if !UNITY_WEBGL
+using Steamworks;
+#endif
 
 public class SinglePlatformAuthWrapper : MonoBehaviour
 {
-    public UserProfile UserProfile { get; private set; }
-    public static event Action<UserProfile> OnUserProfileReceived = delegate { };
-    
     // Optional Parameters
     public LoginV4OptionalParameters OptionalParameters = new();
-    
-    private const string ClassName = "SinglePlatformAuthWrapper";
+
+    // AGS Game SDK references
     private User user;
     private UserProfiles userProfiles;
     private Lobby lobby;
-    private LoginHandler loginHandler = null;
-    private SteamHelper steamHelper;
-    private LoginPlatformType platformType = new LoginPlatformType(AccelByte.Models.PlatformType.Steam);
-    private ResultCallback<TokenData, OAuthError> platformLoginCallback;
-    private TokenData tokenData;
-    
-    private void Start()
+
+    private void Awake()
     {
-        ApiClient apiClient = AccelByteSDK.GetClientRegistry().GetApi();
-        user = apiClient.GetUser();
-        userProfiles = apiClient.GetUserProfiles();
-        lobby = apiClient.GetLobby();
+        AssignSinglePlatformAuthButtonCallback();
 
-        steamHelper = new SteamHelper();
-
-        StartCoroutine(WaitingLoginHandler(SetLoginWithSteamButtonClickCallback));
+        user = AccelByteSDK.GetClientRegistry().GetApi().GetUser();
+        userProfiles = AccelByteSDK.GetClientRegistry().GetApi().GetUserProfiles();
+        lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
     }
 
-    private void OnApplicationQuit()
+    private async void AssignSinglePlatformAuthButtonCallback()
     {
-        if (lobby.IsConnected)
+        while (!(MenuManager.Instance?.IsInitiated ?? false) ||
+            MenuManager.Instance?.GetCurrentMenu()?.GetAssetEnum() != AssetEnum.LoginMenu)
         {
-            lobby.Disconnect();
-        }
-    }
-
-    private IEnumerator WaitingLoginHandler(Action action)
-    {
-        while (!MenuManager.Instance.IsInitiated)
-        {
-            yield return null;
+            await UniTask.Yield();
         }
 
-        while(MenuManager.Instance.GetCurrentMenu().GetAssetEnum() != AssetEnum.LoginMenuCanvas)
+        LoginMenu loginMenu = MenuManager.Instance.GetCurrentMenu() as LoginMenu;
+        Button loginButton = loginMenu?.GetLoginButton(AuthEssentialsModels.LoginType.SinglePlatformAuth);
+        TMP_Text loginButtonText = loginButton?.GetComponentInChildren<TMP_Text>();
+        if (!loginMenu || !loginButton || !loginButtonText)
         {
-            yield return null;
-        }
-
-        BytewarsLogger.Log($"{AssetEnum.LoginMenuCanvas} found");
-        action?.Invoke();
-    }
-
-    private void SetLoginWithSteamButtonClickCallback()
-    {
-        if (loginHandler == null)
-        {
-            if (MenuManager.Instance != null)
-            {
-                var menuCanvas = MenuManager.Instance.GetMenu(AssetEnum.LoginMenuCanvas);
-                if (menuCanvas != null && menuCanvas is LoginHandler loginHandlerC)
-                {
-                    loginHandler = loginHandlerC;
-                    var loginWithSteamButton = loginHandler.GetLoginButton(LoginType.Steam);
-                    bool isSingleAuthModuleActive =
-                        TutorialModuleManager.Instance.IsModuleActive(TutorialType.SinglePlatformAuth);
-                    bool isLoginWithSteam = isSingleAuthModuleActive && SteamManager.Initialized;
-                    if (isLoginWithSteam)
-                    {
-                        if (GConfig.GetSteamAutoLogin())
-                        {
-                            OnLoginWithSteamButtonClicked();
-                        }
-                        else
-                        {
-                            loginWithSteamButton.onClick.AddListener(OnLoginWithSteamButtonClicked);
-                            loginWithSteamButton.gameObject.SetActive(true);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void OnLoginWithSteamButtonClicked()
-    {
-        if (loginHandler == null) return;
-        loginHandler.OnRetryLoginClicked = OnLoginWithSteamButtonClicked;
-        loginHandler.SetView(LoginHandler.LoginView.LoginLoading);
-
-        // Get steam token to be used as platform token later
-#if !UNITY_WEBGL
-        steamHelper.GetAuthSessionTicket(OnGetAuthSessionTicketFinished);
-#endif
-    }
-
-    private void GetUserPublicData(string receivedUserId)
-    {
-        GameData.CachedPlayerState.PlayerId = receivedUserId;
-        user.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { receivedUserId }, OnGetUserPublicDataFinished);
-    }
-
-    private void GetUserProfile()
-    {
-        userProfiles.GetUserProfile(result => OnGetUserProfileCompleted(result));
-    }
-
-    private void CreateUserProfile()
-    {
-        string twoLetterLanguageCode = System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
-        string timeZoneId = TutorialModuleUtil.GetLocalTimeOffsetFromUTC();
-
-        CreateUserProfileRequest createUserProfileRequest = new()
-        {
-            language = twoLetterLanguageCode,
-            timeZone = timeZoneId,
-        };
-
-        userProfiles.CreateUserProfile(createUserProfileRequest, result => OnCreateUserProfileCompleted(result));
-    }
-    
-    private void OnGetUserPublicDataFinished(Result<AccountUserPlatformInfosResponse> result)
-    {
-        if (result.IsError)
-        {
-            BytewarsLogger.LogWarning($"Failed to get user public data info. Error: {result.Error.Message}");
-            loginHandler.OnRetryLoginClicked = () => GetUserPublicData(tokenData.user_id);
-            loginHandler.OnLoginCompleted(CreateLoginErrorResult(result.Error.Code, result.Error.Message));
-        }
-        else
-        {
-            AccountUserPlatformData publicUserData = result.Value.Data[0];
-            string truncatedUserId = publicUserData.UserId[..5];
-            GameData.CachedPlayerState.AvatarUrl = publicUserData.AvatarUrl;
-            GameData.CachedPlayerState.PlayerName = string.IsNullOrEmpty(publicUserData.DisplayName) ?
-                $"Player-{truncatedUserId}" : publicUserData.DisplayName;
-            GameData.CachedPlayerState.PlatformId = string.IsNullOrEmpty(GameData.CachedPlayerState.PlatformId) ? 
-                tokenData.platform_id : GameData.CachedPlayerState.PlatformId;
-
-            loginHandler.OnLoginCompleted(Result<TokenData,OAuthError>.CreateOk(tokenData));
-        }
-    }
-
-    private void OnGetAuthSessionTicketFinished(string steamAuthSessionTicket)
-    {
-        if (loginHandler == null) return;
-        if (String.IsNullOrEmpty(steamAuthSessionTicket))
-        {
-            loginHandler.OnLoginCompleted(
-                CreateLoginErrorResult(ErrorCode.CachedTokenNotFound, 
-                    "Failed to get steam token"));
-        }
-        else
-        {
-            // Casting doesn't work properly, manually transfer the data instead.
-            LoginWithOtherPlatformV4OptionalParameters platformOptionParameters = new LoginWithOtherPlatformV4OptionalParameters
-            {
-                OnQueueUpdatedEvent = OptionalParameters.OnQueueUpdatedEvent,
-                OnCancelledEvent = OptionalParameters.OnCancelledEvent,
-                CancellationToken = OptionalParameters.CancellationToken
-            };
-            
-            // Login with platform token
-            user.LoginWithOtherPlatformV4(
-                platformType,
-                steamAuthSessionTicket,
-                platformOptionParameters,
-                OnLoginWithOtherPlatformCompleted);
-        }
-    }
-
-    private void OnGetUserProfileCompleted(Result<UserProfile> result)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log("Successfully retrieved self user profile!");
-
-            UserProfile = result.Value;
-            OnUserProfileReceived?.Invoke(UserProfile);
-        }
-        else
-        {
-            BytewarsLogger.Log($"Unable to retrieve self user profile. Message: {result.Error.Message}");
-
-            if (result.Error.Code is ErrorCode.UserProfileNotFoundException)
-            {
-                CreateUserProfile();
-            }
-        }
-    }
-
-    private void OnCreateUserProfileCompleted(Result<UserProfile> result)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log("Successfully created self user profile!");
-
-            UserProfile = result.Value;
-            OnUserProfileReceived?.Invoke(UserProfile);
-        }
-        else
-        {
-            BytewarsLogger.Log($"Unable to create self user profile. Message: {result.Error.Message}");
-        }
-    }
-
-    private void OnLoginWithOtherPlatformCompleted(Result<TokenData, OAuthError> result)
-    {
-        if (result.IsError)
-        {
-            loginHandler.OnLoginCompleted(result);
-        }
-        else
-        {
-            tokenData = result.Value;
-            GetUserPublicData(tokenData.user_id);
-
-            GetUserProfile();
-            CheckLobbyConnection();
-        }
-    }
-
-    private void CheckLobbyConnection()
-    {
-        if (!lobby.IsConnected)
-        {
-            lobby.Connected += OnLobbyConnected;
-            lobby.Disconnected += OnLobbyDisconnected;
-            lobby.Disconnecting += OnLobbyDisconnecting;
-            lobby.Connect();
-        }
-    }
-
-    private void OnLobbyConnected()
-    {
-        BytewarsLogger.Log($"Lobby service connected: {lobby.IsConnected}");
-    }
-
-    private void OnLobbyDisconnected(WsCloseCode code)
-    {
-        BytewarsLogger.Log($"Lobby service disconnected with code: {code}");
-
-        HashSet<WsCloseCode> loginDisconnectCodes = new()
-        {
-            WsCloseCode.Normal,
-            WsCloseCode.DisconnectDueToMultipleSessions,
-            WsCloseCode.DisconnectDueToIAMLoggedOut
-        };
-
-        if (loginDisconnectCodes.Contains(code))
-        {
-            lobby.Connected -= OnLobbyConnected;
-            lobby.Disconnected -= OnLobbyDisconnected;
-        }
-    }
-
-    private void OnLobbyDisconnecting(Result<DisconnectNotif> result)
-    {
-        if (result.IsError)
-        {
-            BytewarsLogger.Log($"Error disconnecting lobby: {result.Error.Message}");
             return;
         }
 
-        BytewarsLogger.Log($"Lobby disconnected: {result.Value}");
+        // Get the default single platform auth from config file.
+        if (!Enum.TryParse(ConfigurationReader.Config?.singlePlatformAuth ?? string.Empty, out PlatformType targetPlatformType))
+        {
+            targetPlatformType = PlatformType.None;
+        }
+
+        // Set callback function based on the target single platform auth. You can add more third-party integration if needed.
+        loginButtonText.text = $"Login with {targetPlatformType.ToString()}";
+        loginButton.gameObject.SetActive(true);
+        switch (targetPlatformType)
+        {
+            case PlatformType.Steam:
+#if !UNITY_WEBGL
+                loginButton.onClick.AddListener(OnLoginWithSteamButtonClicked);
+                loginButton.gameObject.SetActive(SteamManager.Initialized);
+                if (GConfig.GetSteamAutoLogin())
+                {
+                    loginButton.onClick.Invoke();
+                }
+                break;
+#endif
+            default:
+                loginButton.gameObject.SetActive(false);
+                break;
+        }
     }
 
-    private Result<TokenData, OAuthError> CreateLoginErrorResult(ErrorCode errorCode, string errorDescription)
+#if !UNITY_WEBGL
+    #region Steam Functions
+
+    private void OnLoginWithSteamButtonClicked()
     {
-        return Result<TokenData, OAuthError>.CreateError(new OAuthError()
+        LoginMenu loginMenu = MenuManager.Instance.GetCurrentMenu() as LoginMenu;
+        if (!loginMenu)
         {
-            error = errorCode.ToString(),
-            error_description = errorDescription
+            return;
+        }
+
+        loginMenu.OnRetryLoginClicked = OnLoginWithSteamButtonClicked;
+        loginMenu.WidgetSwitcher.SetWidgetState(AccelByteWarsWidgetSwitcher.WidgetState.Loading);
+
+        // Get steam token to be used as platform token later
+        GetSteamAuthTicket((Result<string> result) =>
+        {
+            if (result.IsError)
+            {
+                loginMenu.OnLoginCompleted(Result<TokenData, OAuthError>.CreateError(new OAuthError() { error = result.Error.Message }));
+                return;
+            }
+
+            // Login to AccelByte with Steam auth ticket.
+            LoginWithOtherPlatform(result.Value, PlatformType.Steam, loginMenu.OnLoginCompleted);
         });
     }
+
+    private async void GetSteamAuthTicket(ResultCallback<string> resultCallback)
+    {
+        if (!SteamManager.Initialized)
+        {
+            BytewarsLogger.LogWarning(
+                "Failed to get Steam auth ticket. Steam API is not initialized. " +
+                "Try to open the Steam Client first before launching the game.");
+            resultCallback?.Invoke(Result<string>.CreateError(ErrorCode.NotImplemented, "Steam API is not initialized"));
+            return;
+        }
+
+        byte[] buffer = new byte[1024];
+        SteamNetworkingIdentity identity = new SteamNetworkingIdentity();
+        identity.SetGenericString(string.Empty);
+        
+        // Request to get Steam auth ticket.
+        HAuthTicket request = SteamUser.GetAuthSessionTicket(buffer, buffer.Length, out uint ticketSize, ref identity);
+        Array.Resize(ref buffer, (int)ticketSize);
+
+        // Set request callback.
+        TaskCompletionSource<string> getAuthTicketTask = new TaskCompletionSource<string>();
+        Callback<GetAuthSessionTicketResponse_t> callback = Callback<GetAuthSessionTicketResponse_t>.Create((GetAuthSessionTicketResponse_t response) =>
+        {
+            if (response.m_hAuthTicket == request && response.m_eResult == EResult.k_EResultOK)
+            {
+                string sessionTicket = BitConverter.ToString(buffer).Replace("-", string.Empty);
+                getAuthTicketTask.TrySetResult(sessionTicket);
+            }
+            else
+            {
+                getAuthTicketTask.TrySetResult(null);
+            }
+        });
+
+        // Return Steam auth ticket.
+        string authTicket = await getAuthTicketTask.Task;
+        if (string.IsNullOrEmpty(authTicket))
+        {
+            resultCallback?.Invoke(Result<string>.CreateError(ErrorCode.UnknownError, "Failed to get Steam Auth Ticket"));
+        }
+        else
+        {
+            resultCallback?.Invoke(Result<string>.CreateOk(authTicket));
+        }
+    }
+
+    #endregion
+#endif
+
+    #region AB Service Functions
+
+    public void LoginWithOtherPlatform(
+        string platformToken, 
+        PlatformType platformType, 
+        ResultCallback<TokenData, OAuthError> resultCallback)
+    {
+        LoginWithOtherPlatformV4OptionalParameters optionalParams = new LoginWithOtherPlatformV4OptionalParameters
+        {
+            OnQueueUpdatedEvent = OptionalParameters.OnQueueUpdatedEvent,
+            OnCancelledEvent = OptionalParameters.OnCancelledEvent,
+            CancellationToken = OptionalParameters.CancellationToken
+        };
+
+        user.LoginWithOtherPlatformV4(
+            new LoginPlatformType(platformType),
+            platformToken,
+            optionalParams,
+            result => OnLoginWithOtherPlatformCompleted(result, resultCallback));
+    }
+
+    private void CreateOrGetUserProfile(ResultCallback<UserProfile> resultCallback)
+    {
+        userProfiles.GetUserProfile((Result<UserProfile> getUserProfileResult) =>
+        {
+            // If not found because it is not yet created, then try to create one.
+            if (getUserProfileResult.IsError &&
+                getUserProfileResult.Error.Code == ErrorCode.UserProfileNotFoundException)
+            {
+                CreateUserProfileRequest request = new CreateUserProfileRequest()
+                {
+                    language = System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName,
+                    timeZone = TutorialModuleUtil.GetLocalTimeOffsetFromUTC(),
+                };
+                userProfiles.CreateUserProfile(request, resultCallback);
+                return;
+            }
+
+            resultCallback.Invoke(getUserProfileResult);
+        });
+    }
+
+    private void GetUserPublicData(string userId, ResultCallback<AccountUserPlatformInfosResponse> resultCallback)
+    {
+        user.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { userId }, resultCallback);
+    }
+
+    #endregion
+
+    #region Callback Functions
+
+    private void OnLoginWithOtherPlatformCompleted(
+        Result<TokenData, OAuthError> loginResult, 
+        ResultCallback<TokenData, OAuthError> resultCallback = null)
+    {
+        // Abort if failed to login.
+        if (loginResult.IsError)
+        {
+            BytewarsLogger.Log($"Failed to login with other platform. Error: {loginResult.Error.error}");
+            resultCallback?.Invoke(loginResult);
+            return;
+        }
+
+        // Connect to lobby if haven't.
+        if (!lobby.IsConnected)
+        {
+            lobby.Connect();
+        }
+
+        // Get user profile.
+        TokenData tokenData = loginResult.Value;
+        BytewarsLogger.Log("Success to login with other platform. Querying the user profile and user info.");
+        CreateOrGetUserProfile((Result<UserProfile> userProfileResult) =>
+        {
+            // Abort if failed to create or get user profile.
+            if (userProfileResult.IsError)
+            {
+                BytewarsLogger.LogWarning($"Failed to create or get user profile. Error: {userProfileResult.Error.Message}");
+                resultCallback?.Invoke(Result<TokenData, OAuthError>.CreateError(new OAuthError() { error = userProfileResult.Error.Message }));
+                return;
+            }
+
+            // Get user public info.
+            GetUserPublicData(tokenData.user_id, (Result<AccountUserPlatformInfosResponse> userInfoResult) =>
+            {
+                // Abort if failed to get user info.
+                if (userInfoResult.IsError || userInfoResult.Value.Data.Length <= 0)
+                {
+                    BytewarsLogger.LogWarning($"Failed to get user info. Error: {userInfoResult.Error.Message}");
+                    resultCallback?.Invoke(Result<TokenData, OAuthError>.CreateError(new OAuthError() { error = userInfoResult.Error.Message }));
+                    return;
+                }
+
+                // Save the public user info in the game cache.
+                AccountUserPlatformData publicUserData = userInfoResult.Value.Data[0];
+                GameData.CachedPlayerState.PlayerId = publicUserData.UserId;
+                GameData.CachedPlayerState.AvatarUrl = publicUserData.AvatarUrl;
+                GameData.CachedPlayerState.PlayerName =
+                    string.IsNullOrEmpty(publicUserData.DisplayName) ?
+                    $"Player-{publicUserData.UserId[..5]}" :
+                    publicUserData.DisplayName;
+                GameData.CachedPlayerState.PlatformId =
+                    string.IsNullOrEmpty(GameData.CachedPlayerState.PlatformId) ?
+                    tokenData.platform_id : GameData.CachedPlayerState.PlatformId;
+
+                resultCallback.Invoke(loginResult);
+            });
+        });
+    }
+
+    #endregion
 }

@@ -2,6 +2,7 @@
   "enableModulesOverride": true,
   "forceEnabledModules": [],
   "forceDisabledOtherModules": false,
+  "singlePlatformAuth": "Steam",
   "steamConfiguration":
   {
     "steamAppId": "replace with your steam app id",

@@ -37,8 +37,6 @@ public class PresenceEssentialsWrapper : MonoBehaviour
     {
         lobby = ApiClient.GetLobby();
 
-        LoginHandler.OnLoginComplete += CheckLobbyConnection;
-        
         lobby.FriendsStatusChanged += OnStatusChanged;
         lobby.Connected += UpdateSelfPresenceStatus;
 
@@ -76,8 +74,6 @@ public class PresenceEssentialsWrapper : MonoBehaviour
 
     private void OnDestroy()
     {
-        LoginHandler.OnLoginComplete -= CheckLobbyConnection;
-
         lobby.FriendsStatusChanged -= OnStatusChanged;
         lobby.Connected -= UpdateSelfPresenceStatus;
 
@@ -106,14 +102,6 @@ public class PresenceEssentialsWrapper : MonoBehaviour
         SetPresenceStatus(string.Empty, UserStatus.Offline);
     }
 
-    private void CheckLobbyConnection(TokenData tokenData)
-    {
-        if (!lobby.IsConnected)
-        {
-            lobby.Connect();
-        }
-    }
-
     #region User Presence Module
 
     #region Main Functions
@@ -135,13 +123,14 @@ public class PresenceEssentialsWrapper : MonoBehaviour
         bool hasGameModeStatus = !string.IsNullOrEmpty(GameModeStatus);
         if (hasGameModeStatus)
         {
-            activityBuilder.Append(PresenceHelper.HyphenSeparator).Append(GameModeStatus);
+            activityBuilder.Append(PresenceEssentialsModels.HyphenSeparator).Append(GameModeStatus);
         }
         
         if (IsInParty)
         {
-            activityBuilder.Append(hasGameModeStatus ? PresenceHelper.CommaSeparator : PresenceHelper.HyphenSeparator)
-                .Append(PresenceHelper.ActivityStatus[PresenceActivity.InAParty]);
+            activityBuilder
+                .Append(hasGameModeStatus ? PresenceEssentialsModels.CommaSeparator : PresenceEssentialsModels.HyphenSeparator)
+                .Append(PresenceEssentialsModels.ActivityStatus[PresenceEssentialsModels.PresenceActivity.InAParty]);
         }
 
         string activity = activityBuilder.ToString();
@@ -340,11 +329,11 @@ public class PresenceEssentialsWrapper : MonoBehaviour
         {
             bool inMatchLobbyMenu = menuCanvas != null && menuCanvas is MatchLobbyMenu;
             
-            SceneStatus = PresenceHelper.ActivityStatus[PresenceActivity.InMainMenu];
+            SceneStatus = PresenceEssentialsModels.ActivityStatus[PresenceEssentialsModels.PresenceActivity.InMainMenu];
 
             if (inMatchLobbyMenu)
             {
-                GameModeStatus = PresenceHelper.ActivityStatus[PresenceActivity.MatchLobby];
+                GameModeStatus = PresenceEssentialsModels.ActivityStatus[PresenceEssentialsModels.PresenceActivity.MatchLobby];
                 return;
             }
 
@@ -354,15 +343,15 @@ public class PresenceEssentialsWrapper : MonoBehaviour
         
         if (inGameScene)
         {
-            SceneStatus = PresenceHelper.ActivityStatus[PresenceActivity.InAMatch];
+            SceneStatus = PresenceEssentialsModels.ActivityStatus[PresenceEssentialsModels.PresenceActivity.InAMatch];
 
             GameModeStatus = "Game Mode: " + GameManager.Instance.InGameMode switch
             {
-                InGameMode.MatchmakingElimination => PresenceHelper.ActivityStatus[PresenceActivity.Elimination],
-                InGameMode.CreateMatchElimination => PresenceHelper.ActivityStatus[PresenceActivity.Elimination],
-                InGameMode.MatchmakingTeamDeathmatch => PresenceHelper.ActivityStatus[PresenceActivity.TeamDeathmatch],
-                InGameMode.CreateMatchTeamDeathmatch => PresenceHelper.ActivityStatus[PresenceActivity.TeamDeathmatch],
-                _ => PresenceHelper.ActivityStatus[PresenceActivity.Singleplayer]
+                InGameMode.MatchmakingElimination => PresenceEssentialsModels.ActivityStatus[PresenceEssentialsModels.PresenceActivity.Elimination],
+                InGameMode.CreateMatchElimination => PresenceEssentialsModels.ActivityStatus[PresenceEssentialsModels.PresenceActivity.Elimination],
+                InGameMode.MatchmakingTeamDeathmatch => PresenceEssentialsModels.ActivityStatus[PresenceEssentialsModels.PresenceActivity.TeamDeathmatch],
+                InGameMode.CreateMatchTeamDeathmatch => PresenceEssentialsModels.ActivityStatus[PresenceEssentialsModels.PresenceActivity.TeamDeathmatch],
+                _ => PresenceEssentialsModels.ActivityStatus[PresenceEssentialsModels.PresenceActivity.Singleplayer]
             };
         }
     }

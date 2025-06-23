@@ -11,45 +11,29 @@ using UnityEngine;
 
 public class AuthEssentialsWrapper : MonoBehaviour
 {
-    public TokenData UserData;
-    public static event Action<UserProfile> OnUserProfileReceived = delegate { };
-    public UserProfile UserProfile { get; private set; }
-    
     // Optional Parameters
     public LoginV4OptionalParameters OptionalParameters = new();
 
     // AGS Game SDK references
-    private ApiClient apiClient;
     private User user;
     private UserProfiles userProfiles;
     private Lobby lobby;
 
     private void Awake()
     {
-        apiClient = AccelByteSDK.GetClientRegistry().GetApi();
-        user = apiClient.GetUser();
-        userProfiles = apiClient.GetUserProfiles();
-        lobby = apiClient.GetLobby();
-    }
+        user = AccelByteSDK.GetClientRegistry().GetApi().GetUser();
+        userProfiles = AccelByteSDK.GetClientRegistry().GetApi().GetUserProfiles();
+        lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
 
-    void OnApplicationQuit()
-    {
-        lobby.Disconnect();
-    }
-
-    void OnDestroy()
-    {
-        lobby.Disconnecting -= OnLobbyDisconnecting;
+        lobby.Disconnected += OnLobbyDisconnected;
+        MainMenu.OnQuitPressed += Logout;
     }
 
     #region AB Service Functions
 
     public void LoginWithDeviceId(ResultCallback<TokenData, OAuthError> resultCallback)
     {
-        BytewarsLogger.Log($"Trying to login with Device ID");
-
-        // Casting doesn't work properly, manually transfer the data instead.
-        LoginWithDeviceIdV4OptionalParameters deviceIdOptionParameters = new LoginWithDeviceIdV4OptionalParameters
+        LoginWithDeviceIdV4OptionalParameters optionalParams = new LoginWithDeviceIdV4OptionalParameters
         {
             OnQueueUpdatedEvent = OptionalParameters.OnQueueUpdatedEvent,
             OnCancelledEvent = OptionalParameters.OnCancelledEvent,
@@ -57,49 +41,122 @@ public class AuthEssentialsWrapper : MonoBehaviour
         };
         
         user.LoginWithDeviceIdV4(
-            deviceIdOptionParameters,
+            optionalParams, 
             result => OnLoginCompleted(result, resultCallback));
     }
-
-    public bool GetActiveUser()
-    {
-        return user?.Session?.IsValid() ?? false;
-    }
     
-    public void LoginWithUsername(string username, string password, ResultCallback<TokenData, OAuthError> resultCallback)
+    public void LoginWithUsername(
+        string username, 
+        string password, 
+        ResultCallback<TokenData, OAuthError> resultCallback)
     {
-        BytewarsLogger.Log($"Trying login with email and password");
-        
-        // Casting doesn't work properly, manually transfer the data instead.
-        LoginWithEmailV4OptionalParameters emailOptionParameters = new LoginWithEmailV4OptionalParameters
+        LoginWithEmailV4OptionalParameters optionalParams = new LoginWithEmailV4OptionalParameters
         {
             OnQueueUpdatedEvent = OptionalParameters.OnQueueUpdatedEvent,
             OnCancelledEvent = OptionalParameters.OnCancelledEvent,
             CancellationToken = OptionalParameters.CancellationToken
         };
         
-        GameData.CachedPlayerState.PlatformId = "Accelbyte";
+        GameData.CachedPlayerState.PlatformId = "ACCELBYTE";
         user.LoginWithEmailV4(
             username, 
             password,
-            emailOptionParameters,
+            optionalParams,
             result => OnLoginCompleted(result, resultCallback));
-    }
-
-    public void CheckLobbyConnection()
-    {
-        if (!lobby.IsConnected)
-        {
-            lobby.Connected += OnLobbyConnected;
-            lobby.Disconnected += OnLobbyDisconnected;
-            lobby.Disconnecting += OnLobbyDisconnecting;
-            lobby.Connect();
-        }
     }
 
     public void Logout(Action action)
     {
         user.Logout(result => OnLogoutComplete(result, action));
+    }
+
+    private void CreateOrGetUserProfile(ResultCallback<UserProfile> resultCallback)
+    {
+        userProfiles.GetUserProfile((Result<UserProfile> getUserProfileResult) =>
+        {
+            // If not found because it is not yet created, then try to create one.
+            if (getUserProfileResult.IsError &&
+                getUserProfileResult.Error.Code == ErrorCode.UserProfileNotFoundException)
+            {
+                CreateUserProfileRequest request = new CreateUserProfileRequest()
+                {
+                    language = System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName,
+                    timeZone = TutorialModuleUtil.GetLocalTimeOffsetFromUTC(),
+                };
+                userProfiles.CreateUserProfile(request, resultCallback);
+                return;
+            }
+
+            resultCallback.Invoke(getUserProfileResult);
+        });
+    }
+
+    private void GetUserPublicData(string userId, ResultCallback<AccountUserPlatformInfosResponse> resultCallback)
+    {
+        user.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { userId }, resultCallback);
+    }
+
+    #endregion
+
+    #region Callback Functions
+
+    private void OnLoginCompleted(
+        Result<TokenData, OAuthError> loginResult, 
+        ResultCallback<TokenData, OAuthError> resultCallback = null)
+    {
+        // Abort if failed to login.
+        if (loginResult.IsError) 
+        {
+            BytewarsLogger.Log($"Failed to login. Error: {loginResult.Error.error}");
+            resultCallback?.Invoke(loginResult);
+            return;
+        }
+
+        // Connect to lobby if haven't.
+        if (!lobby.IsConnected)
+        {
+            lobby.Connect();
+        }
+
+        // Get user profile.
+        TokenData tokenData = loginResult.Value;
+        BytewarsLogger.Log("Success to login. Querying the user profile and user info.");
+        CreateOrGetUserProfile((Result<UserProfile> userProfileResult) =>
+        {
+            // Abort if failed to create or get user profile.
+            if (userProfileResult.IsError)
+            {
+                BytewarsLogger.LogWarning($"Failed to create or get user profile. Error: {userProfileResult.Error.Message}");
+                resultCallback?.Invoke(Result<TokenData, OAuthError>.CreateError(new OAuthError() { error = userProfileResult.Error.Message }));
+                return;
+            }
+
+            // Get user public info.
+            GetUserPublicData(tokenData.user_id, (Result<AccountUserPlatformInfosResponse> userInfoResult) =>
+            {
+                // Abort if failed to get user info.
+                if (userInfoResult.IsError || userInfoResult.Value.Data.Length <= 0)
+                {
+                    BytewarsLogger.LogWarning($"Failed to get user info. Error: {userInfoResult.Error.Message}");
+                    resultCallback?.Invoke(Result<TokenData, OAuthError>.CreateError(new OAuthError() { error = userInfoResult.Error.Message }));
+                    return;
+                }
+
+                // Save the public user info in the game cache.
+                AccountUserPlatformData publicUserData = userInfoResult.Value.Data[0];
+                GameData.CachedPlayerState.PlayerId = publicUserData.UserId;
+                GameData.CachedPlayerState.AvatarUrl = publicUserData.AvatarUrl;
+                GameData.CachedPlayerState.PlayerName =
+                    string.IsNullOrEmpty(publicUserData.DisplayName) ?
+                    $"Player-{publicUserData.UserId[..5]}" :
+                    publicUserData.DisplayName;
+                GameData.CachedPlayerState.PlatformId =
+                    string.IsNullOrEmpty(GameData.CachedPlayerState.PlatformId) ?
+                    tokenData.platform_id : GameData.CachedPlayerState.PlatformId;
+
+                resultCallback.Invoke(loginResult);
+            });
+        });
     }
 
     private void OnLogoutComplete(Result result, Action callback)
@@ -115,174 +172,22 @@ public class AuthEssentialsWrapper : MonoBehaviour
         }
     }
 
-    public void GetUserAvatar(string userId, ResultCallback<Texture2D> resultCallback)
-    {
-        user.GetUserAvatar(userId, result => OnGetUserAvatarCompleted(result, resultCallback));
-    }
-
-    private void GetUserProfile()
-    {
-        userProfiles.GetUserProfile(result => OnGetUserProfileCompleted(result));
-    }
-
-    private void CreateUserProfile()
-    {
-        string twoLetterLanguageCode = System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
-        string timeZoneId = TutorialModuleUtil.GetLocalTimeOffsetFromUTC();
-
-        CreateUserProfileRequest createUserProfileRequest = new()
-        {
-            language = twoLetterLanguageCode,
-            timeZone = timeZoneId,
-        };
-
-        userProfiles.CreateUserProfile(createUserProfileRequest, result => OnCreateUserProfileCompleted(result));
-    }
-
-    #endregion
-    
-    #region Lobby Callback
-    /// <summary>
-    /// A callback function to handle websocket connection closed events from the lobby service
-    /// </summary>
-    /// <param name="code"></param>
     private void OnLobbyDisconnected(WsCloseCode code)
     {
         BytewarsLogger.Log($"Lobby service disconnected with code: {code}");
 
-        HashSet<WsCloseCode> loginDisconnectCodes = new()
+        /* If disconnected from lobby intentionally or due to account issue.
+         * Log out and back to the login menu.*/
+        HashSet<WsCloseCode> disconnectCode = new HashSet<WsCloseCode>()
         {
             WsCloseCode.Normal,
             WsCloseCode.DisconnectDueToMultipleSessions,
             WsCloseCode.DisconnectDueToIAMLoggedOut
         };
-
-        if (loginDisconnectCodes.Contains(code))
+        if (disconnectCode.Contains(code))
         {
-            lobby.Connected -= OnLobbyConnected;
             lobby.Disconnected -= OnLobbyDisconnected;
-
-            AuthEssentialsHelper.OnUserLogout?.Invoke();
-        }
-    }
-
-    private void OnLobbyDisconnecting(Result<DisconnectNotif> result)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"{result.Value.message}");
-        } 
-        else
-        {
-            BytewarsLogger.LogWarning($"{result.Error.Message}");
-        }
-    }
-
-    private void OnLobbyConnected()
-    {
-        BytewarsLogger.Log($"Lobby service connected: {lobby.IsConnected}");
-    }
-
-    #endregion
-
-    #region Callback Functions
-
-    /// <summary>
-    /// Default Callback for LoginWithOtherPlatform() function
-    /// </summary>
-    /// <param name="result">result of the LoginWithOtherPlatform() function call</param>
-    /// <param name="customCallback">additional callback function that can be customized from other script</param>
-    private void OnLoginCompleted(Result<TokenData, OAuthError> result, ResultCallback<TokenData, OAuthError> customCallback = null)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"The user successfully logged in with Device ID: {result.Value.platform_user_id}");
-
-            GameData.CachedPlayerState.PlayerId = result.Value.user_id;
-            UserData = result.Value;
-
-            GetUserProfile();
-            CheckLobbyConnection();
-        }
-        else
-        {
-            BytewarsLogger.Log($"The user failed to log in with Device ID. Error Message: {result.Error.error}");
-            GameData.CachedPlayerState.PlatformId = string.Empty;
-        }
-
-        customCallback?.Invoke(result);
-    }
-
-    private void OnGetUserAvatarCompleted(Result<Texture2D> result, ResultCallback<Texture2D> customCallback = null)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log($"Successfully retrieve the user avatar! ");
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"Unable to retrieve the user avatar. Message: {result.Error}");
-        }
-
-        customCallback?.Invoke(result);
-    }
-
-    private void OnGetUserProfileCompleted(Result<UserProfile> result)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log("Successfully retrieved self user profile!");
-
-            UserProfile = result.Value;
-            GetUserPublicData(UserProfile.userId);
-            OnUserProfileReceived?.Invoke(UserProfile);
-        }
-        else
-        {
-            BytewarsLogger.Log($"Unable to retrieve self user profile. Message: {result.Error.Message}");
-
-            if (result.Error.Code is ErrorCode.UserProfileNotFoundException)
-            {
-                CreateUserProfile();
-            }
-        }
-    }
-
-    private void OnCreateUserProfileCompleted(Result<UserProfile> result)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log("Successfully created self user profile!");
-
-            UserProfile = result.Value;
-            OnUserProfileReceived?.Invoke(UserProfile);
-        }
-        else
-        {
-            BytewarsLogger.Log($"Unable to create self user profile. Message: {result.Error.Message}");
-        }
-    }
-
-    private void GetUserPublicData(string receivedUserId)
-    {
-        user.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { receivedUserId }, OnGetUserPublicDataFinished);
-    }
-
-    private void OnGetUserPublicDataFinished(Result<AccountUserPlatformInfosResponse> result)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log("Successfully Retrieved Public Data");
-            AccountUserPlatformData publicUserData = result.Value.Data[0];
-            string truncatedUserId = publicUserData.UserId[..5];
-            GameData.CachedPlayerState.AvatarUrl = publicUserData.AvatarUrl;
-            GameData.CachedPlayerState.PlayerName = string.IsNullOrEmpty(publicUserData.DisplayName) ?
-                $"Player-{truncatedUserId}" : publicUserData.DisplayName;
-            GameData.CachedPlayerState.PlatformId = string.IsNullOrEmpty(GameData.CachedPlayerState.PlatformId) ? UserData.platform_id : GameData.CachedPlayerState.PlatformId;
-        }
-        else
-        {
-            BytewarsLogger.Log($"Error:{result.Error.Message}");
+            Logout(() => { MenuManager.Instance.ChangeToMenu(AssetEnum.LoginMenu); });
         }
     }
 

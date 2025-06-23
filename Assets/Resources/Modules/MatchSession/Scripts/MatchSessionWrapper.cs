@@ -61,7 +61,7 @@ public class MatchSessionWrapper : GameSessionUtilityWrapper
         }
 
         // Add preferred regions.
-        string[] preferredRegions = RegionPreferencesHelper.GetEnabledRegions().Select(x => x.RegionCode).ToArray();
+        string[] preferredRegions = RegionPreferencesModels.GetEnabledRegions().Select(x => x.RegionCode).ToArray();
         if (preferredRegions.Length > 0)
         {
             request.requestedRegions = preferredRegions;

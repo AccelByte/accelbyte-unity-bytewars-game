@@ -17,9 +17,6 @@ public class ManagingFriendsWrapper : MonoBehaviour
 
     private FriendsEssentialsWrapper friendsEssentialsWrapper;
 
-    public static event Action<string> OnPlayerBlocked = delegate { };
-    public static event Action<string> OnPlayerUnfriended = delegate { };
-
     private void Awake()
     {
         lobby = ApiClient.GetLobby();
@@ -132,7 +129,7 @@ public class ManagingFriendsWrapper : MonoBehaviour
 
         BytewarsLogger.Log($"Player with user Id: {result.Value.userId} has been blocked");
 
-        OnPlayerBlocked?.Invoke(result.Value.userId);
+        ManagingFriendsModels.OnPlayerBlocked?.Invoke(result.Value.userId);
     }
 
     private void OnPlayerUnfriendNotif(Result<Friend> result)
@@ -146,7 +143,7 @@ public class ManagingFriendsWrapper : MonoBehaviour
 
         BytewarsLogger.Log($"Unfriend from {result.Value.friendId}");
 
-        OnPlayerUnfriended?.Invoke(result.Value.friendId);
+        ManagingFriendsModels.OnPlayerUnfriended?.Invoke(result.Value.friendId);
     }
 
     #endregion Manage Friends

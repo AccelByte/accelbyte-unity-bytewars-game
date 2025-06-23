@@ -16,27 +16,15 @@ public class FriendsEssentialsWrapper : MonoBehaviour
     private User user;
     private UserProfiles userProfiles;
     private Lobby lobby;
+    private PublicUserProfile cachedUserProfile;
 
-    public string PlayerUserId { get; private set; } = string.Empty;
-    public string PlayerFriendCode { get; private set; } = string.Empty;
     public ObservableList<string> CachedFriendUserIds { get; private set; } = new ObservableList<string>();
-
-    public static event Action<string> OnIncomingRequest = delegate { };
-    public static event Action<string> OnRequestCanceled = delegate { };
-    public static event Action<string> OnRequestRejected = delegate { };
-    public static event Action<string> OnRequestAccepted = delegate { };
 
     private void Awake()
     {
         user = ApiClient.GetUser();
         userProfiles = ApiClient.GetUserProfiles();
         lobby = ApiClient.GetLobby();
-
-        // Assign to both starter and non to make sure we support mix matched modules starter mode
-        AuthEssentialsWrapper.OnUserProfileReceived += SetPlayerInfo;
-        SinglePlatformAuthWrapper.OnUserProfileReceived += SetPlayerInfo;
-        AuthEssentialsWrapper_Starter.OnUserProfileReceived += SetPlayerInfo;
-        SinglePlatformAuthWrapper_Starter.OnUserProfileReceived += SetPlayerInfo;
 
         lobby.OnIncomingFriendRequest += OnIncomingFriendRequest;
         lobby.FriendRequestCanceled += OnFriendRequestCanceled;
@@ -46,21 +34,10 @@ public class FriendsEssentialsWrapper : MonoBehaviour
     
     private void OnDestroy()
     {
-        AuthEssentialsWrapper.OnUserProfileReceived -= SetPlayerInfo;
-        SinglePlatformAuthWrapper.OnUserProfileReceived -= SetPlayerInfo;
-        AuthEssentialsWrapper_Starter.OnUserProfileReceived -= SetPlayerInfo;
-        SinglePlatformAuthWrapper_Starter.OnUserProfileReceived -= SetPlayerInfo;
-
         lobby.OnIncomingFriendRequest -= OnIncomingFriendRequest;
         lobby.FriendRequestCanceled -= OnFriendRequestCanceled;
         lobby.FriendRequestRejected -= OnFriendRequestRejected;
         lobby.FriendRequestAccepted -= OnFriendRequestAccepted;
-    }
-    
-    private void SetPlayerInfo(UserProfile userProfile)
-    {
-        PlayerUserId = userProfile.userId;
-        PlayerFriendCode = userProfile.publicId;
     }
 
     #region Add Friends
@@ -191,7 +168,7 @@ public class FriendsEssentialsWrapper : MonoBehaviour
         BytewarsLogger.Log($"Incoming friend request from {result.Value.friendId}");
         CachedFriendUserIds.Add(result.Value.friendId);
 
-        OnIncomingRequest?.Invoke(result.Value.friendId);
+        FriendsEssentialsModels.OnIncomingRequest?.Invoke(result.Value.friendId);
     }
     
     private void OnFriendRequestCanceled(Result<Acquaintance> result)
@@ -206,7 +183,7 @@ public class FriendsEssentialsWrapper : MonoBehaviour
         BytewarsLogger.Log($"Friend request from {result.Value.userId} has been canceled");
         CachedFriendUserIds.Remove(result.Value.userId);
 
-        OnRequestCanceled?.Invoke(result.Value.userId);
+        FriendsEssentialsModels.OnRequestCanceled?.Invoke(result.Value.userId);
     }
     
     private void OnFriendRequestRejected(Result<Acquaintance> result)
@@ -221,7 +198,7 @@ public class FriendsEssentialsWrapper : MonoBehaviour
         BytewarsLogger.Log($"Friend request from {result.Value.userId} has been rejected");
         CachedFriendUserIds.Remove(result.Value.userId);
 
-        OnRequestRejected?.Invoke(result.Value.userId);
+        FriendsEssentialsModels.OnRequestRejected?.Invoke(result.Value.userId);
     }
     
     private void OnFriendRequestAccepted(Result<Friend> result)
@@ -236,12 +213,47 @@ public class FriendsEssentialsWrapper : MonoBehaviour
         BytewarsLogger.Log($"Friend request from {result.Value.friendId} has been accepted");
         CachedFriendUserIds.Add(result.Value.friendId);
 
-        OnRequestAccepted?.Invoke(result.Value.friendId);
+        FriendsEssentialsModels.OnRequestAccepted?.Invoke(result.Value.friendId);
     }
 
     #endregion Add Friends
 
     #region Search for Players
+
+    public void GetSelfFriendCode(ResultCallback<string> resultCallback)
+    {
+        string userId = GameData.CachedPlayerState.PlayerId;
+        if (string.IsNullOrEmpty(userId))
+        {
+            string errorMessage = "Error to get self friend code. Failed to find the logged-in user Id.";
+            BytewarsLogger.LogWarning(errorMessage);
+            resultCallback.Invoke(Result<string>.CreateError(ErrorCode.InvalidArgument, errorMessage));
+            return;
+        }
+
+        // Use cache if available.
+        if (userId == cachedUserProfile?.userId)
+        {
+            resultCallback.Invoke(Result<string>.CreateOk(cachedUserProfile.publicId));
+            return;
+        }
+
+        // Query the user profile to get its friend code (public ID).
+        userProfiles.GetPublicUserProfile(userId, (Result<PublicUserProfile> result) =>
+        {
+            if (result.IsError)
+            {
+                BytewarsLogger.LogWarning($"Error to get self friend code. Error: {result.Error.Message}");
+                resultCallback.Invoke(Result<string>.CreateError(result.Error.Code, result.Error.Message));
+                return;
+            }
+
+            BytewarsLogger.Log($"Successfully get self friend code for User Id: {userId}");
+
+            cachedUserProfile = result.Value;
+            resultCallback.Invoke(Result<string>.CreateOk(cachedUserProfile.publicId));
+        });
+    }
 
     public void GetUserByFriendCode(string friendCode, ResultCallback<AccountUserPlatformData> resultCallback)
     {

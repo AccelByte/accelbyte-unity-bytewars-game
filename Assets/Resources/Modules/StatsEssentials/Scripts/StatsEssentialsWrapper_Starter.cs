@@ -2,8 +2,8 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
@@ -12,22 +12,19 @@ using UnityEngine;
 
 public class StatsEssentialsWrapper_Starter : MonoBehaviour
 {
-    // AccelByte's Multi Registry references 
+    // AGS Game SDK references
     private Statistic statistic;
     private ServerStatistic serverStatistic;
 
-    //Paste Start() function from "Implement Statistic Service for Client Side" here (step number 2)
+    void Start()
+    {
+        statistic = AccelByteSDK.GetClientRegistry().GetApi().GetStatistic();
+#if UNITY_SERVER
+        serverStatistic = AccelByteSDK.GetServerRegistry().GetApi().GetStatistic();
+#endif
 
-    
-    //Paste UpdateUserStatsFromClient() function from "Implement Statistic Service for Client Side" here (step number 4)
+        // TODO: Add the tutorial module code here.
+    }
 
-    
-    //Paste GetUserStatsFromClient() function from "Implement Statistic Service for Client Side" here (step number 6)
-    
-
-    //Paste OnUpdateUserStatsFromClientCompleted() here from "Implement Statistic Service for Client Side" unit here (step number 3)
-    
-    
-    //Paste OnGetUserStatsFromClientCompleted() here from "Implement Statistic Service for Client Side" unit here (step number 5)
-    
+    // TODO: Declare the tutorial module functions here.
 }

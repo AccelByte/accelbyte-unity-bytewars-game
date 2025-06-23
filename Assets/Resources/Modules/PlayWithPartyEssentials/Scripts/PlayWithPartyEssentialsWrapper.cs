@@ -23,7 +23,7 @@ public class PlayWithPartyEssentialsWrapper : MonoBehaviour
         session = AccelByteSDK.GetClientRegistry().GetApi().GetSession();
         lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
 
-        LoginHandler.OnLoginComplete += data => SubscribeLobbyNotifications();
+        lobby.Connected += SubscribeLobbyNotifications;
     }
 
     #region AB Service Functions

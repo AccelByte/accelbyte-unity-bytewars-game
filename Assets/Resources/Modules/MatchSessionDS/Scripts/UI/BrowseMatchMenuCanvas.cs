@@ -124,7 +124,7 @@ public class BrowseMatchMenuCanvas : MenuCanvas
         // Filter game session results.
         result = new BrowseMatchResult
         (
-            RegionPreferencesHelper.FilterEnabledRegionGameSession(result.Result.ToList()).ToArray(),
+            RegionPreferencesModels.FilterEnabledRegionGameSession(result.Result.ToList()).ToArray(),
             result.ErrorMessage
         );
 

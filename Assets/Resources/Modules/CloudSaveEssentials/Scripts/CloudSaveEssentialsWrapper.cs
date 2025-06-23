@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using AccelByte.Api;
 using AccelByte.Core;
@@ -13,12 +13,73 @@ public class CloudSaveEssentialsWrapper : MonoBehaviour
 {
     // AccelByte's Multi Registry references
     private CloudSave cloudSave;
+    private Lobby lobby;
 
-    // Start is called before the first frame update
     void Start()
     {
         cloudSave = AccelByteSDK.GetClientRegistry().GetApi().GetCloudSave();
+        lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
+
+        lobby.Connected += LoadGameOptions;
+        OptionsMenu.OnOptionsMenuActivated += (musicVolume, sfxVolume) => LoadGameOptions();
+        OptionsMenu.OnOptionsMenuDeactivated += SaveGameOptions;
     }
+
+    #region Helper Functions
+
+    public void LoadGameOptions()
+    {
+        GetUserRecord(CloudSaveEssentialsModels.GameOptionsRecordKey, (Result<UserRecord> result) => 
+        {
+            if (result.IsError)
+            {
+                BytewarsLogger.LogWarning($"Failed to load game options from Cloud Save. Error {result.Error.Code}: {result.Error.Message}");
+                return;
+            }
+
+            BytewarsLogger.Log($"Success to load game options from Cloud Save.");
+
+            // Apply record data to local game option settings.
+            Dictionary<string, object> recordData = result.Value.value;
+            if (recordData != null)
+            {
+                float musicVolume = Convert.ToSingle(recordData[CloudSaveEssentialsModels.MusicVolumeItemName]);
+                float sfxVolume = Convert.ToSingle(recordData[CloudSaveEssentialsModels.SfxVolumeItemName]);
+                AudioManager.Instance.SetMusicVolume(musicVolume);
+                AudioManager.Instance.SetSfxVolume(sfxVolume);
+            }
+        });
+    }
+
+    private void SaveGameOptions(float musicVolume, float sfxVolume)
+    {
+        // Collect the local game options values to save.
+        Dictionary<string, object> gameOptions = new Dictionary<string, object>()
+        {
+            {
+                CloudSaveEssentialsModels.MusicVolumeItemName, 
+                AudioManager.Instance.GetCurrentVolume(AudioManager.AudioType.MusicAudio)
+            },
+            {
+                CloudSaveEssentialsModels.SfxVolumeItemName, 
+                AudioManager.Instance.GetCurrentVolume(AudioManager.AudioType.SfxAudio)
+            }
+        };
+
+        SaveUserRecord(CloudSaveEssentialsModels.GameOptionsRecordKey, gameOptions, (Result result) =>
+        {
+            if (result.IsError)
+            {
+                BytewarsLogger.LogWarning($"Failed to save game options to Cloud Save. Error {result.Error.Code}: {result.Error.Message}");
+            }
+            else
+            {
+                BytewarsLogger.Log($"Success to save game options to Cloud Save.");
+            }
+        });
+    }
+
+    #endregion
 
     #region AB Service Functions
 
@@ -80,19 +141,19 @@ public class CloudSaveEssentialsWrapper : MonoBehaviour
         customCallback?.Invoke(result);
     }
     
-        private void OnDeleteUserRecordCompleted(Result result, ResultCallback customCallback = null)
+    private void OnDeleteUserRecordCompleted(Result result, ResultCallback customCallback = null)
+    {
+        if (!result.IsError)
         {
-            if (!result.IsError)
-            {
-                BytewarsLogger.Log($"Delete Player Record from Client successful.");
-            }
-            else
-            {
-                BytewarsLogger.LogWarning($"Delete Player Record from Client failed. Message: {result.Error.Message}");
-            }
-            
-            customCallback?.Invoke(result);
+            BytewarsLogger.Log($"Delete Player Record from Client successful.");
         }
+        else
+        {
+            BytewarsLogger.LogWarning($"Delete Player Record from Client failed. Message: {result.Error.Message}");
+        }
+            
+        customCallback?.Invoke(result);
+    }
 
     #endregion
 }

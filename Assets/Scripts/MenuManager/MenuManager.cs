@@ -40,12 +40,12 @@ public class MenuManager : MonoBehaviour
         { AssetEnum.MainMenuCanvas, 0 },
         { AssetEnum.MatchLobbyMenuCanvas, 0 },
         // tutorialmodules specifics
-        { AssetEnum.LoginMenuCanvas, 0 },
-        { AssetEnum.LoginMenuCanvas_Starter, 0 },
-        { AssetEnum.FriendsMenuCanvas, 2 },
-        { AssetEnum.FriendsMenuCanvas_Starter, 2 },
-        { AssetEnum.FriendDetailsMenuCanvas, 2 },
-        { AssetEnum.FriendDetailsMenuCanvas_Starter, 2 }
+        { AssetEnum.LoginMenu, 0 },
+        { AssetEnum.LoginMenu_Starter, 0 },
+        { AssetEnum.FriendsMenu, 2 },
+        { AssetEnum.FriendsMenu_Starter, 2 },
+        { AssetEnum.FriendDetailsMenu, 2 },
+        { AssetEnum.FriendDetailsMenu_Starter, 2 }
     };
     
     private EventSystem eventSystem;

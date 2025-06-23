@@ -5,6 +5,7 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using static RegionPreferencesModels;
 
 public class RegionPreferencesEntry : MonoBehaviour
 {

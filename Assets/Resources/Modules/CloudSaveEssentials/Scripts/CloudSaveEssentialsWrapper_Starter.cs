@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using AccelByte.Api;
 using AccelByte.Core;
@@ -13,24 +13,29 @@ public class CloudSaveEssentialsWrapper_Starter : MonoBehaviour
 {
     // AccelByte's Multi Registry references
     private CloudSave cloudSave;
-    
-    // Copy Start() function from "Use the AccelByte Game SDK to Store Settings" unit here (step number 2)
+    private Lobby lobby;
 
-    
-    // Copy OnSaveUserRecordCompleted() function from "Use the AccelByte Game SDK to Store Settings" unit here (step number 3)
+    void Start()
+    {
+        cloudSave = AccelByteSDK.GetClientRegistry().GetApi().GetCloudSave();
+        lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
 
-    
-    // Copy SaveUserRecord() function from "Use the AccelByte Game SDK to Store Settings" unit here (step number 4)
+        // TODO: Add the tutorial module code here.
+    }
 
-    
-    // Copy OnGetUserRecordCompleted() function from "Use the AccelByte Game SDK to Store Settings" unit here (step number 5)
+    #region Helper Functions
 
-    
-    // Copy GetUserRecord() function from "Use the AccelByte Game SDK to Store Settings" unit here (step number 6)
+    public void LoadGameOptions()
+    {
+        // TODO: Add code to load game options from Cloud Save here.
+    }
 
-    
-    // Copy OnDeleteUserRecordCompleted() function from "Delete Player Record with the AccelByte Game SDK" unit here (step number 2)
+    private void SaveGameOptions(float musicVolume, float sfxVolume)
+    {
+        // TODO: Add code to save game options to Cloud Save.
+    }
 
-    
-    // Copy DeleteUserRecord() function from "Delete Player Record with the AccelByte Game SDK" unit here (step number 3)
+    #endregion
+
+    // TODO: Declare the tutorial module functions here.
 }

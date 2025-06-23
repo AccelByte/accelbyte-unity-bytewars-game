@@ -40,7 +40,7 @@ public class MainMenu : MenuCanvas
         ModuleModel friendsEssentialModule = TutorialModuleManager.Instance.GetModule(TutorialType.FriendsEssentials);
 
         MenuManager.Instance.ChangeToMenu(friendsEssentialModule.isStarterActive 
-            ? AssetEnum.SocialMenuCanvas_Starter : AssetEnum.SocialMenuCanvas);
+            ? AssetEnum.SocialMenu_Starter : AssetEnum.SocialMenu);
     }
     
     private static void OnPlayButtonPressed()
@@ -55,15 +55,12 @@ public class MainMenu : MenuCanvas
     
     private static void OnLeaderboardButtonPressed()
     {
-        ModuleModel leaderboardEssentialModule = TutorialModuleManager.Instance.GetModule(TutorialType.LeaderboardEssentials);
-        
-        MenuManager.Instance.ChangeToMenu(leaderboardEssentialModule.isStarterActive 
-            ? AssetEnum.LeaderboardSelectionMenuCanvas_Starter : AssetEnum.LeaderboardSelectionMenuCanvas);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.LeaderboardsMenu);
     }
     
     private static void OnProfileButtonPressed()
     {
-        MenuManager.Instance.ChangeToMenu(AssetEnum.ProfileMenuCanvas);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.ProfileMenu);
     }
     
     private static void OnHelpAndOptionsButtonPressed()

@@ -9,14 +9,13 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using static RegionPreferencesModels;
 
 public class RegionPreferencesMenu : MenuCanvas
 {
     [Header("Region Preference Components")]
     [SerializeField] private RegionPreferencesEntry entryPrefab;
-    [SerializeField] private RectTransform emptyPanel;
-    [SerializeField] private RectTransform loadingPanel;
-    [SerializeField] private RectTransform failedPanel;
+    [SerializeField] private AccelByteWarsWidgetSwitcher widgetSwitcher;
     [SerializeField] private RectTransform resultContentPanel;
 
     [Header("Menu Components")]
@@ -28,29 +27,6 @@ public class RegionPreferencesMenu : MenuCanvas
     private Coroutine warningDisplayCoroutine;
 
     private RegionPreferencesWrapper regionPreferencesWrapper;
-
-    private enum RegionPreferencesView
-    {
-        Empty,
-        Loading,
-        Failed,
-        Success
-    }
-
-    private RegionPreferencesView currentView = RegionPreferencesView.Empty;
-
-    private RegionPreferencesView CurrentView
-    {
-        get => currentView;
-        set
-        {
-            emptyPanel.gameObject.SetActive(value == RegionPreferencesView.Empty);
-            loadingPanel.gameObject.SetActive(value == RegionPreferencesView.Loading);
-            failedPanel.gameObject.SetActive(value == RegionPreferencesView.Failed);
-            resultContentPanel.gameObject.SetActive(value == RegionPreferencesView.Success);
-            currentView = value;
-        }
-    }
 
     public override GameObject GetFirstButton()
     {
@@ -99,7 +75,7 @@ public class RegionPreferencesMenu : MenuCanvas
         else 
         {
             BytewarsLogger.LogWarning("Unable to load region preferences. Player has not logged in yet.");
-            CurrentView = RegionPreferencesView.Failed;
+            widgetSwitcher.SetWidgetState(AccelByteWarsWidgetSwitcher.WidgetState.Error);
         }
     }
 
@@ -116,7 +92,7 @@ public class RegionPreferencesMenu : MenuCanvas
     private void QueryRegionPreferences() 
     {
         refreshButton.enabled = false;
-        CurrentView = RegionPreferencesView.Loading;
+        widgetSwitcher.SetWidgetState(AccelByteWarsWidgetSwitcher.WidgetState.Loading);
         regionPreferencesWrapper.QueryRegionLatencies(OnQueryRegionPreferencesComplete);
     }
 
@@ -126,7 +102,7 @@ public class RegionPreferencesMenu : MenuCanvas
 
         if (result.IsError)
         {
-            CurrentView = RegionPreferencesView.Failed;
+            widgetSwitcher.SetWidgetState(AccelByteWarsWidgetSwitcher.WidgetState.Error);
             return;
         }
 
@@ -140,7 +116,7 @@ public class RegionPreferencesMenu : MenuCanvas
         List<RegionPreferenceInfo> regionInfos = regionPreferencesWrapper.GetRegionInfos();
         if (regionInfos.Count <= 0) 
         {
-            CurrentView = RegionPreferencesView.Empty;
+            widgetSwitcher.SetWidgetState(AccelByteWarsWidgetSwitcher.WidgetState.Empty);
             return;
         }
 
@@ -151,7 +127,7 @@ public class RegionPreferencesMenu : MenuCanvas
             newEntry.Init(regionInfo);
         }
 
-        CurrentView = RegionPreferencesView.Success;
+        widgetSwitcher.SetWidgetState(AccelByteWarsWidgetSwitcher.WidgetState.Not_Empty);
     }
 
     private void OnMinimumRegionCountWarning() 

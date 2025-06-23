@@ -9,27 +9,15 @@ using UnityEngine;
 
 public class LeaderboardEssentialsWrapper : MonoBehaviour
 {
-    // AccelByte's Multi Registry references
+    // AGS Game SDK references
     private Leaderboard leaderboard;
     
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         leaderboard = AccelByteSDK.GetClientRegistry().GetApi().GetLeaderboard();
     }
 
     #region AB Service Functions
-
-    /// <summary>
-    /// Get list of available leaderboards configured in Admin Portal
-    /// </summary>
-    /// <param name="resultCallback">callback function to get result from other script</param>
-    public void GetLeaderboardList(ResultCallback<LeaderboardPagedListV3> resultCallback)
-    {
-        leaderboard.GetLeaderboardListV3(
-            result => OnGetLeaderboardListCompleted(result, resultCallback)
-        );
-    }
     
     /// <summary>
     /// Get rankings list of the desired leaderboard
@@ -62,32 +50,13 @@ public class LeaderboardEssentialsWrapper : MonoBehaviour
     #endregion
 
     #region Callback Functions
-
-    /// <summary>
-    /// Default Callback for Leaderboard V3's GetLeaderboardListV3() function
-    /// </summary>
-    /// <param name="result">result of the GetUserStatItems() function call</param>
-    /// <param name="customCallback">additional callback function that can be customized from other script</param>
-    private void OnGetLeaderboardListCompleted(Result<LeaderboardPagedListV3> result, ResultCallback<LeaderboardPagedListV3> customCallback = null)
-    {
-        if (!result.IsError)
-        {
-            BytewarsLogger.Log("Get Leaderboard List V3 successful.");
-        }
-        else
-        {
-            BytewarsLogger.LogWarning($"Get Leaderboard List V3 failed. Message: {result.Error.Message}");
-        }
-        
-        customCallback?.Invoke(result);
-    }
     
     /// <summary>
     /// Default Callback for Leaderboard V3's GetRankingsV3() function
     /// </summary>
     /// <param name="result">result of the GetUserStatItems() function call</param>
     /// <param name="customCallback">additional callback function that can be customized from other script</param>
-    private void OnGetRankingsCompleted(Result<LeaderboardRankingResult> result, ResultCallback<LeaderboardRankingResult> customCallback = null)
+    private void OnGetRankingsCompleted(Result<LeaderboardRankingResult> result, ResultCallback<LeaderboardRankingResult> customCallback)
     {
         if (!result.IsError)
         {

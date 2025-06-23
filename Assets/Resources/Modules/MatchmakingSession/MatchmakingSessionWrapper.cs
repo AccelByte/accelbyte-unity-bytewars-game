@@ -75,7 +75,7 @@ public class MatchmakingSessionWrapper : GameSessionUtilityWrapper
         optionalParams.attributes.Add("client_version", TutorialModuleUtil.IsOverrideDedicatedServerVersion() ? Application.version : string.Empty);
 
         // Add preferred regions.
-        Dictionary<string, int> preferredRegions = RegionPreferencesHelper.GetEnabledRegions().ToDictionary(x => x.RegionCode, y => (int)y.Latency);
+        Dictionary<string, int> preferredRegions = RegionPreferencesModels.GetEnabledRegions().ToDictionary(x => x.RegionCode, y => (int)y.Latency);
         if (preferredRegions.Count > 0)
         {
             optionalParams.latencies = preferredRegions;

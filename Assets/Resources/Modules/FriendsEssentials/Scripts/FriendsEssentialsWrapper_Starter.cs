@@ -16,15 +16,9 @@ public class FriendsEssentialsWrapper_Starter : MonoBehaviour
     private User user;
     private UserProfiles userProfiles;
     private Lobby lobby;
+    private PublicUserProfile cachedUserProfile;
 
-    public string PlayerUserId { get; private set; } = string.Empty;
-    public string PlayerFriendCode { get; private set; } = string.Empty;
     public ObservableList<string> CachedFriendUserIds { get; private set; } = new ObservableList<string>();
-
-    public static event Action<string> OnIncomingRequest = delegate { };
-    public static event Action<string> OnRequestCanceled = delegate { };
-    public static event Action<string> OnRequestRejected = delegate { };
-    public static event Action<string> OnRequestAccepted = delegate { };
     
     private void Awake()
     {
@@ -32,29 +26,12 @@ public class FriendsEssentialsWrapper_Starter : MonoBehaviour
         userProfiles = ApiClient.GetUserProfiles();
         lobby = ApiClient.GetLobby();
 
-        // Assign to both starter and non to make sure we support mix matched modules starter mode
-        AuthEssentialsWrapper.OnUserProfileReceived += SetPlayerInfo;
-        SinglePlatformAuthWrapper.OnUserProfileReceived += SetPlayerInfo;
-        AuthEssentialsWrapper_Starter.OnUserProfileReceived += SetPlayerInfo;
-        SinglePlatformAuthWrapper_Starter.OnUserProfileReceived += SetPlayerInfo;
-
         // TODO: Bind listeners here.
     }
     
     private void OnDestroy()
     {
-        AuthEssentialsWrapper.OnUserProfileReceived -= SetPlayerInfo;
-        SinglePlatformAuthWrapper.OnUserProfileReceived -= SetPlayerInfo;
-        AuthEssentialsWrapper_Starter.OnUserProfileReceived -= SetPlayerInfo;
-        SinglePlatformAuthWrapper_Starter.OnUserProfileReceived -= SetPlayerInfo;
-
         // TODO: Unbind listeners here.
-    }
-
-    private void SetPlayerInfo(UserProfile userProfile)
-    {
-        PlayerUserId = userProfile.userId;
-        PlayerFriendCode = userProfile.publicId;
     }
 
     #region Add Friends

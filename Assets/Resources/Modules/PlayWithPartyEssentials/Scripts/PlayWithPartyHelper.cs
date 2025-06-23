@@ -13,12 +13,10 @@ public class PlayWithPartyHelper : MonoBehaviour
 {
     private bool IsMatchmakingEventslistened = false;
     private PlayWithPartyEssentialsWrapper playWithPartyWrapper;
-    private AuthEssentialsWrapper authWrapper;
 
     private void Start()
     {
         playWithPartyWrapper = TutorialModuleManager.Instance.GetModuleClass<PlayWithPartyEssentialsWrapper>();
-        authWrapper = TutorialModuleManager.Instance.GetModuleClass<AuthEssentialsWrapper>();
 
         // On Match Session's Join Button clicked event
         MatchSessionItem.OnJoinButtonDataSet += OnJoinButtonDataSet;
@@ -72,7 +70,7 @@ public class PlayWithPartyHelper : MonoBehaviour
         joinButton.enabled = true; // enable button by default
 
         SessionV2PartySession partySession = PartyEssentialsModels.PartyHelper.CurrentPartySession;
-        if (partySession != null && authWrapper.UserData.user_id != partySession.leaderId)
+        if (partySession != null && GameData.CachedPlayerState.PlayerId != partySession.leaderId)
         {
             joinButton.enabled = false;
         }
@@ -81,7 +79,7 @@ public class PlayWithPartyHelper : MonoBehaviour
     private void OnJoinButtonClicked(string sessionId)
     {
         SessionV2PartySession partySession = PartyEssentialsModels.PartyHelper.CurrentPartySession;
-        if (partySession != null && authWrapper.UserData.user_id == partySession.leaderId)
+        if (partySession != null && GameData.CachedPlayerState.PlayerId == partySession.leaderId)
         {
             foreach (SessionV2MemberData member in partySession.members.Where(x => x.StatusV2 == SessionV2MemberStatus.JOINED))
             {

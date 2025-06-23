@@ -32,25 +32,13 @@ public class PresenceEssentialsWrapper_Starter : MonoBehaviour
     {
         lobby = ApiClient.GetLobby();
 
-        LoginHandler.OnLoginComplete += CheckLobbyConnection;
+        // TODO: Add the tutorial module code here.
     }
-    
+
     private void OnDestroy()
     {
-        LoginHandler.OnLoginComplete -= CheckLobbyConnection;
-    }
-    
-    private void CheckLobbyConnection(TokenData _)
-    {
-        if (!lobby.IsConnected)
-        {
-            lobby.Connect();
-        }
+        // TODO: Add the tutorial module code here.
     }
 
-    #region User Presence Module
-
-    // TODO: Implement User Presence Module functions here.
-
-    #endregion
+    // TODO: Declare the tutorial module functions here.
 }
