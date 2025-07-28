@@ -28,12 +28,6 @@ public static class TutorialModuleForceEnable
         set => _forcedModules = value;
     }
 
-    public static bool IsError
-    {
-        get => _isError;
-        set => _isError = value;
-    }
-
     public static bool IsForceDisable
     {
         get => _isForceDisableOtherModules;
@@ -99,11 +93,7 @@ public static class TutorialModuleForceEnable
         {
             if (EditorPrefs.GetBool("FIRST_TIME", true))
             {
-                if (UpdateConfigFromJson(ReadJson()))
-                {
-                    Debug.Log($"first time opened");
-                    ShowPopupForceEnable.Init();
-                }
+                UpdateConfigFromJson(ReadJson());
             }
 
             EditorPrefs.SetBool(FIRST_TIME, false);
@@ -114,6 +104,7 @@ public static class TutorialModuleForceEnable
 
     private static bool UpdateConfigFromJson(string jsonStr)
     {
+        _moduleDictionary.Clear();
 #if UNITY_EDITOR
         // Reset tutorial module values to its original Scriptable Object state.
         // Only do this on editor, since the values are automatically reset when reopening the project and on packaged game.
@@ -131,6 +122,9 @@ public static class TutorialModuleForceEnable
             {
                 DisableRestOfModules(_moduleDependencies);
             }
+
+            ShowPopupForceEnable.Init();
+
             return true;
         }
         return false;
@@ -174,7 +168,6 @@ public static class TutorialModuleForceEnable
         {
             Debug.Log($"there are no modules override, check length module {json.forceEnabledModules.Length}");
             _forcedModules = null;
-            _isError = true;
             return _forcedModules;
         }
         if (!json.enableModulesOverride)
@@ -282,14 +275,29 @@ public static class TutorialModuleForceEnable
 
     private static void DisableRestOfModules(string[] modules)
     {
-        string[] modulePaths = AssetDatabase.FindAssets("AssetConfig").Select(AssetDatabase.GUIDToAssetPath).ToArray();
-        string[] modulesToForceEnable = modules.Select(module => AssetDatabase.FindAssets($"{module}AssetConfig").FirstOrDefault()).Select(AssetDatabase.GUIDToAssetPath).ToArray();
-        string[] modulesToDisable = modulePaths.Except(modulesToForceEnable).ToArray();
-        foreach (string tutorialModulePath in modulesToDisable)
+        string[] allModulePaths = AssetDatabase
+            .FindAssets("t:TutorialModuleData")
+            .Select(AssetDatabase.GUIDToAssetPath)
+            .Where(path => Path.GetFileNameWithoutExtension(path).EndsWith("AssetConfig"))
+            .ToArray();
+
+        HashSet<string> targetFileNames = modules.Select(m => m + "AssetConfig").ToHashSet();
+
+        string[] modulesToKeepEnabled = allModulePaths.Where(path =>
         {
-            TutorialModuleData module = AssetDatabase.LoadAssetAtPath<TutorialModuleData>(tutorialModulePath);
-            module.CacheState();
-            module.isActive = false;
+            string fileName = Path.GetFileNameWithoutExtension(path);
+            return targetFileNames.Contains(fileName);
+        }).ToArray();
+
+        string[] modulesToDisable = allModulePaths.Except(modulesToKeepEnabled).ToArray();
+        foreach (string path in modulesToDisable)
+        {
+            TutorialModuleData module = AssetDatabase.LoadAssetAtPath<TutorialModuleData>(path);
+            if (module != null)
+            {
+                module.CacheState();
+                module.isActive = false;
+            }
         }
     }
 
@@ -332,20 +340,21 @@ public static class TutorialModuleForceEnable
 
     private static TutorialModuleData GetTutorialModuleDataObject(string moduleName)
     {
-        var fileName = $"{moduleName}AssetConfig";
-        var assets = AssetDatabase.FindAssets(fileName).FirstOrDefault();
-        if (assets != null && assets.Length == 0)
+        string targetFileName = $"{moduleName}AssetConfig";
+
+        string path = AssetDatabase
+            .FindAssets("t:TutorialModuleData")
+            .Select(guid => AssetDatabase.GUIDToAssetPath(guid))
+            .FirstOrDefault(p => System.IO.Path.GetFileNameWithoutExtension(p) == targetFileName);
+
+        if (!string.IsNullOrEmpty(path))
         {
-            Debug.Log($"check your module name, the Asset Config cannot be found");
-            _isError = true;
-            ShowPopupForceEnable.Init();
-            return null;
+            BytewarsLogger.Log($"Found tutorial module data at path: {path}");
+            return AssetDatabase.LoadAssetAtPath<TutorialModuleData>(path);
         }
-        var asset = assets != null
-            ? AssetDatabase.GUIDToAssetPath(assets)
-            : null;
-        Debug.Log(asset);
-        return AssetDatabase.LoadAssetAtPath<TutorialModuleData>(asset);
+
+        BytewarsLogger.LogWarning($"Tutorial module data with '{targetFileName}' name not found.");
+        return null;
     }
 
     private static void GetAllHelperFiles(Object selectedGameObject, bool isStaterActive = false)

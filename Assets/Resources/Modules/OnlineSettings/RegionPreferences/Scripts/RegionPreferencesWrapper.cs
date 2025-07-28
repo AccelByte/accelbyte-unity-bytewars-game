@@ -202,6 +202,12 @@ public class RegionPreferencesWrapper : MonoBehaviour
 
     private void UpdateCurrentServerInfo(SessionV2GameSession gameSession)
     {
+        // Abort if the update game session is not the current active game session.
+        if (gameSession.id != GameData.ServerSessionID)
+        {
+            return;
+        }
+
         currentServerRegion = "Unknown Region";
 
         SessionV2DsInformation dsInfo = gameSession.dsInformation;

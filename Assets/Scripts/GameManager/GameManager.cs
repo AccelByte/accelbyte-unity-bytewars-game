@@ -56,10 +56,8 @@ public class GameManager : NetworkBehaviour
 
     public static event OnDisconnectedInMainMenuDelegate OnDisconnectedInMainMenu = delegate { };
 
-    public event Action OnGameStateIsNone = delegate { };
     public event Action OnRegisterServer = delegate { };
     public event Action OnDeregisterServer = delegate { };
-    public event Action OnRejectBackfill = delegate { };
     public event Action OnClientLeaveSession = delegate { };
 
     public Guid CurrentGuid { get; private set; }
@@ -364,6 +362,8 @@ public class GameManager : NetworkBehaviour
 
         reconnect.OnClientStopped(isHostStopped, InGameState, serverHelper,
             clientHelper.ClientNetworkId, InGameMode);
+
+        OnClientLeaveSession?.Invoke();
     }
 
     private void StartServer()
@@ -870,9 +870,6 @@ public class GameManager : NetworkBehaviour
         {
             case InGameState.None:
                 ResetLevel();
-#if !UNITY_SERVER
-                OnGameStateIsNone?.Invoke();
-#endif
                 break;
             case InGameState.Initializing:
                 gameTimeLeft = GameData.GameModeSo.GameDuration;
@@ -1594,7 +1591,6 @@ public class GameManager : NetworkBehaviour
                 if (InGameState == InGameState.None)
                 {
                     BytewarsLogger.Log("Game secene loaded. Setup game.");
-                    OnRejectBackfill?.Invoke();
                     menuManager.CloseMenuPanel();
                     Pool ??= new ObjectPooling(container, gamePrefabs, fxPrefabs);
                     SetupGame();
@@ -1662,6 +1658,7 @@ public class GameManager : NetworkBehaviour
         // Show traveling loading with time out countdown.
         if (!IsDedicatedServer) 
         {
+            MenuManager.Instance.OnBackPressed();
             MenuManager.Instance.ShowLoading(
                 loadingMessage,
                 new LoadingTimeoutInfo()

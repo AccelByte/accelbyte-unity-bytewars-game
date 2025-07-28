@@ -8,14 +8,14 @@
 public enum TutorialType
 {
     AuthEssentials = 2,
-    MatchmakingWithDS = 3,
+    MatchmakingDSEssentials = 3,
     StatsEssentials = 4,
     CloudSaveEssentials = 5,
     LeaderboardEssentials = 6,
     SinglePlatformAuth = 7,
     FriendsEssentials = 8,
-    MatchmakingWithP2P = 9,
-    MatchSessionWithDS = 11,
+    MatchmakingP2PEssentials = 9,
+    MatchSessionDSEssentials = 11,
     ManagingFriends = 12,
     PeriodicLeaderboardEssentials = 13,
     SessionEssentials = 14,
@@ -23,13 +23,15 @@ public enum TutorialType
     PresenceEssentials = 16,
     PartyEssentials = 17,
     PlayWithPartyEssentials = 18,
-    MatchmakingSession = 103,
-    MatchSession = 104,
-    MatchSessionWithP2P = 19,
+    MatchmakingEssentials = 103,
+    MatchSessionEssentials = 104,
+    MatchSessionP2PEssentials = 19,
     GameTelemetry = 200,
     OnlineSettings = 201,
     MultiplayerSettings = 202,
     RegionPreferences = 203,
     CrossplayPreferences = 204,
-    LoginQueue = 42
+    LoginQueue = 42,
+    ChallengeEssentials = 43,
+    PlayingWithFriends = 24
 }

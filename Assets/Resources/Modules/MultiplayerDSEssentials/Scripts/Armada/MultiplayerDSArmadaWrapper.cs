@@ -8,8 +8,9 @@ using AccelByte.Core;
 using AccelByte.Models;
 using AccelByte.Server;
 using Unity.Profiling;
+using UnityEngine;
 
-public class MultiplayerDSArmadaWrapper: GameSessionUtilityWrapper
+public class MultiplayerDSArmadaWrapper: MonoBehaviour
 {
     public event Action OnInstantiateComplete;
     public event ResultCallback OnLoginCompleteEvent;

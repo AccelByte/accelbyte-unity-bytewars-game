@@ -9,7 +9,7 @@ using AccelByte.Server;
 using UnityEngine;
 using WebSocketSharp;
 
-public class MultiplayerDSAMSWrapper : GameSessionUtilityWrapper
+public class MultiplayerDSAMSWrapper : MonoBehaviour
 {
     public event Action OnAMSConnectionOpened = delegate {};
     public event Action OnAMSConnectionClosed = delegate {};

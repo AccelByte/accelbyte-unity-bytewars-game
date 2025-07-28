@@ -82,9 +82,9 @@ public class TutorialModuleDataEditor : Editor
         _buttonPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BUTTON_PREFAB_PATH);
         if (_tutorialModuleData.defaultAdditionalMenuUIPrefabs != null && _tutorialModuleData.starterAdditionalMenuUIPrefabs != null  )
         {
-            _defaultAdditionalMenus = _tutorialModuleData.defaultAdditionalMenuUIPrefabs.ToDictionary(menu => menu.name, menu => menu.gameObject);
+            _defaultAdditionalMenus = _tutorialModuleData.defaultAdditionalMenuUIPrefabs.Where(menu => menu != null).ToDictionary(menu => menu.name, menu => menu.gameObject);
             _defaultAdditionalMenusKeys = _defaultAdditionalMenus.Keys.ToArray();
-            _starterAdditionalMenus = _tutorialModuleData.starterAdditionalMenuUIPrefabs.ToDictionary(menu => menu.name, menu => menu.gameObject);
+            _starterAdditionalMenus = _tutorialModuleData.starterAdditionalMenuUIPrefabs.Where(menu => menu != null).ToDictionary(menu => menu.name, menu => menu.gameObject);
             _starterAdditionalMenusKeys = _starterAdditionalMenus.Keys.ToArray();
         }
         _defaultMenuUIPrefab = serializedObject.FindProperty("defaultMenuUIPrefab");

@@ -26,56 +26,36 @@ public class PresenceEssentialsWrapper : MonoBehaviour
     private readonly List<UserStatusNotif> cachedUserPresence = new();
 
     private FriendsEssentialsWrapper friendsEssentialsWrapper;
-    private MatchmakingSessionDSWrapper matchmakingSessionDSWrapper;
-#if !UNITY_WEBGL
-    private MatchmakingSessionP2PWrapper matchmakingSessionP2PWrapper;
-#endif
     public static event Action<FriendsStatusNotif> OnFriendsStatusChanged = delegate { };
     public static event Action<BulkUserStatusNotif> OnBulkUserStatusReceived = delegate { };
 
     private void Awake()
     {
         lobby = ApiClient.GetLobby();
-
         lobby.FriendsStatusChanged += OnStatusChanged;
         lobby.Connected += UpdateSelfPresenceStatus;
+
+        MatchmakingEssentialsWrapper.OnMatchmakingStarted += OnMatchmakingStarted;
+        MatchmakingEssentialsWrapper.OnMatchmakingCanceled += OnMatchmakingCanceled;
+        MatchmakingEssentialsWrapper.OnMatchmakingExpired += OnMatchmakingExpired;
 
         PartyEssentialsModels.PartyHelper.BindOnPartyUpdate(OnPartyUpdate);
 
         SceneManager.sceneLoaded += OnSceneLoaded;
         MenuManager.OnMenuChanged += OnMenuChanged;
-    }
-    
-    private void Start()
-    {
+
         friendsEssentialsWrapper = TutorialModuleManager.Instance.GetModuleClass<FriendsEssentialsWrapper>();
-        matchmakingSessionDSWrapper ??= TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapper>();
-#if !UNITY_WEBGL
-        matchmakingSessionP2PWrapper ??= TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionP2PWrapper>();
-#endif
         friendsEssentialsWrapper.CachedFriendUserIds.ItemAdded += OnFriendUserIdAdded;
-
-        if (matchmakingSessionDSWrapper)
-        {
-            matchmakingSessionDSWrapper.OnMatchTicketCreated += OnMatchmakingStarted;
-            matchmakingSessionDSWrapper.OnMatchTicketDeleted += OnMatchmakingCanceled;
-            matchmakingSessionDSWrapper.OnMatchmakingError += OnMatchmakingError;
-        }
-
-#if !UNITY_WEBGL
-        if (matchmakingSessionP2PWrapper)
-        {
-            matchmakingSessionP2PWrapper.OnMatchTicketCreated += OnMatchmakingStarted;
-            matchmakingSessionP2PWrapper.OnMatchTicketDeleted += OnMatchmakingCanceled;
-            matchmakingSessionP2PWrapper.OnMatchmakingError += OnMatchmakingError;
-        }
-#endif
     }
 
     private void OnDestroy()
     {
         lobby.FriendsStatusChanged -= OnStatusChanged;
         lobby.Connected -= UpdateSelfPresenceStatus;
+
+        MatchmakingEssentialsWrapper.OnMatchmakingStarted -= OnMatchmakingStarted;
+        MatchmakingEssentialsWrapper.OnMatchmakingCanceled -= OnMatchmakingCanceled;
+        MatchmakingEssentialsWrapper.OnMatchmakingExpired -= OnMatchmakingExpired;
 
         PartyEssentialsModels.PartyHelper.UnBindOnPartyUpdate(OnPartyUpdate);
 
@@ -84,21 +64,6 @@ public class PresenceEssentialsWrapper : MonoBehaviour
 
         friendsEssentialsWrapper.CachedFriendUserIds.ItemAdded -= OnFriendUserIdAdded;
 
-        if (matchmakingSessionDSWrapper)
-        {
-            matchmakingSessionDSWrapper.OnMatchTicketCreated -= OnMatchmakingStarted;
-            matchmakingSessionDSWrapper.OnMatchTicketDeleted -= OnMatchmakingCanceled;
-            matchmakingSessionDSWrapper.OnMatchmakingError -= OnMatchmakingError;
-        }
-
-#if !UNITY_WEBGL
-        if (matchmakingSessionP2PWrapper)
-        {
-            matchmakingSessionP2PWrapper.OnMatchTicketCreated -= OnMatchmakingStarted;
-            matchmakingSessionP2PWrapper.OnMatchTicketDeleted -= OnMatchmakingCanceled;
-            matchmakingSessionP2PWrapper.OnMatchmakingError -= OnMatchmakingError;
-        }
-#endif
         SetPresenceStatus(string.Empty, UserStatus.Offline);
     }
 
@@ -269,43 +234,38 @@ public class PresenceEssentialsWrapper : MonoBehaviour
         });
     }
 
-    private void OnMatchmakingStarted(string matchId)
+    private void OnMatchmakingStarted(Result<MatchmakingV2CreateTicketResponse> result)
     {
+        // Update to show matchmaking activity status.
         bool inMainMenuScene = SceneManager.GetActiveScene().buildIndex is GameConstant.MenuSceneBuildIndex;
-        if (!inMainMenuScene)
+        if (inMainMenuScene && !result.IsError)
         {
-            return;
+            SceneStatus = "In Main Menu";
+            GameModeStatus = "Matchmaking";
+            UpdateSelfPresenceStatus();
         }
-
-        if (string.IsNullOrEmpty(matchId))
-        {
-            return;
-        }
-
-        SceneStatus = "In Main Menu";
-        GameModeStatus = "Matchmaking";
-
-        UpdateSelfPresenceStatus();
     }
 
-    private void OnMatchmakingCanceled()
+    private void OnMatchmakingCanceled(Result result)
     {
-        AssignStatusBySceneAndMenu();
-
-        UpdateSelfPresenceStatus();
+        // Reset to remove the matchmaking activity status.
+        if (!result.IsError)
+        {
+            AssignStatusBySceneAndMenu();
+            UpdateSelfPresenceStatus();
+        }
     }
 
-    private void OnMatchmakingError(string errorMessage)
+    private void OnMatchmakingExpired(Result<MatchmakingV2TicketExpiredNotification> result)
     {
+        // Reset to remove the matchmaking activity status.
         AssignStatusBySceneAndMenu();
-
         UpdateSelfPresenceStatus();
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         AssignStatusBySceneAndMenu();
-
         UpdateSelfPresenceStatus();
     }
     

@@ -11,7 +11,6 @@ public class MultiplayerDSArmadaHelper_Starter: MonoBehaviour
     public event Action OnServerLoggedIn;
     
     private MultiplayerDSArmadaWrapper_Starter armadaWrapper;
-    private MatchmakingSessionDSWrapperServer matchmakingDSWrapper;
 
 #if UNITY_SERVER
 
@@ -19,8 +18,7 @@ public class MultiplayerDSArmadaHelper_Starter: MonoBehaviour
     {
         BytewarsLogger.Log("Starting server using AMS..");
         armadaWrapper = TutorialModuleManager.Instance.GetModuleClass<MultiplayerDSArmadaWrapper_Starter>();
-        matchmakingDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapperServer>();
-            
+
         // Put your code here
         
     }

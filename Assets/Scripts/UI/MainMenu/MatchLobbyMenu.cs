@@ -18,11 +18,10 @@ public class MatchLobbyMenu : MenuCanvas
     [SerializeField] private PlayerEntry playerEntryPrefab;
 
     [SerializeField] private Button quitButton;
-    [SerializeField] private Button inviteFriendsButton;
     [SerializeField] private Button startButton;
     [SerializeField] private TextMeshProUGUI statusLabel;
     [SerializeField] private GameObject statusContainer;
-    
+
     private const string CountDownPrefix = "MATCH START IN: ";
 
     #region Initialization and Lifecycle

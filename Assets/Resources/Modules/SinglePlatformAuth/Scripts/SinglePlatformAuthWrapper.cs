@@ -61,8 +61,8 @@ public class SinglePlatformAuthWrapper : MonoBehaviour
         loginButton.gameObject.SetActive(true);
         switch (targetPlatformType)
         {
-            case PlatformType.Steam:
 #if !UNITY_WEBGL
+            case PlatformType.Steam:
                 loginButton.onClick.AddListener(OnLoginWithSteamButtonClicked);
                 loginButton.gameObject.SetActive(SteamManager.Initialized);
                 if (GConfig.GetSteamAutoLogin())

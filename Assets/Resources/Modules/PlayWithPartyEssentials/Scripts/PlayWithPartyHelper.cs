@@ -18,10 +18,6 @@ public class PlayWithPartyHelper : MonoBehaviour
     {
         playWithPartyWrapper = TutorialModuleManager.Instance.GetModuleClass<PlayWithPartyEssentialsWrapper>();
 
-        // On Match Session's Join Button clicked event
-        MatchSessionItem.OnJoinButtonDataSet += OnJoinButtonDataSet;
-        MatchSessionItem.OnJoinButtonClicked += OnJoinButtonClicked;
-
         // Match Session with Party's lobby notifications event
         PlayWithPartyEssentialsWrapper.OnMatchmakingStarted += SetupMatchmakingEvents;
         PlayWithPartyEssentialsWrapper.OnGameSessionInvitationReceived += OnInvitedToGameSession;
@@ -122,10 +118,10 @@ public class PlayWithPartyHelper : MonoBehaviour
             InGameMode currentGameMode = GetGameMode(result.Value.configuration.name);
 
             MatchSessionDSWrapper matchSessionDSWrapper = TutorialModuleManager.Instance.GetModuleClass<MatchSessionDSWrapper>();
-            matchSessionDSWrapper.JoinMatchSession(
-                result.Value.id,
-                currentGameMode
-            );
+            //matchSessionDSWrapper.JoinMatchSession(
+            //    result.Value.id,
+            //    currentGameMode
+            //);
         } 
         else
         {
@@ -141,7 +137,7 @@ public class PlayWithPartyHelper : MonoBehaviour
     private Action<string> OnJoinMatchSessionCompleted(SessionV2GameSession gameSessionData)
     {
         Debug.Log("Success joining the game session!");
-        BrowseMatchSessionEventListener.OnUpdate?.Invoke(gameSessionData);
+        //BrowseMatchSessionEventListener.OnUpdate?.Invoke(gameSessionData);
         return null;
     }
 
@@ -151,9 +147,9 @@ public class PlayWithPartyHelper : MonoBehaviour
     {
         switch (configurationName)
         {
-            case GameSessionConfig.UnitySessionEliminationDS or GameSessionConfig.UnitySessionEliminationP2P or GameSessionConfig.UnitySessionEliminationDSAMS:
+            case AccelByteWarsOnlineSessionModels.EliminationDSSessionTemplateName or AccelByteWarsOnlineSessionModels.EliminationP2PSessionTemplateName or AccelByteWarsOnlineSessionModels.EliminationDSAMSSessionTemplateName:
                 return InGameMode.CreateMatchElimination;
-            case GameSessionConfig.UnitySessionTeamDeathmatchDS or GameSessionConfig.UnitySessionTeamDeathmatchP2P or GameSessionConfig.UnitySessionTeamDeathmatchDSAMS:
+            case AccelByteWarsOnlineSessionModels.TeamDeathmatchDSSessionTemplateName or AccelByteWarsOnlineSessionModels.TeamDeathmatchP2PSessionTemplateName or AccelByteWarsOnlineSessionModels.TeamDeathmatchDSAMSSessionTemplateName:
                 return InGameMode.CreateMatchTeamDeathmatch;
             default:
                 return InGameMode.None;

@@ -10,7 +10,6 @@ using UnityEngine;
 public class MultiplayerDSAMSHelper : MonoBehaviour
 {
     private MultiplayerDSAMSWrapper amsWrapper;
-    private MatchmakingSessionDSWrapperServer matchmakingDSWrapperServer;
 
 #if UNITY_SERVER
 
@@ -22,10 +21,6 @@ public class MultiplayerDSAMSHelper : MonoBehaviour
         }
 
         amsWrapper = TutorialModuleManager.Instance.GetModuleClass<MultiplayerDSAMSWrapper>();
-        matchmakingDSWrapperServer = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapperServer>();
-
-        matchmakingDSWrapperServer.BackFillProposal();
-        matchmakingDSWrapperServer.OnServerSessionUpdate();
 
         GameManager.Instance.OnDeregisterServer += DeregisterDSFromAMS;
 

@@ -5,6 +5,8 @@
 using System;
 using System.Globalization;
 using UnityEngine;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using System.Runtime.InteropServices;
 
 public class AccelByteWarsUtility
@@ -44,5 +46,32 @@ public class AccelByteWarsUtility
     public static string GenerateObjectEntityId(GameObject gameObject) 
     {
         return $"{gameObject.name}_{Mathf.Abs(gameObject.GetInstanceID())}";
+    }
+
+    public static async UniTask StartCountdown(
+        float countdownInSeconds,
+        Action<float /*remainingTime*/, bool /*isComplete*/> callback,
+        CancellationToken cancelToken = default)
+    {
+        float remaining = countdownInSeconds;
+
+        while (remaining > 0f)
+        {
+            if (cancelToken.IsCancellationRequested) return;
+
+            callback?.Invoke(Mathf.Max(remaining, 0f), false);
+
+            await UniTask.Delay(
+                millisecondsDelay: 1000,
+                ignoreTimeScale: false,
+                delayTiming: PlayerLoopTiming.Update,
+                cancellationToken: cancelToken,
+                cancelImmediately: true);
+
+            remaining -= 1f;
+        }
+
+        callback?.Invoke(0f, true);
+        await UniTask.Yield(PlayerLoopTiming.Update);
     }
 }

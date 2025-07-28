@@ -9,7 +9,6 @@ using UnityEngine;
 public class MultiplayerDSArmadaHelper: MonoBehaviour
 {
     private MultiplayerDSArmadaWrapper armadaWrapper;
-    private MatchmakingSessionDSWrapperServer matchmakingDSWrapper;
 
 #if UNITY_SERVER
 
@@ -22,10 +21,6 @@ public class MultiplayerDSArmadaHelper: MonoBehaviour
         
         BytewarsLogger.Log("Starting server with Armada..");
         armadaWrapper = TutorialModuleManager.Instance.GetModuleClass<MultiplayerDSArmadaWrapper>();
-        MatchmakingSessionDSWrapperServer matchmakingDSWrapperServer = TutorialModuleManager.Instance.GetModuleClass<MatchmakingSessionDSWrapperServer>();
-        
-        matchmakingDSWrapperServer.BackFillProposal();
-        matchmakingDSWrapperServer.OnServerSessionUpdate();
         GameManager.Instance.OnDeregisterServer += UnregisterServer;
         LoginServer();
     }
