@@ -84,6 +84,6 @@ public class OptionsMenu : MenuCanvas
 
     public override AssetEnum GetAssetEnum()
     {
-        return AssetEnum.OptionsMenuCanvas;
+        return AssetEnum.OptionsMenu;
     }
 }

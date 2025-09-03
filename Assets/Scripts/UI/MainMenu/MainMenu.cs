@@ -15,10 +15,10 @@ public class MainMenu : MenuCanvas
     [SerializeField] private Button playOnlineBtn;
     [SerializeField] private Button profileButton;
     [SerializeField] private Button leaderboardButton;
+    [SerializeField] private Button challengeButton;
     [SerializeField] private Button socialButton;
     [SerializeField] private Button helpAndOptionsButton;
     [SerializeField] private Button quitButton;
-    [SerializeField] private LayoutGroup layoutGroup;
     
     public static event Action<Action> OnQuitPressed;
 
@@ -29,6 +29,7 @@ public class MainMenu : MenuCanvas
         playButton.onClick.AddListener(OnPlayButtonPressed);
         playOnlineBtn.onClick.AddListener(OnPlayOnlineButtonPressed);
         leaderboardButton.onClick.AddListener(OnLeaderboardButtonPressed);
+        challengeButton.onClick.AddListener(OnChallengeButtonPressed);
         profileButton.onClick.AddListener(OnProfileButtonPressed);
         socialButton.onClick.AddListener(OnSocialButtonPressed);
         helpAndOptionsButton.onClick.AddListener(OnHelpAndOptionsButtonPressed);
@@ -40,7 +41,7 @@ public class MainMenu : MenuCanvas
         ModuleModel friendsEssentialModule = TutorialModuleManager.Instance.GetModule(TutorialType.FriendsEssentials);
 
         MenuManager.Instance.ChangeToMenu(friendsEssentialModule.isStarterActive 
-            ? AssetEnum.SocialMenuCanvas_Starter : AssetEnum.SocialMenuCanvas);
+            ? AssetEnum.SocialMenu_Starter : AssetEnum.SocialMenu);
     }
     
     private static void OnPlayButtonPressed()
@@ -55,15 +56,17 @@ public class MainMenu : MenuCanvas
     
     private static void OnLeaderboardButtonPressed()
     {
-        ModuleModel leaderboardEssentialModule = TutorialModuleManager.Instance.GetModule(TutorialType.LeaderboardEssentials);
-        
-        MenuManager.Instance.ChangeToMenu(leaderboardEssentialModule.isStarterActive 
-            ? AssetEnum.LeaderboardSelectionMenuCanvas_Starter : AssetEnum.LeaderboardSelectionMenuCanvas);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.LeaderboardsMenu);
     }
     
+    private static void OnChallengeButtonPressed()
+    {
+        MenuManager.Instance.ChangeToMenu(AssetEnum.ChallengePeriodMenu);
+    }
+
     private static void OnProfileButtonPressed()
     {
-        MenuManager.Instance.ChangeToMenu(AssetEnum.ProfileMenuCanvas);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.ProfileMenu);
     }
     
     private static void OnHelpAndOptionsButtonPressed()
@@ -115,8 +118,8 @@ public class MainMenu : MenuCanvas
     private void CheckModulesButtons()
     {
 #if !BYTEWARS_DEBUG
-        bool isOnlineBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithDS)
-                                 || TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithDS)
+        bool isOnlineBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingEssentials)
+                                 || TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionEssentials)
                                  || TutorialModuleManager.Instance.IsModuleActive(TutorialType.SessionEssentials);
         playOnlineBtn.gameObject.SetActive(isOnlineBtnActive);
 #endif
@@ -129,6 +132,9 @@ public class MainMenu : MenuCanvas
 
         bool isLeaderboardModuleActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.LeaderboardEssentials);
         leaderboardButton.gameObject.SetActive(isLeaderboardModuleActive);
+
+        bool isChallengeModuleActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.ChallengeEssentials);
+        challengeButton.gameObject.SetActive(isChallengeModuleActive);
     }
 }
 

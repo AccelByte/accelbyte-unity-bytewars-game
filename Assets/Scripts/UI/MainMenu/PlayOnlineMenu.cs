@@ -2,37 +2,38 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class PlayOnlineMenu : MenuCanvas
 {
-    public Button backButton;
-    public Button browseMatchButton;
-    public Button createMatchButton;
-    public Button quickPlayButton;
-    public Button createSessionButton;
+    [SerializeField] private Button createSessionButton;
+    [SerializeField] private Button quickPlayButton;
+    [SerializeField] private Button createMatchButton;
+    [SerializeField] private Button browseMatchButton;
+    [SerializeField] private Button backButton;
 
-
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         SetModuleButtonVisibility();
-        browseMatchButton.onClick.AddListener(OnBrowserMatchButtonPressed);
-        createMatchButton.onClick.AddListener(OnCreateMatchButtonPressed);
-        quickPlayButton.onClick.AddListener(OnQuickPlayButtonPressed);
-        backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
         createSessionButton.onClick.AddListener(OnCreateSessionPressed);
+        quickPlayButton.onClick.AddListener(OnQuickPlayButtonPressed);
+        createMatchButton.onClick.AddListener(OnCreateMatchButtonPressed);
+        browseMatchButton.onClick.AddListener(OnBrowserMatchButtonPressed);
+        backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
     }
 
     private void SetModuleButtonVisibility()
     {
 #if !BYTEWARS_DEBUG
         bool isCreateSessionBtnActive = TutorialModuleManager.Instance.IsModuleActive(TutorialType.SessionEssentials);
-        bool isQuickPlayBtnActive = (TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithDS) 
-            || TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingWithP2P));
-        bool isCreateBrowseMatchBtnActive = (TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithDS) 
-            || TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionWithP2P));
+        bool isQuickPlayBtnActive = 
+            TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingDSEssentials) || 
+            TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchmakingP2PEssentials);
+        bool isCreateBrowseMatchBtnActive = 
+            TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionDSEssentials) || 
+            TutorialModuleManager.Instance.IsModuleActive(TutorialType.MatchSessionP2PEssentials);
 
         createSessionButton.gameObject.SetActive(isCreateSessionBtnActive);
         quickPlayButton.gameObject.SetActive(isQuickPlayBtnActive);
@@ -41,30 +42,38 @@ public class PlayOnlineMenu : MenuCanvas
 #endif
     }
 
-
     private void OnQuickPlayButtonPressed()
     {
-        MenuManager.Instance.ChangeToMenu(TutorialType.MatchmakingSession);
+        MenuManager.Instance.ChangeToMenu(TutorialType.MatchmakingEssentials);
     }
 
     private void OnCreateMatchButtonPressed()
     {
-        MenuManager.Instance.ChangeToMenu(AssetEnum.MatchSessionHandler);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.CreateMatchSessionMenu);
     }
 
     private void OnBrowserMatchButtonPressed()
     {
-        MenuManager.Instance.ChangeToMenu(AssetEnum.BrowseMatchMenuCanvas);
+        MenuManager.Instance.ChangeToMenu(AssetEnum.BrowseMatchMenu);
     }
 
     private void OnCreateSessionPressed()
     {
-        MenuManager.Instance.ChangeToMenu(AssetEnum.SessionEssentialsMenuCanvas);
+        ModuleModel module = TutorialModuleManager.Instance.GetModule(TutorialType.SessionEssentials);
+        MenuManager.Instance.ChangeToMenu(
+            module.isStarterActive ? AssetEnum.CreateSessionMenu_Starter : AssetEnum.CreateSessionMenu);
     }
 
     public override GameObject GetFirstButton()
     {
-        return quickPlayButton.gameObject;
+        Button[] buttons = new[] {
+            createSessionButton,
+            quickPlayButton,
+            createMatchButton,
+            browseMatchButton,
+            backButton
+        };
+        return buttons.First(b => b.isActiveAndEnabled).gameObject;
     }
 
     public override AssetEnum GetAssetEnum()

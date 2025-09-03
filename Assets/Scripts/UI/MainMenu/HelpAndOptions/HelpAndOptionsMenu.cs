@@ -23,7 +23,7 @@ public class HelpAndOptionsMenu : MenuCanvas
         }));
         optionsButton.onClick.AddListener((() =>
         {
-            MenuManager.Instance.ChangeToMenu(AssetEnum.OptionsMenuCanvas);
+            MenuManager.Instance.ChangeToMenu(AssetEnum.OptionsMenu);
         }));
         creditsButton.onClick.AddListener((() =>
         {

@@ -23,10 +23,10 @@ namespace Extensions
                     toBeDestroyed.Add(t.gameObject);
                 }
             }
-            // Loop through list and Delete all Children
+            // Loop through list and destroy all children immediately, so the child count is updated immediately
             for (int i = 0; i < toBeDestroyed.Count; i++)
             {
-                UnityEngine.Object.Destroy(toBeDestroyed[i]);
+                UnityEngine.Object.DestroyImmediate(toBeDestroyed[i]);
             }
         }
     }

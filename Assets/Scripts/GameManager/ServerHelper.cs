@@ -35,7 +35,7 @@ public class ServerHelper
         connectedTeamStates.Clear();
     }
 
-    public PlayerState CreateNewPlayerState(ulong clientNetworkId, GameModeSO gameMode)
+    public PlayerState CreateNewPlayerState(string playerId, ulong clientNetworkId, GameModeSO gameMode)
     {
         int teamIndex = GetTeamAssignment(gameMode);
         if (teamIndex == NoTeamIndex)
@@ -45,18 +45,17 @@ public class ServerHelper
         }
 
         int playerIndex = connectedPlayerStates.Count;
-        string playerName = "Player " + (playerIndex + 1);
         PlayerState playerState = new PlayerState
         {
             PlayerIndex = playerIndex,
             ClientNetworkId = clientNetworkId,
-            PlayerName = playerName,
+            PlayerName = string.Empty,
             TeamIndex = teamIndex,
             Lives = gameMode.PlayerStartLives,
             SessionId = Guid.NewGuid().ToString(),
-            PlayerId = ""
+            PlayerId = playerId
         };
-        BytewarsLogger.Log($"Added player {playerName} teamIndex:{teamIndex} clientNetworkId:{clientNetworkId}");
+        BytewarsLogger.Log($"Added player {playerId}. playerIndex:{playerIndex}, teamIndex:{teamIndex}, clientNetworkId:{clientNetworkId}");
 
         // Add new player state if not yet.
         if (!connectedPlayerStates.ContainsKey(clientNetworkId))
@@ -77,7 +76,7 @@ public class ServerHelper
         return playerState;
     }
 
-    public Player AddReconnectPlayerState(string sessionId, ulong clientNetworkId, GameModeSO gameMode)
+    public Player AddReconnectPlayerState(string sessionId, string userId, ulong clientNetworkId, GameModeSO gameMode)
     {
         // Get the disconnected player.
         Player player = null;
@@ -103,7 +102,7 @@ public class ServerHelper
         else
         {
             BytewarsLogger.Log("Unable to reconnect player state, player state is not found. Creating a new player state instead.");
-            playerState = CreateNewPlayerState(clientNetworkId, gameMode);
+            playerState = CreateNewPlayerState(userId, clientNetworkId, gameMode);
         }
 
         // Abort if the team index is not found.
@@ -319,14 +318,15 @@ public class ServerHelper
     /// <returns>Return number of team that still has active member.</returns>
     public int GetActiveTeamsCount()
     {
-        return GetTeamsMemberCount().Where(team => team.Value > 0).Count();
+        return GetTeamsMemberCount(activePlayerOnly:true).Where(team => team.Value > 0).Count();
     }
 
     /// <summary>
     /// Get the number of team member for each teams.
     /// </summary>
+    /// <param name="activePlayerOnly">Optional parameter to count active player only, default is false</param>
     /// <returns>Return a dictionary with team index as the key and number of team member as the value.</returns>
-    public Dictionary<int, int> GetTeamsMemberCount()
+    public Dictionary<int, int> GetTeamsMemberCount(bool activePlayerOnly = false)
     {
         Dictionary<int, int> teamMemberCount = new Dictionary<int, int>();
         foreach (TeamState teamState in connectedTeamStates.Values)
@@ -340,10 +340,13 @@ public class ServerHelper
             // Only count players who currently connected to the server.
             if (teamMemberCount.Keys.Contains(teamIndex) && !disconnectedPlayerStates.ContainsKey(playerState.SessionId))
             {
-                teamMemberCount[teamIndex]++;
+                // Count only player has live when activePlayerOnly is true
+                if (!activePlayerOnly || playerState.Lives > 0)
+                {
+                    teamMemberCount[teamIndex]++;
+                }
             }
         }
-
         return teamMemberCount;
     }
     #endregion

@@ -17,7 +17,6 @@ public class Player : GameEntityAbs
     [SerializeField] private PowerBarUI powerBarUIPrefab;
     [SerializeField] private ShipDestroyedEffect shipDestroyedEffectPrefab;
     [SerializeField] private Missile missilePrefab;
-    [SerializeField] private MissileTrail missileTrailPrefab;
     [SerializeField] private Transform missileSpawnPos;
     [SerializeField] private PlayerInput playerInput;
 
@@ -200,10 +199,6 @@ public class Player : GameEntityAbs
         // Initialize shoot missile cooldown.
         missileTimer = missileCooldown;
 
-#if !UNITY_SERVER
-        AddMissileTrail(missile.gameObject, missileState.SpawnPosition);
-#endif
-
         return missile.MissileState;
     }
     
@@ -213,19 +208,6 @@ public class Player : GameEntityAbs
         missile.SetId(missileState.Id);
         missile.Init(playerState, missileState);
         firedMissiles.TryAdd(missile.GetId(), missile);
-
-        AddMissileTrail(missile.gameObject, missileState.SpawnPosition);
-    }
-
-    private void AddMissileTrail(GameObject missileGameObject, Vector3 position)
-    {
-        MissileTrail missileTrail = GameManager.Instance.Pool.Get(missileTrailPrefab) as MissileTrail;
-
-        Color.RGBToHSV(playerColor, out float H, out float S, out float V);
-        S = Math.Min(1f, S + 0.5f);
-        Color saturatedColor = Color.HSVToRGB(H, S, V);
-
-        missileTrail.Init(missileGameObject, position, transform.rotation, saturatedColor);
     }
 
     public override void OnHitByMissile()

@@ -13,6 +13,13 @@ using UnityEngine.SceneManagement;
 
 public class Reconnect : MonoBehaviour
 {
+    private IEnumerator reconnectCoroutine;
+    private bool reconnectionInProgress = false;
+
+    private const int reconnectWaitTimeInSeconds = 3;
+
+    private bool isIntentionallyDisconnect;
+
     public void ConnectAsClient(
         WebSocketTransport networkTransport, 
         string address, 
@@ -91,9 +98,6 @@ public class Reconnect : MonoBehaviour
         }
     }
 
-    private IEnumerator reconnectCoroutine;
-    private bool reconnectionInProgress = false;
-
     public void TryReconnect(InitialConnectionData initialConnectionData)
     {
         if (!reconnectionInProgress)
@@ -104,75 +108,111 @@ public class Reconnect : MonoBehaviour
         }
     }
 
-    private readonly WaitForSeconds wait3Seconds = new WaitForSeconds(3);
     private IEnumerator ReconnectWait(InitialConnectionData initialConnectionData)
     {
         yield return DisconnectSafely();
-        yield return wait3Seconds;
-        var connectionData = GameUtility.ToByteArray(initialConnectionData);
+        yield return new WaitForSeconds(reconnectWaitTimeInSeconds);
+
+        byte[] connectionData = GameUtility.ToByteArray(initialConnectionData);
         NetworkManager.Singleton.NetworkConfig.ConnectionData = connectionData;
         BytewarsLogger.Log("Reconnect start client");
         NetworkManager.Singleton.StartClient();
+        
         reconnectionInProgress = false;
     }
-    public void OnClientConnected(ulong clientNetworkId, bool isOwner, bool isServer, bool isClient, bool isHost,
-        ServerHelper serverHelper, InGameMode inGameMode,
-        Dictionary<ulong, GameClientController> connectedClients, InGameState inGameState, ServerType serverType,
-        Dictionary<ulong, Player> players, int gameTimeLeft, ClientHelper clientHelper)
+
+    public void OnClientConnected(
+        ulong clientNetworkId, 
+        bool isOwner, 
+        bool isServer, 
+        bool isClient, 
+        bool isHost,
+        ServerHelper serverHelper, 
+        InGameMode inGameMode,
+        Dictionary<ulong, GameClientController> connectedClients, 
+        InGameState inGameState, 
+        ServerType serverType,
+        Dictionary<ulong, Player> players, 
+        int gameTimeLeft, 
+        ClientHelper clientHelper)
     {
         BytewarsLogger.Log($"OnClientConnected IsServer:{isServer} isOwner:{isOwner} clientNetworkId:{clientNetworkId}");
+
         isIntentionallyDisconnect = false;
-        var game = GameManager.Instance;
+
+        // If server, handle player authentication.
         if (isOwner && isServer)
         {
-            if (GameData.GameModeSo.LobbyCountdownSecond > -1)
-            {
-                serverHelper.StartCoroutineCountdown(this,
-                    GameData.GameModeSo.LobbyCountdownSecond,
-                    game.OnLobbyCountdownServerUpdated);
-            }
-            //most variable exists only on IsServer bracket
+            NetworkObject playerObj = NetworkManager.Singleton.ConnectedClients[clientNetworkId].PlayerObject;
+            GameClientController gameClient = playerObj.GetComponent<GameClientController>();
             bool isInGameScene = GameConstant.GameSceneBuildIndex == SceneManager.GetActiveScene().buildIndex;
-            game.SendConnectedPlayerStateClientRpc(serverHelper.ConnectedTeamStates.Values.ToArray(),
-                serverHelper.ConnectedPlayerStates.Values.ToArray(), inGameMode, serverType, isInGameScene);
-            var playerObj = NetworkManager.Singleton.ConnectedClients[clientNetworkId].PlayerObject;
-            var gameClient = playerObj.GetComponent<GameClientController>();
+
             if (gameClient)
             {
-                connectedClients.Add(clientNetworkId, gameClient);
-                BytewarsLogger.Log($"ClientNetworkId: {clientNetworkId} connected");
-                if (isInGameScene && inGameState != InGameState.GameOver)
+                BytewarsLogger.Log($"ClientNetworkId: {clientNetworkId} connected.");
+
+                connectedClients.TryAdd(clientNetworkId, gameClient);
+
+                // If in in-game scene.
+                if (isInGameScene)
                 {
-                    if (players.TryGetValue(clientNetworkId, out var serverPlayer))
+                    if (inGameState != InGameState.GameOver)
                     {
-                        serverPlayer.UpdateMissilesState();
-                        game.ReAddReconnectedPlayerClientRpc(
-                            clientNetworkId, 
-                            serverPlayer.GetFiredMissilesId(),
-                            serverHelper.ConnectedTeamStates.Values.ToArray(),
-                            serverHelper.ConnectedPlayerStates.Values.ToArray(),
-                            game.CreatedLevel);
-                    }
-                    //gameplay already started
-                    if (gameTimeLeft != 0)
-                    {
-                        game.SetInGameState(InGameState.Playing, true);
-                    }
-                    else
-                    {
-                        game.SetInGameState(InGameState.PreGameCountdown, true);
+                        // If the player was exists, recover it states.
+                        if (players.TryGetValue(clientNetworkId, out Player player))
+                        {
+                            player.UpdateMissilesState();
+                            GameManager.Instance.ReAddReconnectedPlayerClientRpc(
+                                clientNetworkId,
+                                player.GetFiredMissilesId(),
+                                serverHelper.ConnectedTeamStates.Values.ToArray(),
+                                serverHelper.ConnectedPlayerStates.Values.ToArray(),
+                                GameManager.Instance.CreatedLevel);
+                        }
+
+                        // Set game state accordingly.
+                        if (gameTimeLeft > 0)
+                        {
+                            GameManager.Instance.SetInGameState(InGameState.Playing, true);
+                        }
+                        else
+                        {
+                            GameManager.Instance.SetInGameState(InGameState.PreGameCountdown, true);
+                        }
                     }
                 }
+                // If in main menu.
+                else
+                {
+                    // Start match lobby countdown.
+                    if (GameData.GameModeSo.LobbyCountdownSecond > -1)
+                    {
+                        serverHelper.StartCoroutineCountdown(this,
+                            GameData.GameModeSo.LobbyCountdownSecond,
+                            GameManager.Instance.OnLobbyCountdownServerUpdated);
+                    }
+                }
+
+                GameManager.Instance.SendConnectedPlayerStateClientRpc(
+                    serverHelper.ConnectedTeamStates.Values.ToArray(),
+                    serverHelper.ConnectedPlayerStates.Values.ToArray(),
+                    inGameMode, serverType, isInGameScene);
+            }
+            else
+            {
+                // Kick player if player's network object is not exists.
+                NetworkManager.Singleton.DisconnectClient(clientNetworkId, "Player network object is not exists.");
             }
         }
+
+        // If client, refresh connected clients.
         if (isClient && !isHost)
         {
-            //most variable does not exists on IsClient bracket
             clientHelper.SetClientNetworkId(clientNetworkId);
-            var playerObj = NetworkManager.Singleton.LocalClient.PlayerObject;
+            NetworkObject playerObj = NetworkManager.Singleton.LocalClient.PlayerObject;
             if (playerObj)
             {
-                var gameController = playerObj.GetComponent<GameClientController>();
+                GameClientController gameController = playerObj.GetComponent<GameClientController>();
                 if (gameController)
                 {
                     connectedClients.TryAdd(clientNetworkId, gameController);
@@ -181,7 +221,11 @@ public class Reconnect : MonoBehaviour
         }
     }
 
-    public void OnClientStopped(bool isHost, InGameState inGameState, ServerHelper serverHelper, ulong clientNetworkId,
+    public void OnClientStopped(
+        bool isHost, 
+        InGameState inGameState, 
+        ServerHelper serverHelper, 
+        ulong clientNetworkId,
         InGameMode inGameMode)
     {
         BytewarsLogger.Log($"OnClientStopped isHost:{isHost} clientNetworkId:{clientNetworkId}");
@@ -198,11 +242,13 @@ public class Reconnect : MonoBehaviour
             {
                 if (serverHelper.ConnectedPlayerStates.TryGetValue(clientNetworkId, out var playerState))
                 {
-                    var initialData = new InitialConnectionData()
+                    InitialConnectionData initialData = new InitialConnectionData()
                     {
                         inGameMode = inGameMode,
-                        sessionId = playerState.SessionId
+                        sessionId = playerState.SessionId,
+                        userId = playerState.PlayerId
                     };
+
                     if (!isIntentionallyDisconnect)
                     {
                         TryReconnect(initialData);
@@ -227,7 +273,6 @@ public class Reconnect : MonoBehaviour
         }
     }
 
-    private bool isIntentionallyDisconnect;
     public IEnumerator ClientDisconnectIntentionally()
     {
         isIntentionallyDisconnect = true;

@@ -22,7 +22,10 @@ public class GameManager : NetworkBehaviour
     }
 
     public static GameManager Instance { get; private set; }
-    
+
+    public delegate void OnClientAuthenticationCompleteDelegate(ulong clientNetworkId, bool isAuthenticated);
+    public delegate void OnClientConnectedAuthenticationDelegate(ulong clientNetworkId, OnClientAuthenticationCompleteDelegate callback);
+
     public delegate void OnGameEndedDelegate(GameOverReason reason);
     public delegate void OnGameStateChangedDelegate(InGameState newGameState);
     public delegate void OnPlayerEnterGameDelegate(PlayerState playerState);
@@ -41,6 +44,8 @@ public class GameManager : NetworkBehaviour
         PlayerState killerPlayerState,
         MissileState missileState);
 
+    public static event OnClientConnectedAuthenticationDelegate OnClientConnectedAuthentication;
+
     public static event Action OnGameStarted = delegate { };
     public static event OnGameEndedDelegate OnGameEnded = delegate { };
     public static event OnGameStateChangedDelegate OnGameStateChanged = delegate { };
@@ -51,10 +56,8 @@ public class GameManager : NetworkBehaviour
 
     public static event OnDisconnectedInMainMenuDelegate OnDisconnectedInMainMenu = delegate { };
 
-    public event Action OnGameStateIsNone = delegate { };
     public event Action OnRegisterServer = delegate { };
     public event Action OnDeregisterServer = delegate { };
-    public event Action OnRejectBackfill = delegate { };
     public event Action OnClientLeaveSession = delegate { };
 
     public Guid CurrentGuid { get; private set; }
@@ -359,6 +362,8 @@ public class GameManager : NetworkBehaviour
 
         reconnect.OnClientStopped(isHostStopped, InGameState, serverHelper,
             clientHelper.ClientNetworkId, InGameMode);
+
+        OnClientLeaveSession?.Invoke();
     }
 
     private void StartServer()
@@ -390,8 +395,45 @@ public class GameManager : NetworkBehaviour
     {
         BytewarsLogger.Log($"Client connected. Client id: {clientNetworkId}");
 
-        reconnect.OnClientConnected(clientNetworkId, IsOwner, IsServer, IsClient, IsHost, serverHelper,
-                                    InGameMode, connectedClients, InGameState, GameData.ServerType, Players, gameTimeLeft, clientHelper);
+        if (IsClient && clientNetworkId == NetworkManager.Singleton.LocalClientId) 
+        {
+            MenuManager.Instance.ShowLoading("Verifying");
+        }
+
+        // Invoke authentication method if any.
+        if (IsServer) 
+        {
+            if (OnClientConnectedAuthentication.GetInvocationList().Length > 0)
+            {
+                OnClientConnectedAuthentication.Invoke(clientNetworkId, OnClientConnectedAuthenticationComplete);
+            }
+            else
+            {
+                OnClientConnectedAuthenticationComplete(clientNetworkId, true);
+            }
+        }
+    }
+
+    private void OnClientConnectedAuthenticationComplete(ulong clientNetworkId, bool isAuthenticated) 
+    {
+        // Kick player if not authenticated.
+        if (!isAuthenticated)
+        {
+            BytewarsLogger.LogWarning($"Client is not authenticated. Disconnecting the player. Client id: {clientNetworkId}");
+            NetworkManager.Singleton.DisconnectClient(clientNetworkId, "Player is not authenticated.");
+            return;
+        }
+
+        BytewarsLogger.Log($"Client is authenticated. Client id: {clientNetworkId}");
+
+        reconnect.OnClientConnected(
+            clientNetworkId,
+            IsOwner, IsServer, IsClient, IsHost,
+            serverHelper, InGameMode,
+            connectedClients, InGameState,
+            GameData.ServerType, Players,
+            gameTimeLeft,
+            clientHelper);
 
         // Broadcast on player enter game event.
         if (IsLocalGame || IsServer) 
@@ -467,7 +509,8 @@ public class GameManager : NetworkBehaviour
                         $"Current active team count: {serverHelper.GetActiveTeamsCount()}. " +
                         $"Minimum team required: {GameData.GameModeSo.MinimumTeamCountToPlay}");
 
-                    SetInGameState(InGameState.ShuttingDown);
+                    // Check the game over condition when player left the game instead of shuting down
+                    CheckForGameOverCondition();
                 }
             }
         }
@@ -827,9 +870,6 @@ public class GameManager : NetworkBehaviour
         {
             case InGameState.None:
                 ResetLevel();
-#if !UNITY_SERVER
-                OnGameStateIsNone?.Invoke();
-#endif
                 break;
             case InGameState.Initializing:
                 gameTimeLeft = GameData.GameModeSo.GameDuration;
@@ -1551,7 +1591,6 @@ public class GameManager : NetworkBehaviour
                 if (InGameState == InGameState.None)
                 {
                     BytewarsLogger.Log("Game secene loaded. Setup game.");
-                    OnRejectBackfill?.Invoke();
                     menuManager.CloseMenuPanel();
                     Pool ??= new ObjectPooling(container, gamePrefabs, fxPrefabs);
                     SetupGame();
@@ -1619,6 +1658,7 @@ public class GameManager : NetworkBehaviour
         // Show traveling loading with time out countdown.
         if (!IsDedicatedServer) 
         {
+            MenuManager.Instance.OnBackPressed();
             MenuManager.Instance.ShowLoading(
                 loadingMessage,
                 new LoadingTimeoutInfo()
@@ -1705,7 +1745,6 @@ public class GameManager : NetworkBehaviour
         InGameMode = inGameMode;
         GameData.GameModeSo = availableInGameMode.FirstOrDefault(x => x.InGameMode == InGameMode);
         GameData.ServerType = serverType;
-        GameData.CachedPlayerState = playerStates.FirstOrDefault(x => x.ClientNetworkId == NetworkManager.Singleton.LocalClientId);
 
         if (!isInGameScene)
         {

@@ -149,7 +149,7 @@ public class ConnectionHelper
         if (isNewPlayer || !isGameScene)
         {
             // Create a new player state for the new player, reject if failed.
-            if (serverHelper.CreateNewPlayerState(clientNetworkId, requestedGameModeSo) == null)
+            if (serverHelper.CreateNewPlayerState(initialData.userId, clientNetworkId, requestedGameModeSo) == null)
             {
                 rejectReason = "Cannot accept new player connection. Game is already full.";
                 return false;
@@ -158,7 +158,7 @@ public class ConnectionHelper
         // Handle player reconnection.
         else
         {
-            reconnectedPlayer = serverHelper.AddReconnectPlayerState(initialData.sessionId, clientNetworkId, requestedGameModeSo);
+            reconnectedPlayer = serverHelper.AddReconnectPlayerState(initialData.sessionId, initialData.userId, clientNetworkId, requestedGameModeSo);
             if (reconnectedPlayer == null)
             {
                 rejectReason = $"Cannot reconnect player. Game is already full.";
