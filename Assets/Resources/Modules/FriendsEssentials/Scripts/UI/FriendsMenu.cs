@@ -179,7 +179,7 @@ public class FriendsMenu : MenuCanvas
     {
         foreach (AccountUserPlatformData baseUserInfo in userInfo)
         {
-            CreateFriendEntry(baseUserInfo.UserId, baseUserInfo.DisplayName);
+            CreateFriendEntry(baseUserInfo.UserId, AccelByteWarsOnlineUtility.GetDisplayName(baseUserInfo));
         }
     }
     
@@ -187,12 +187,6 @@ public class FriendsMenu : MenuCanvas
     {
         GameObject playerEntry = InstantiateToColumn(friendEntryPrefab);
         playerEntry.name = userId;
-        
-        if (string.IsNullOrEmpty(displayName))
-        {
-            string truncatedUserId = userId[..5];
-            displayName = $"Player-{truncatedUserId}";
-        }
         
         FriendEntry playerEntryHandler = playerEntry.GetComponent<FriendEntry>();
         playerEntryHandler.EntryView = FriendEntry.FriendEntryView.Default;

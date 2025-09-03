@@ -95,7 +95,7 @@ public class PeriodicLeaderboardMenu : MenuCanvas
                             {
                                 LeaderboardEntry entry = Instantiate(leaderboardEntryPrefab, leaderboardListPanel).GetComponent<LeaderboardEntry>();
                                 usersInfo.TryGetValue(ranking.userId, out AccountUserPlatformData userInfo);
-                                entry.SetRankingDetails(ranking.userId, ++rankOrder, userInfo?.DisplayName, ranking.point);
+                                entry.SetRankingDetails(ranking.userId, ++rankOrder, AccelByteWarsOnlineUtility.GetDisplayName(userInfo), ranking.point);
 
                                 // If the user is the current logged-in player, display the rank on the player ranking entry card.
                                 if (ranking.userId == GameData.CachedPlayerState.PlayerId)

@@ -320,10 +320,9 @@ public class PartyEssentialsWrapper : MonoBehaviour
         {
             AccountUserPlatformData senderInfo = userDataResult.IsError ? null : userDataResult.Value.Data[0];
 
-            string senderName =
-                userDataResult.IsError || string.IsNullOrEmpty(senderInfo.DisplayName) ?
+            string senderName = userDataResult.IsError ? 
                 AccelByteWarsUtility.GetDefaultDisplayNameByUserId(senderId) : 
-                senderInfo.DisplayName;
+                AccelByteWarsOnlineUtility.GetDisplayName(senderInfo);
             string senderAvatarUrl = userDataResult.IsError ? string.Empty : senderInfo.AvatarUrl;
 
             MenuManager.Instance.PushNotification(new PushNotificationModel
@@ -384,11 +383,12 @@ public class PartyEssentialsWrapper : MonoBehaviour
         // Display push notification.
         userApi.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { rejecterId }, (Result<AccountUserPlatformInfosResponse> userDataResult) =>
         {
-            AccountUserPlatformData senderInfo = userDataResult.IsError ? null : userDataResult.Value.Data[0];
+            AccountUserPlatformData rejecterInfo = userDataResult.IsError ? null : userDataResult.Value.Data[0];
             
-            string rejecterName = userDataResult.IsError || string.IsNullOrEmpty(senderInfo.DisplayName) ? 
-                AccelByteWarsUtility.GetDefaultDisplayNameByUserId(rejecterId) : senderInfo.DisplayName;
-            string rejecterAvatarUrl = userDataResult.IsError ? string.Empty : senderInfo.AvatarUrl;
+            string rejecterName = userDataResult.IsError ?
+                AccelByteWarsUtility.GetDefaultDisplayNameByUserId(rejecterId) :
+                AccelByteWarsOnlineUtility.GetDisplayName(rejecterInfo);
+            string rejecterAvatarUrl = userDataResult.IsError ? string.Empty : rejecterInfo.AvatarUrl;
 
             MenuManager.Instance.PushNotification(new PushNotificationModel
             {
@@ -418,11 +418,12 @@ public class PartyEssentialsWrapper : MonoBehaviour
 
             userApi.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { newLeaderId }, (Result<AccountUserPlatformInfosResponse> userDataResult) =>
             {
-                AccountUserPlatformData senderInfo = userDataResult.IsError ? null : userDataResult.Value.Data[0];
+                AccountUserPlatformData newLeaderInfo = userDataResult.IsError ? null : userDataResult.Value.Data[0];
 
-                string leaderName = userDataResult.IsError || string.IsNullOrEmpty(senderInfo.DisplayName) ?
-                    AccelByteWarsUtility.GetDefaultDisplayNameByUserId(newLeaderId) : senderInfo.DisplayName;
-                string leaderAvatarUrl = userDataResult.IsError ? string.Empty : senderInfo.AvatarUrl;
+                string leaderName = userDataResult.IsError ?
+                    AccelByteWarsUtility.GetDefaultDisplayNameByUserId(newLeaderId) :
+                    AccelByteWarsOnlineUtility.GetDisplayName(newLeaderInfo);
+                string leaderAvatarUrl = userDataResult.IsError ? string.Empty : newLeaderInfo.AvatarUrl;
 
                 MenuManager.Instance.PushNotification(new PushNotificationModel
                 {
@@ -508,9 +509,7 @@ public class PartyEssentialsWrapper : MonoBehaviour
                         continue;
                     }
 
-                    string memberName = string.IsNullOrEmpty(memberInfo.DisplayName) ?
-                        AccelByteWarsUtility.GetDefaultDisplayNameByUserId(memberInfo.UserId) : memberInfo.DisplayName;
-
+                    string memberName = AccelByteWarsOnlineUtility.GetDisplayName(memberInfo);
                     string pushNotifMessage = string.Empty;
                     switch (updatedMemberStatus[memberInfo.UserId])
                     {

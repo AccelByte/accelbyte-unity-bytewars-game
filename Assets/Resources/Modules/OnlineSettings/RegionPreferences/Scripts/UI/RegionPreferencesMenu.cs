@@ -61,7 +61,8 @@ public class RegionPreferencesMenu : MenuCanvas
 
         regionPreferencesWrapper.OnMinimumRegionCountWarning += OnMinimumRegionCountWarning;
 
-        if (ApiClientHelper.IsPlayerLoggedIn) 
+        bool isLoggedIn = AccelByteSDK.GetClientRegistry()?.GetApi()?.GetUser()?.Session?.IsValid() ?? false;
+        if (isLoggedIn) 
         {
             if (regionPreferencesWrapper.GetRegionInfos().Count > 0) 
             {

@@ -9,7 +9,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using System.Runtime.InteropServices;
 
-public class AccelByteWarsUtility
+public static class AccelByteWarsUtility
 {
 #if UNITY_WEBGL && !UNITY_EDITOR
     [DllImport("__Internal")]

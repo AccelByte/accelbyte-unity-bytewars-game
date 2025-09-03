@@ -182,7 +182,7 @@ public class BlockedPlayersMenu : MenuCanvas
     {
         foreach (AccountUserPlatformData baseUserInfo in userInfo)
         {
-            CreatePlayerEntry(baseUserInfo.UserId, baseUserInfo.DisplayName);
+            CreatePlayerEntry(baseUserInfo.UserId, AccelByteWarsOnlineUtility.GetDisplayName(baseUserInfo));
         }
     }
     
@@ -190,12 +190,6 @@ public class BlockedPlayersMenu : MenuCanvas
     {
         GameObject playerEntry = Instantiate(playerEntryPrefab, resultContentPanel);
         playerEntry.name = userId;
-
-        if (string.IsNullOrEmpty(displayName))
-        {
-            string truncatedUserId = userId[..5];
-            displayName = $"Player-{truncatedUserId}";
-        }
 
         BlockedPlayerEntry playerEntryHandler = playerEntry.GetComponent<BlockedPlayerEntry>();
         playerEntryHandler.UserId = userId;

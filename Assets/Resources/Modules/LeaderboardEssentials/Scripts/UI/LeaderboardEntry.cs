@@ -13,8 +13,7 @@ public class LeaderboardEntry : MonoBehaviour
 
     public void SetRankingDetails(string userId, int rank, string displayName, float score)
     {
-        // If display name is null or empty, set to default format: Player-{first 5 char of user ID}
-        displayNameText.text = string.IsNullOrEmpty(displayName) ? $"Player-{userId[..5]}" : displayName;
+        displayNameText.text = displayName;
         rankText.text = $"{rank}";
         scoreText.text = $"{score}";
     }

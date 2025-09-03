@@ -322,7 +322,7 @@ public class FriendsEssentialsWrapper : MonoBehaviour
             }
 
             PublicUserInfo userByExactDisplayName = result.Value.data.FirstOrDefault(publicUserInfo => 
-                publicUserInfo.displayName.Equals(displayName, StringComparison.CurrentCultureIgnoreCase));
+                AccelByteWarsOnlineUtility.GetDisplayName(publicUserInfo).Equals(displayName, StringComparison.CurrentCultureIgnoreCase));
 
             if (userByExactDisplayName == null)
             {

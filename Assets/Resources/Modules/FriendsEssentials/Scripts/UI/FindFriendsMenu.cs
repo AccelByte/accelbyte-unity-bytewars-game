@@ -113,7 +113,7 @@ public class FindFriendsMenu : MenuCanvas
             return;
         }
 
-        CreateFriendEntry(result.Value.userId, result.Value.displayName);
+        CreateFriendEntry(result.Value.userId, AccelByteWarsOnlineUtility.GetDisplayName(result.Value));
     }
     
     private void OnUsersFriendCodeFound(Result<AccountUserPlatformData> result, string query, Action fallbackAction = null)
@@ -145,7 +145,7 @@ public class FindFriendsMenu : MenuCanvas
         }
 
         SendFriendInvitation(userData.UserId, usingFriendCode: true);
-        CreateFriendEntry(userData.UserId, userData.DisplayName);
+        CreateFriendEntry(userData.UserId, AccelByteWarsOnlineUtility.GetDisplayName(userData));
     }
     
     private void OnSendRequestComplete(IResult result, bool usingFriendCode = false)
@@ -277,12 +277,6 @@ public class FindFriendsMenu : MenuCanvas
         
         GameObject playerEntry = Instantiate(friendEntryPrefab, resultContentPanel);
         playerEntry.name = userId;
-        
-        if (string.IsNullOrEmpty(displayName))
-        {
-            string truncatedUserId = userId[..5];
-            displayName = $"Player-{truncatedUserId}";
-        }
         
         FriendEntry playerEntryHandler = playerEntry.GetComponent<FriendEntry>();
         playerEntryHandler.EntryView = FriendEntry.FriendEntryView.Searched;

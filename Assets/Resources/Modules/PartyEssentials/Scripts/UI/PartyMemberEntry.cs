@@ -24,8 +24,7 @@ public class PartyMemberEntry : MonoBehaviour
         cachedMemberUserData = memberUserData;
 
         SetPartyMemberColor(isLeader ? leaderColor : memberColor);
-        memberNameText.text = string.IsNullOrEmpty(memberUserData.DisplayName) ?
-            AccelByteWarsUtility.GetDefaultDisplayNameByUserId(memberUserData.UserId) : memberUserData.DisplayName;
+        memberNameText.text = AccelByteWarsOnlineUtility.GetDisplayName(memberUserData);
         avatarImage.LoadImage(memberUserData.AvatarUrl);
 
         // Switch view to display member information.

@@ -146,10 +146,7 @@ public class AuthEssentialsWrapper : MonoBehaviour
                 AccountUserPlatformData publicUserData = userInfoResult.Value.Data[0];
                 GameData.CachedPlayerState.PlayerId = publicUserData.UserId;
                 GameData.CachedPlayerState.AvatarUrl = publicUserData.AvatarUrl;
-                GameData.CachedPlayerState.PlayerName =
-                    string.IsNullOrEmpty(publicUserData.DisplayName) ?
-                    $"Player-{publicUserData.UserId[..5]}" :
-                    publicUserData.DisplayName;
+                GameData.CachedPlayerState.PlayerName = AccelByteWarsOnlineUtility.GetDisplayName(publicUserData);
                 GameData.CachedPlayerState.PlatformId =
                     string.IsNullOrEmpty(GameData.CachedPlayerState.PlatformId) ?
                     tokenData.platform_id : GameData.CachedPlayerState.PlatformId;

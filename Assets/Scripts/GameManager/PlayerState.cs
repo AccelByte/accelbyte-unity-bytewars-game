@@ -68,6 +68,6 @@ public class PlayerState : INetworkSerializable
         }
 
         // Return the first five characters of the AccelByte user ID.
-        return $"Player-{PlayerId[..5]}";
+        return AccelByteWarsUtility.GetDefaultDisplayNameByUserId(PlayerId);
     }
 }

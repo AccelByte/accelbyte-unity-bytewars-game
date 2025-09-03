@@ -133,7 +133,7 @@ public abstract class AccelByteWarsOnlineSession : MonoBehaviour
         {
             playerState.PlayerId = userInfo.userId;
             playerState.AvatarUrl = userInfo.avatarUrl;
-            playerState.PlayerName = userInfo.displayName;
+            playerState.PlayerName = AccelByteWarsOnlineUtility.GetDisplayName(userInfo);
             GameManager.Instance.ConnectedPlayerStates[userNetId] = playerState;
         }
 

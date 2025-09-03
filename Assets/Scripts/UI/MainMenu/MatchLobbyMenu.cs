@@ -137,7 +137,7 @@ public class MatchLobbyMenu : MenuCanvas
     
     private void GenerateTeamEntries()
     {
-        ulong clientNetworkId = GameManager.Instance.ClientNetworkId;
+        ulong clientNetworkId = NetworkManager.Singleton.LocalClientId;
         Dictionary<ulong, PlayerState> playerStates = GameManager.Instance.ConnectedPlayerStates;
         Dictionary<int, TeamState> teamStates = GameManager.Instance.ConnectedTeamStates;
 

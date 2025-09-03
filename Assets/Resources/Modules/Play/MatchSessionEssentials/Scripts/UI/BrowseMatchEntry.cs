@@ -23,12 +23,7 @@ public class BrowseMatchEntry : MonoBehaviour
 
     public void Setup(BrowseSessionModel sessionModel)
     {
-        string ownerName = 
-            string.IsNullOrEmpty(sessionModel.Owner.UniqueDisplayName) ?
-            string.IsNullOrEmpty(sessionModel.Owner.DisplayName) ? 
-            $"Player-{sessionModel.Owner.UserId[..5]}" : 
-            sessionModel.Owner.DisplayName : 
-            sessionModel.Owner.UniqueDisplayName;
+        string ownerName = AccelByteWarsOnlineUtility.GetDisplayName(sessionModel.Owner);
         sessionOwnerText.text = $"{ownerName}'s Session";
         sessionOwnerImage.LoadImage(sessionModel.Owner.AvatarUrl);
 
