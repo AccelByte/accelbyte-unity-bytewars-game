@@ -11,6 +11,14 @@ using UnityEngine.UI;
 
 public class PromptMenuCanvas : MenuCanvas
 {
+    public static readonly string DefaultPromptMessage = "Message";
+    public static readonly string DefaultErrorPromptMessage = "Error";
+    public static readonly string DefaultYesMessage = "Yes";
+    public static readonly string DefaultNoMessage = "No";
+    public static readonly string DefaultConfirmMessage = "Confirm";
+    public static readonly string DefaultCancelMessage = "Cancel";
+    public static readonly string DefaultOkMessage = "Ok";
+
     private const float BackgroundAlpha = 0.5f; // The target alpha intensity of the fade background.
     private const float AlphaFadeIncrement = 0.05f; // The rate of the fade background animation.
     private const float FadeSpeed = 0.02f; // The speed of the background fade animation
