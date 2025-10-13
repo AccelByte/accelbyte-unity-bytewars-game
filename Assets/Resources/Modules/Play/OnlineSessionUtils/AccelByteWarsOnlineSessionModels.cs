@@ -14,6 +14,12 @@ public class AccelByteWarsOnlineSessionModels
     public static readonly string StartingAsHostMessage = "Starting As Host";
     public static readonly string WaitingHostMessage = "Waiting for Host";
 
+    public static readonly string MultiLoginSessionMessage = "You have been logged out because you logged in elsewhere";
+    public static readonly string DisconnectLogoutMessage = "You are disconnected. Please login again";
+    public static readonly string ReconnectAGSMessage = "Reconnecting to AGS";
+    public static readonly string SuccessReconnectAGSMessage = "Success to reconnect to AGS";
+    public static readonly string FailedReconnectAGSMessage = "Failed to reconnect to AGS. Try to reconnect";
+
     public const string NoneSessionTemplateName = "unity-elimination-none";
     public const string EliminationDSSessionTemplateName = "unity-elimination-ds";
     public const string EliminationP2PSessionTemplateName = "unity-elimination-p2p";

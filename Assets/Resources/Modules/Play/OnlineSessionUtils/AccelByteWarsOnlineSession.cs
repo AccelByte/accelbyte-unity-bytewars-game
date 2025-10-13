@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using AccelByte.Api;
@@ -11,6 +12,7 @@ using AccelByte.Models;
 using AccelByte.Server;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using static AccelByteWarsOnlineSessionModels;
 
 public abstract class AccelByteWarsOnlineSession : MonoBehaviour
@@ -27,6 +29,7 @@ public abstract class AccelByteWarsOnlineSession : MonoBehaviour
     private static bool isAuthenticationSequenceRunning = false;
 
     private static bool isInitialized = false;
+    private static bool isReconnectingLobby = false;
 
     protected virtual void Awake()
     {
@@ -36,6 +39,10 @@ public abstract class AccelByteWarsOnlineSession : MonoBehaviour
         User ??= AccelByteSDK.GetClientRegistry().GetApi().GetUser();
         Lobby ??= AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
         Session ??= AccelByteSDK.GetClientRegistry().GetApi().GetSession();
+
+        Lobby.Connected += OnLobbyConnected;
+        Lobby.Reconnecting += OnLobbyReconnecting;
+        Lobby.Disconnected += OnLobbyDisconnected;
 
         GameManager.OnClientConnectedAuthentication += AuthenticatePlayer;
         GameManager.Instance.OnClientLeaveSession += LeaveCurrentGameSession;
@@ -76,6 +83,114 @@ public abstract class AccelByteWarsOnlineSession : MonoBehaviour
         ResultCallback onComplete)
     {
         onComplete?.Invoke(Result.CreateError(ErrorCode.NotImplemented));
+    }
+    #endregion
+
+    #region Lobby Reconnect
+    private void ReconnectLobby() 
+    {
+        isReconnectingLobby = true;
+        
+        if (Lobby.IsConnected)
+        {
+            OnLobbyConnected();
+            return;
+        }
+
+        MenuManager.Instance.PromptMenu.ShowLoadingPrompt(ReconnectAGSMessage, true, PromptMenuCanvas.DefaultCancelMessage, Lobby.Disconnect);
+        Lobby.Connect();
+    }
+
+    private IEnumerator FallbackFailedReconnectLobby() 
+    {
+        User.Session.ClearSession(true);
+
+        if (SceneManager.GetActiveScene().buildIndex != GameConstant.MenuSceneBuildIndex) 
+        {
+            yield return GameManager.Instance.QuitToMainMenu();
+        }
+        
+        ModuleModel module = TutorialModuleManager.Instance.GetModule(TutorialType.AuthEssentials);
+        if (module == null)
+        {
+            BytewarsLogger.LogWarning("Failed to redirect to login menu. Module is inactive.");
+            yield return null;
+        }
+        MenuManager.Instance.ChangeToMenu(module.isStarterActive ? AssetEnum.LoginMenu_Starter : AssetEnum.LoginMenu);
+    }
+
+    private void OnLobbyConnected() 
+    {
+        // Show lobby reconnect success message.
+        if (isReconnectingLobby) 
+        {
+            isReconnectingLobby = false;
+            MenuManager.Instance.PromptMenu.ShowPromptMenu(PromptMenuCanvas.DefaultPromptMessage, SuccessReconnectAGSMessage, PromptMenuCanvas.DefaultOkMessage, null);
+        }
+    }
+
+    private void OnLobbyReconnecting() 
+    {
+        // Show lobby reconnecting message.
+        if (isReconnectingLobby) 
+        {
+            MenuManager.Instance.PromptMenu.ShowLoadingPrompt(ReconnectAGSMessage, true, PromptMenuCanvas.DefaultCancelMessage, Lobby.Disconnect);
+        }
+    }
+
+    private void OnLobbyDisconnected(WsCloseCode closeCode) 
+    {
+        isReconnectingLobby = false;
+
+        /* If running as a P2P host, and disconnected from the lobby, the backend automatically marks the game session as a soft delete.
+         * Hence, it is not possible to continue the game session. Therefore, simply close the P2P host. */
+        if (NetworkManager.Singleton.IsHost && NetworkManager.Singleton.IsClient)
+        {
+            BytewarsLogger.LogWarning("Client is a P2P host. Closing the game session as the backend has already marked it as a soft delete.");
+            StartCoroutine(GameManager.Instance.QuitToMainMenu());
+        }
+
+        /* Do not attempt to reconnect if the disconnection is due to an account issue.
+         * Lobby functions require the user to be logged in. */
+        if (closeCode is WsCloseCode.Normal or 
+            WsCloseCode.DisconnectDueToMultipleSessions or 
+            WsCloseCode.DisconnectDueToIAMLoggedOut)
+        {
+            string disconnectMessage = string.Empty;
+            switch(closeCode)
+            {
+                case WsCloseCode.DisconnectDueToMultipleSessions:
+                    disconnectMessage = MultiLoginSessionMessage;
+                    break;
+                case WsCloseCode.DisconnectDueToIAMLoggedOut:
+                    disconnectMessage = DisconnectLogoutMessage;
+                    break;
+            }
+
+            if (!string.IsNullOrEmpty(disconnectMessage))
+            {
+                MenuManager.Instance.PromptMenu.ShowPromptMenu(
+                    PromptMenuCanvas.DefaultPromptMessage, disconnectMessage, 
+                    PromptMenuCanvas.DefaultOkMessage, null);
+            }
+
+            User.Logout(result => StartCoroutine(FallbackFailedReconnectLobby()));
+        }
+        // If the disconnection is due to an AGS service event, try to reconnect automatically.
+        else if (closeCode is WsCloseCode.DisconnectFromExternalReconnect)
+        {
+            ReconnectLobby();
+        }
+        // Otherwise, show a prompt to let the player decide whether to reconnect or not.
+        else
+        {
+            MenuManager.Instance.PromptMenu.ShowPromptMenu(
+                PromptMenuCanvas.DefaultErrorPromptMessage,
+                FailedReconnectAGSMessage,
+                PromptMenuCanvas.DefaultYesMessage, ReconnectLobby,
+                PromptMenuCanvas.DefaultNoMessage, () => User.Logout(result => StartCoroutine(FallbackFailedReconnectLobby())));
+        }
+
     }
     #endregion
 

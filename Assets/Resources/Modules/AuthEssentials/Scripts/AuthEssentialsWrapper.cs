@@ -25,7 +25,6 @@ public class AuthEssentialsWrapper : MonoBehaviour
         userProfiles = AccelByteSDK.GetClientRegistry().GetApi().GetUserProfiles();
         lobby = AccelByteSDK.GetClientRegistry().GetApi().GetLobby();
 
-        lobby.Disconnected += OnLobbyDisconnected;
         MainMenu.OnQuitPressed += Logout;
     }
 
@@ -168,25 +167,5 @@ public class AuthEssentialsWrapper : MonoBehaviour
             BytewarsLogger.Log($"Logout failed. Error message: {result.Error.Message}");
         }
     }
-
-    private void OnLobbyDisconnected(WsCloseCode code)
-    {
-        BytewarsLogger.Log($"Lobby service disconnected with code: {code}");
-
-        /* If disconnected from lobby intentionally or due to account issue.
-         * Log out and back to the login menu.*/
-        HashSet<WsCloseCode> disconnectCode = new HashSet<WsCloseCode>()
-        {
-            WsCloseCode.Normal,
-            WsCloseCode.DisconnectDueToMultipleSessions,
-            WsCloseCode.DisconnectDueToIAMLoggedOut
-        };
-        if (disconnectCode.Contains(code))
-        {
-            lobby.Disconnected -= OnLobbyDisconnected;
-            Logout(() => { MenuManager.Instance.ChangeToMenu(AssetEnum.LoginMenu); });
-        }
-    }
-
     #endregion
 }
