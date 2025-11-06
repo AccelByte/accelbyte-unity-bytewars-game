@@ -119,7 +119,6 @@ public class GameManager : NetworkBehaviour
 
     private List<Vector3> availablePositions;
     private WebSocketTransport networkTransport;
-    private DebugImplementation debug;
     private MenuManager menuManager;
     private int gameTimeLeft;
 
@@ -188,7 +187,6 @@ public class GameManager : NetworkBehaviour
         StartServer();
 #endif
 
-        debug ??= new DebugImplementation();
         hud.Reset();
         
         InitMenuManagerWhenReady().ContinueWith(() =>
