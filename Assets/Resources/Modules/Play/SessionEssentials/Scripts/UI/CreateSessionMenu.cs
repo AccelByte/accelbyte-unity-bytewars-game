@@ -7,6 +7,7 @@ using AccelByte.Models;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Cysharp.Threading.Tasks;
 using static SessionEssentialsModels;
 
 public class CreateSessionMenu : MenuCanvas
@@ -24,8 +25,8 @@ public class CreateSessionMenu : MenuCanvas
     private void Awake()
     {
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
-        createSessionButton.onClick.AddListener(CreateSession);
-        widgetSwitcher.OnRetryButtonClicked = CreateSession;
+        createSessionButton.onClick.AddListener(() => CreateSession().Forget());
+        widgetSwitcher.OnRetryButtonClicked = () => CreateSession().Forget();
         leaveSessionButton.onClick.AddListener(LeaveSession);
     }
 
@@ -49,8 +50,13 @@ public class CreateSessionMenu : MenuCanvas
         }
     }
 
-    private void CreateSession()
+    private async UniTask CreateSession()
     {
+        if (!await AccelByteWarsOnlineSession.OnValidateToStartGameSession.Invoke())
+        {
+            return;
+        }
+
         SessionV2GameSessionCreateRequest request = 
             AccelByteWarsOnlineSessionModels.GetGameSessionRequestModel(InGameMode.None, GameSessionServerType.None);
         if (request == null)

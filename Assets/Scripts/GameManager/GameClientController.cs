@@ -280,7 +280,8 @@ public class GameClientController : NetworkBehaviour
             {
                 gameManager.UpdatePlayerStatesClientRpc(
                     gameManager.ConnectedTeamStates.Values.ToArray(),
-                    gameManager.ConnectedPlayerStates.Values.ToArray());
+                    gameManager.ConnectedPlayerStates.Values.ToArray(),
+                    gameManager.ActiveClientRpcParams);
             }
         }
     }

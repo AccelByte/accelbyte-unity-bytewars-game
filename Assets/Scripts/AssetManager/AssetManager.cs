@@ -11,6 +11,7 @@ using Object = UnityEngine.Object;
 public class AssetManager : MonoBehaviour
 {
     private const string TutorialDataSuffix = "AssetConfig";
+    public const string CoreFolder = "Core";
     public const string ModuleFolder = "Modules";
 
     [SerializeField] private GameManager gameManagerPrefab;
@@ -41,7 +42,9 @@ public class AssetManager : MonoBehaviour
 
     private void LoadAssets()
     {
-        Object[] objects = Resources.LoadAll(ModuleFolder);
+        Object[] objects =
+            Resources.LoadAll(CoreFolder).
+            Concat(Resources.LoadAll(ModuleFolder)).ToArray();
 
         foreach (Object obj in objects)
         {

@@ -89,7 +89,26 @@ public class GameManager : NetworkBehaviour
     [SerializeField] private InGameCamera inGameCamera;
 
     private const string NotEnoughPlayer = "Not enough players, shutting down DS in: ";
-    
+
+    /* By default, Unity sends RPCs to all clients.
+     * However, when invoking an RPC during a client disconnect event, 
+     * it may throw an error if the target client is no longer connected.
+     * This parameter ensures the RPC is only sent to currently connected clients based on a cached list. */
+    private ClientRpcParams activeClientRpcParams = new ClientRpcParams { Send = new ClientRpcSendParams() };
+    public ClientRpcParams ActiveClientRpcParams
+    {
+        get
+        {
+            List<ulong> clientIds = connectedClients.Keys.ToList();
+            if (NetworkManager.Singleton.IsServer || NetworkManager.IsHost)
+            {
+                clientIds.Remove(NetworkManager.Singleton.LocalClientId);
+            }
+            activeClientRpcParams.Send.TargetClientIds = clientIds;
+            return activeClientRpcParams;
+        }
+    }
+
     private readonly Dictionary<ulong, GameClientController> connectedClients = new();
     private readonly Dictionary<string, GameEntityAbs> gamePrefabDict = new();
     private readonly Dictionary<int, Planet> planets = new();
@@ -117,7 +136,7 @@ public class GameManager : NetworkBehaviour
     private bool isGameEnded = false;
 
     #region Initialization and Lifecycle
-
+    
     [RuntimeInitializeOnLoadMethod]
     private static void CreateInstance()
     {
@@ -596,15 +615,15 @@ public class GameManager : NetworkBehaviour
     
     public void RemoveConnectedClient(ulong clientNetworkId, bool isInGameScene, bool isResetMissile = true)
     {
-        BytewarsLogger.LogWarning($"Remove connected client. Client id: {clientNetworkId} is not found.");
-
-        connectedClients.Remove(clientNetworkId);
-
         if (!Players.TryGetValue(clientNetworkId, out Player player) && isInGameScene)
         {
             BytewarsLogger.LogWarning($"Unable to remove connected client. Player with client id {clientNetworkId} is not found.");
             return;
         }
+        
+        BytewarsLogger.LogWarning($"Remove connected client. Client id: {clientNetworkId}.");
+        
+        connectedClients.Remove(clientNetworkId);
 
         if (!IsServer && isInGameScene)
         {
@@ -623,8 +642,12 @@ public class GameManager : NetworkBehaviour
             serverHelper.RemovePlayerState(clientNetworkId);
         }
 
-        RemoveConnectedClientRpc(clientNetworkId, serverHelper.ConnectedTeamStates.Values.ToArray(), 
-            serverHelper.ConnectedPlayerStates.Values.ToArray(), isResetMissile);
+        RemoveConnectedClientRpc(
+            clientNetworkId, 
+            serverHelper.ConnectedTeamStates.Values.ToArray(), 
+            serverHelper.ConnectedPlayerStates.Values.ToArray(), 
+            isResetMissile,
+            ActiveClientRpcParams);
     }
 
     [ClientRpc]
@@ -632,7 +655,8 @@ public class GameManager : NetworkBehaviour
         ulong clientNetworkId, 
         TeamState[] teamStates,
         PlayerState[] playerStates, 
-        bool isResetMissile)
+        bool isResetMissile,
+        ClientRpcParams clientRpcParams = default)
     {
         BytewarsLogger.Log($"[Client] Remove connected client. Client id: {clientNetworkId}. Is host: {IsHost}");
 
@@ -845,7 +869,8 @@ public class GameManager : NetworkBehaviour
             {
                 UpdatePlayerStatesClientRpc(
                     serverHelper.ConnectedTeamStates.Values.ToArray(),
-                    serverHelper.ConnectedPlayerStates.Values.ToArray());
+                    serverHelper.ConnectedPlayerStates.Values.ToArray(),
+                    ActiveClientRpcParams);
             }
 
             SetInGameState(InGameState.GameOver);
@@ -904,7 +929,8 @@ public class GameManager : NetworkBehaviour
                 {
                     UpdatePlayerStatesClientRpc(
                         serverHelper.ConnectedTeamStates.Values.ToArray(),
-                        serverHelper.ConnectedPlayerStates.Values.ToArray());
+                        serverHelper.ConnectedPlayerStates.Values.ToArray(),
+                        ActiveClientRpcParams);
                 }
 
                 isGameEnded = true;
@@ -1244,7 +1270,7 @@ public class GameManager : NetworkBehaviour
     }
     
     [ClientRpc]
-    public void UpdatePlayerStatesClientRpc(TeamState[] teamStates, PlayerState[] playerStates)
+    public void UpdatePlayerStatesClientRpc(TeamState[] teamStates, PlayerState[] playerStates, ClientRpcParams clientRpcParams = default)
     {
         BytewarsLogger.Log(
             $"[Client] Update player states. Is host: {IsHost}. " +
@@ -1659,6 +1685,7 @@ public class GameManager : NetworkBehaviour
         if (!IsDedicatedServer) 
         {
             MenuManager.Instance.OnBackPressed();
+            MenuManager.Instance.PromptMenu.HidePromptMenu();
             MenuManager.Instance.ShowLoading(
                 loadingMessage,
                 new LoadingTimeoutInfo()

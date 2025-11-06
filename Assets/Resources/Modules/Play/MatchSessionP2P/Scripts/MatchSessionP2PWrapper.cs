@@ -26,10 +26,16 @@ public class MatchSessionP2PWrapper : MatchSessionEssentialsWrapper
         ResultCallback<SessionV2GameSession> onComplete)
     {
         // Add party session id for playing with party feature.
-        SessionV2PartySession partySession = PartyEssentialsModels.PartyHelper.CurrentPartySession;
-        if (partySession != null && !string.IsNullOrEmpty(partySession.id))
+        if (CachedParty != null && !string.IsNullOrEmpty(CachedParty.id))
         {
-            request.members = partySession.members;
+            request.teams = new SessionV2TeamData[]
+            {
+                new SessionV2TeamData
+                {
+                    TeamId = CachedParty.id,
+                    userIds = CachedParty.members.Where(m => m.StatusV2 == SessionV2MemberStatus.JOINED).Select(m  => m.id).ToArray()
+                }
+            };
         }
 
         // Add custom attribute as filter for session browser.

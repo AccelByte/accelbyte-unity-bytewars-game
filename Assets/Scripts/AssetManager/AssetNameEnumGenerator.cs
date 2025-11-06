@@ -14,7 +14,8 @@ using UnityEngine;
 public class AssetNameEnumGenerator : AssetModificationProcessor
 {
     private const string EnumPath = "/Scripts/AssetManager/AssetEnum.cs";
-    private const string AssetFolder = "Assets/Resources/" + AssetManager.ModuleFolder;
+    private const string CoreAssetFolder = "Assets/Resources/" + AssetManager.CoreFolder;
+    private const string ModuleAssetFolder = "Assets/Resources/" + AssetManager.ModuleFolder;
     private const string MetaExtension = ".meta";
     private const string CsExtension = ".cs";
 
@@ -33,7 +34,7 @@ public class AssetNameEnumGenerator : AssetModificationProcessor
                 continue;
             }
 
-            if (!path.StartsWith(AssetFolder))
+            if (!path.StartsWith(CoreAssetFolder) && !path.StartsWith(ModuleAssetFolder))
             {
                 continue;
             }
@@ -71,7 +72,8 @@ public class AssetNameEnumGenerator : AssetModificationProcessor
             throw;
         }
 
-        if (assetPath.StartsWith(AssetFolder) && !assetPath.EndsWith(CsExtension))
+        if (!assetPath.EndsWith(CsExtension) && 
+            (assetPath.StartsWith(CoreAssetFolder) || assetPath.StartsWith(ModuleAssetFolder)))
         {
             if (options is RemoveAssetOptions.DeleteAssets)
             {
@@ -100,9 +102,10 @@ public class AssetNameEnumGenerator : AssetModificationProcessor
         File.Move(sourcePath+MetaExtension, destinationPath+MetaExtension);
 
         bool metaOrCsFile = sourcePath.EndsWith(MetaExtension) || sourcePath.EndsWith(CsExtension);
-        bool assetFolderChanged = destinationPath.StartsWith(AssetFolder) != sourcePath.StartsWith(AssetFolder);
-        bool fileInAssetFolderChanged = !Path.GetFileName(sourcePath).Equals(Path.GetFileName(destinationPath)) 
-                                        && sourcePath.StartsWith(AssetFolder);
+        bool sourceInAssets = sourcePath.StartsWith(CoreAssetFolder) || sourcePath.StartsWith(ModuleAssetFolder);
+        bool destinationInAssets = destinationPath.StartsWith(CoreAssetFolder) || destinationPath.StartsWith(ModuleAssetFolder);
+        bool assetFolderChanged = sourceInAssets != destinationInAssets;
+        bool fileInAssetFolderChanged = !Path.GetFileName(sourcePath).Equals(Path.GetFileName(destinationPath)) && sourceInAssets;
 
         if (!metaOrCsFile && (assetFolderChanged || fileInAssetFolderChanged))
         {
@@ -165,7 +168,11 @@ public class AssetNameEnumGenerator : AssetModificationProcessor
     {
         List<string> enumNames = new();
 
-        List<string> assetNames = Directory.GetFiles(AssetFolder, "*", SearchOption.AllDirectories).ToList();
+        List<string> assetNames = Directory
+            .GetFiles(CoreAssetFolder, "*", SearchOption.AllDirectories)
+            .Concat(Directory.GetFiles(ModuleAssetFolder, "*", SearchOption.AllDirectories))
+            .ToList();
+
         if (newAssetNames != null)
         {
             assetNames.AddRange(newAssetNames);

@@ -2,9 +2,9 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-using System;
 using UnityEngine;
 using UnityEngine.UI;
+using Cysharp.Threading.Tasks;
 
 public class CreateMatchSessionServerTypeMenu : MenuCanvas
 {
@@ -16,8 +16,8 @@ public class CreateMatchSessionServerTypeMenu : MenuCanvas
 
     private void Awake()
     {
-        dedicatedServerButton.onClick.AddListener(OnDedicatedServerButtonClicked);
-        peerToPeerButton.onClick.AddListener(OnPeerToPeerButtonClicked);
+        dedicatedServerButton.onClick.AddListener(() => OnDedicatedServerButtonClicked().Forget());
+        peerToPeerButton.onClick.AddListener(() => OnPeerToPeerButtonClicked().Forget());
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
     }
 
@@ -30,16 +30,22 @@ public class CreateMatchSessionServerTypeMenu : MenuCanvas
         peerToPeerButton.gameObject.SetActive(matchSessionP2PModule?.isActive ?? false);
     }
 
-    private void OnDedicatedServerButtonClicked()
+    private async UniTask OnDedicatedServerButtonClicked()
     {
-        MenuManager.Instance.ChangeToMenu(
-            matchSessionDSModule.isStarterActive ? AssetEnum.CreateMatchSessionDSMenu_Starter : AssetEnum.CreateMatchSessionDSMenu);
+        if (await AccelByteWarsOnlineSession.OnValidateToStartGameSession.Invoke())
+        {
+            MenuManager.Instance.ChangeToMenu(
+                matchSessionDSModule.isStarterActive ? AssetEnum.CreateMatchSessionDSMenu_Starter : AssetEnum.CreateMatchSessionDSMenu);
+        }
     }
 
-    private void OnPeerToPeerButtonClicked()
+    private async UniTask OnPeerToPeerButtonClicked()
     {
-        MenuManager.Instance.ChangeToMenu(
-            matchSessionP2PModule.isStarterActive ? AssetEnum.CreateMatchSessionP2PMenu_Starter : AssetEnum.CreateMatchSessionP2PMenu);
+        if (await AccelByteWarsOnlineSession.OnValidateToStartGameSession.Invoke())
+        {
+            MenuManager.Instance.ChangeToMenu(
+                matchSessionP2PModule.isStarterActive ? AssetEnum.CreateMatchSessionP2PMenu_Starter : AssetEnum.CreateMatchSessionP2PMenu);
+        }
     }
 
     public override AssetEnum GetAssetEnum()

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2025 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -41,64 +41,69 @@ public class PlayingWithFriendsWrapper : SessionEssentialsWrapper
             BytewarsLogger.LogWarning($"Failed to handle received game session invitation. Error {notif.Error.Code}: {notif.Error.Message}");
             return;
         }
-        
-        // Construct local function to display push notification.
-        void OnGetSenderInfoCompleted(Result<AccountUserPlatformInfosResponse> result)
-        {
-            AccountUserPlatformData senderInfo = result.IsError ? null : result.Value.Data[0];
-            if (senderInfo == null)
-            {
-                BytewarsLogger.LogWarning($"Failed to get sender info. Error {result.Error.Code}: {result.Error.Message}");
 
-                return;
-            }
-
-            MenuManager.Instance.PushNotification(new PushNotificationModel
-            {
-                Message = senderInfo.DisplayName + PlayingWithFriendsModels.InviteReceived,
-                IconUrl = senderInfo.AvatarUrl,
-                UseDefaultIconOnEmpty = true,
-                ActionButtonTexts = new string[]
-                {
-                    PlayingWithFriendsModels.InviteAccept,
-                    PlayingWithFriendsModels.InviteReject
-                },
-                ActionButtonCallback = (PushNotificationActionResult actionResult) =>
-                {
-                    switch (actionResult)
-                    {
-                        // Show accept party invitation confirmation.
-                        case PushNotificationActionResult.Button1:
-                            JoinGameSession(notif.Value.sessionId, (Result<SessionV2GameSession> result) =>
-                            {
-                                OnJoinGameSessionCompleted(result, null);
-                            });
-                            break;
-
-                        // Reject party invitation.
-                        case PushNotificationActionResult.Button2:
-                            RejectGameSessionInvite(notif.Value.sessionId, null);
-                            break;
-                    }
-                }
-            });
-        }
-
-        // Construct local function to get sender info.
-        void OnGetGameSessionDetailsCompleted(Result<SessionV2GameSession> result)
+        // Get session info.
+        Session.GetGameSessionDetailsBySessionId(notif.Value.sessionId, (result) =>
         {
             if (result.IsError)
             {
                 BytewarsLogger.LogWarning($"Failed to get game session details. Error {result.Error.Code}: {result.Error.Message}");
-
                 return;
             }
 
-            User.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { result.Value.leaderId }, OnGetSenderInfoCompleted);
-        }
+            SessionV2GameSession gameSession = result.Value;
 
-        // Get session info.
-        Session.GetGameSessionDetailsBySessionId(notif.Value.sessionId, OnGetGameSessionDetailsCompleted);
+            // Ignore if the invitation is from party leader as it is already handled in the play with party module.
+            if (CachedParty != null && gameSession.leaderId == CachedParty.leaderId)
+            {
+                return;
+            }
+
+            // Get session owner info.
+            User.GetUserOtherPlatformBasicPublicInfo("ACCELBYTE", new string[] { result.Value.leaderId }, (userInfoResult) =>
+            {
+                AccountUserPlatformData senderInfo = userInfoResult.IsError ? null : userInfoResult.Value.Data[0];
+                if (senderInfo == null)
+                {
+                    BytewarsLogger.LogWarning($"Failed to get sender info. Error {userInfoResult.Error.Code}: {userInfoResult.Error.Message}");
+                    return;
+                }
+
+                // Prompt notification to join or reject session invitation.
+                MenuManager.Instance.PushNotification(new PushNotificationModel
+                {
+                    Message = senderInfo.DisplayName + PlayingWithFriendsModels.InviteReceived,
+                    IconUrl = senderInfo.AvatarUrl,
+                    UseDefaultIconOnEmpty = true,
+                    ActionButtonTexts = new string[]
+                    {
+                        PlayingWithFriendsModels.InviteAccept,
+                        PlayingWithFriendsModels.InviteReject
+                    },
+                    ActionButtonCallback = async (PushNotificationActionResult actionResult) =>
+                    {
+                        switch (actionResult)
+                        {
+                            // Show accept party invitation confirmation.
+                            case PushNotificationActionResult.Button1:
+                                if (await AccelByteWarsOnlineSession.OnValidateToJoinGameSession.Invoke(gameSession))
+                                {
+                                    JoinGameSession(notif.Value.sessionId, (Result<SessionV2GameSession> result) =>
+                                    {
+                                        OnJoinGameSessionCompleted(result, null);
+                                    });
+                                }
+                                break;
+
+                            // Reject party invitation.
+                            case PushNotificationActionResult.Button2:
+                                RejectGameSessionInvite(notif.Value.sessionId, null);
+                                break;
+                        }
+                    }
+                });
+            });
+        });
     }
 
     private void OnJoinGameSessionCompleted(Result<SessionV2GameSession> result, ResultCallback<SessionV2GameSession> onComplete = null)

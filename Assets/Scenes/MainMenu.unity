@@ -259,16 +259,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: AssetManager
       objectReference: {fileID: 0}
-    - target: {fileID: 7497277548367277921, guid: f18464845b457df4cb53def745e81062,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7497277548367277923, guid: f18464845b457df4cb53def745e81062,
-        type: 3}
-      propertyPath: m_RootOrder
-      value: 2
-      objectReference: {fileID: 0}
     - target: {fileID: 7497277548367277923, guid: f18464845b457df4cb53def745e81062,
         type: 3}
       propertyPath: m_LocalPosition.x

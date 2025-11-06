@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.UI;
+using Cysharp.Threading.Tasks;
 
 public class MatchmakingServerTypeMenu : MenuCanvas
 {
@@ -15,8 +16,8 @@ public class MatchmakingServerTypeMenu : MenuCanvas
 
     private void Awake()
     {
-        dedicatedServerButton.onClick.AddListener(OnDedicatedServerButtonClicked);
-        peerToPeerButton.onClick.AddListener(OnPeerToPeerButtonClicked);
+        dedicatedServerButton.onClick.AddListener(() => OnDedicatedServerButtonClicked().Forget());
+        peerToPeerButton.onClick.AddListener(() => OnPeerToPeerButtonClicked().Forget());
         backButton.onClick.AddListener(MenuManager.Instance.OnBackPressed);
     }
 
@@ -29,16 +30,22 @@ public class MatchmakingServerTypeMenu : MenuCanvas
         peerToPeerButton.gameObject.SetActive(matchmakingP2PModule?.isActive ?? false);
     }
 
-    private void OnDedicatedServerButtonClicked()
+    private async UniTask OnDedicatedServerButtonClicked()
     {
-        MenuManager.Instance.ChangeToMenu(
-            matchmakingDSModule.isStarterActive ? AssetEnum.MatchmakingDSMenu_Starter : AssetEnum.MatchmakingDSMenu);
+        if (await AccelByteWarsOnlineSession.OnValidateToStartMatchmaking.Invoke(MatchmakingMenu.SelectedGameMode))
+        {
+            MenuManager.Instance.ChangeToMenu(
+                matchmakingDSModule.isStarterActive ? AssetEnum.MatchmakingDSMenu_Starter : AssetEnum.MatchmakingDSMenu);
+        }
     }
 
-    private void OnPeerToPeerButtonClicked()
+    private async UniTask OnPeerToPeerButtonClicked()
     {
-        MenuManager.Instance.ChangeToMenu(
-            matchmakingP2PModule.isStarterActive ? AssetEnum.MatchmakingP2PMenu_Starter : AssetEnum.MatchmakingP2PMenu);
+        if (await AccelByteWarsOnlineSession.OnValidateToStartMatchmaking.Invoke(MatchmakingMenu.SelectedGameMode))
+        {
+            MenuManager.Instance.ChangeToMenu(
+                matchmakingP2PModule.isStarterActive ? AssetEnum.MatchmakingP2PMenu_Starter : AssetEnum.MatchmakingP2PMenu);
+        }
     }
 
     public override AssetEnum GetAssetEnum()

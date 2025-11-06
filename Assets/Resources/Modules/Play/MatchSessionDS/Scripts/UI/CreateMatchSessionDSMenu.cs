@@ -19,10 +19,13 @@ public class CreateMatchSessionDSMenu : MenuCanvas
 
     private void Awake()
     {
-        BrowseMatchEntry.OnJoinDSMatchButtonClicked += (BrowseSessionModel sessionModel) =>
+        BrowseMatchEntry.OnJoinDSMatchButtonClicked += async (BrowseSessionModel sessionModel) =>
         {
-            sessionToJoin = sessionModel;
-            MenuManager.Instance.ChangeToMenu(GetAssetEnum());
+            if (await AccelByteWarsOnlineSession.OnValidateToJoinGameSession.Invoke(sessionModel.Session))
+            {
+                sessionToJoin = sessionModel;
+                MenuManager.Instance.ChangeToMenu(GetAssetEnum());
+            }
         };
     }
 

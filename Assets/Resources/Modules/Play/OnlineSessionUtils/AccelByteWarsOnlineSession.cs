@@ -2,14 +2,15 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using AccelByte.Api;
 using AccelByte.Core;
 using AccelByte.Models;
 using AccelByte.Server;
+using Cysharp.Threading.Tasks;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -17,7 +18,18 @@ using static AccelByteWarsOnlineSessionModels;
 
 public abstract class AccelByteWarsOnlineSession : MonoBehaviour
 {
-    public static SessionV2GameSession CachedSession { get; protected set; }
+    public static SessionV2GameSession CachedSession { get; protected set; } = null;
+    public static SessionV2PartySession CachedParty { get; protected set; } = null;
+
+    public static bool IsInParty => CachedParty != null && CachedParty.members.Select(m => m.StatusV2 == SessionV2MemberStatus.JOINED).ToArray().Length > 1;
+
+    public static bool IsPartyLeader => IsInParty && GameData.CachedPlayerState.PlayerId == CachedParty.leaderId;
+
+    public static Func<InGameMode, UniTask<bool>> OnValidateToStartMatchmaking = gameMode => UniTask.FromResult(true);
+    public static Func<UniTask<bool>> OnValidateToStartGameSession = () => UniTask.FromResult(true);
+    public static Func<SessionV2GameSession, UniTask<bool>> OnValidateToJoinGameSession = sessionId => UniTask.FromResult(true);
+
+    public static Action OnPartySessionUpdated = delegate { };
 
     protected static User User;
     protected static Lobby Lobby;
@@ -474,6 +486,7 @@ public abstract class AccelByteWarsOnlineSession : MonoBehaviour
         NetworkManager.Singleton.NetworkConfig.NetworkTransport = transportManager;
 
         bool isHost = session.leaderId == GameData.CachedPlayerState.PlayerId;
+
         GameManager.Instance.ShowTravelingLoading(() =>
         {
             GameManager.Instance.ResetCache();

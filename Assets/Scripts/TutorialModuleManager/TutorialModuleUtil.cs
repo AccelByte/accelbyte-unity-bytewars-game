@@ -97,6 +97,12 @@ public static class TutorialModuleUtil
 
     public static ProxyConfiguration GetProxy()
     {
+        // Return default if no config file was found.
+        if (ConfigurationReader.Config == null)
+        {
+            return new ProxyConfiguration();
+        }
+
         const string proxyUrlParam = "-ProxyUrl=";
         const string proxyPathParam = "-ProxyPath=";
         const string proxyUsernameParam = "-ProxyUsername=";

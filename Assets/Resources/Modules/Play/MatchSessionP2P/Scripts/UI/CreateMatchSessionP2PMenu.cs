@@ -4,9 +4,10 @@
 
 using AccelByte.Core;
 using AccelByte.Models;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
-using static SessionEssentialsModels;
 using static MatchSessionEssentialsModels;
+using static SessionEssentialsModels;
 
 public class CreateMatchSessionP2PMenu : MenuCanvas
 {
@@ -18,10 +19,13 @@ public class CreateMatchSessionP2PMenu : MenuCanvas
 
     private void Awake()
     {
-        BrowseMatchEntry.OnJoinP2PMatchButtonClicked += (BrowseSessionModel sessionModel) =>
+        BrowseMatchEntry.OnJoinP2PMatchButtonClicked += async (BrowseSessionModel sessionModel) =>
         {
-            sessionToJoin = sessionModel;
-            MenuManager.Instance.ChangeToMenu(GetAssetEnum());
+            if (await AccelByteWarsOnlineSession.OnValidateToJoinGameSession.Invoke(sessionModel.Session))
+            {
+                sessionToJoin = sessionModel;
+                MenuManager.Instance.ChangeToMenu(GetAssetEnum());
+            }
         };
     }
 

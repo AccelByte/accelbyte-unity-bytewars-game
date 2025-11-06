@@ -157,22 +157,28 @@ public static class TutorialModuleForceEnable
     /// <returns></returns>
     private static string[] ReadJsonConfig(string jsonStr, bool readFromInspector = false)
     {
-        var json = JsonUtility.FromJson<TutorialModuleConfig>(jsonStr);
+        TutorialModuleConfig json = JsonUtility.FromJson<TutorialModuleConfig>(jsonStr);
         // Check if open asset config from inspector
-        if (!readFromInspector)
+        if (json == null)
         {
-            Debug.Log($"override module {String.Join(" ", json.forceEnabledModules)}");
-            Debug.Log($"override status {json.enableModulesOverride}");
+            Debug.Log($"Unable to read JSON file. No module to override.");
+            _forcedModules = null;
+            return _forcedModules;
+        }
+        else if (!readFromInspector)
+        {
+            Debug.Log($"Override module {String.Join(" ", json.forceEnabledModules)}");
+            Debug.Log($"Override status {json.enableModulesOverride}");
         }
         if (json.forceEnabledModules.Length <= 0)
         {
-            Debug.Log($"there are no modules override, check length module {json.forceEnabledModules.Length}");
+            Debug.Log($"There are no modules override, check length module {json.forceEnabledModules.Length}");
             _forcedModules = null;
             return _forcedModules;
         }
         if (!json.enableModulesOverride)
         {
-            Debug.Log($"enableModulesOverride status {json.enableModulesOverride}");
+            Debug.Log($"The enableModulesOverride status is {json.enableModulesOverride}");
             _forcedModules = null;
             return _forcedModules;
         }
@@ -184,8 +190,8 @@ public static class TutorialModuleForceEnable
 
     private static string ReadJson()
     {
-        var tutorialModuleConfig = (TextAsset)Resources.Load("Modules/TutorialModuleConfig");
-        var textJson = tutorialModuleConfig.text;
+        TextAsset tutorialModuleConfig = (TextAsset)Resources.Load("Modules/TutorialModuleConfig");
+        string textJson = tutorialModuleConfig != null ? tutorialModuleConfig.text : string.Empty;
         return textJson;
     }
 
