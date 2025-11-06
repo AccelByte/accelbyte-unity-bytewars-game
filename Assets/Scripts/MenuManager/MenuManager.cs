@@ -702,11 +702,23 @@ public class MenuManager : MonoBehaviour
         {
             BlurEffect.RemoveBlurEffect(0f);
         }
+
+        // Clear main menu navigation stack when entering the game scene (GalaxyWorld)
+        if (IsGameScene() && Instance != null)
+        {
+            Instance.mainMenusStack.Clear();
+        }
     }
 
     private void OnSceneUnloaded(Scene scene)
     {
         CameraMovement.MoveCamera(GameManager.Instance.MainCamera, TargetCameraPositions.First());
+        
+        // Handle if there is connection issue but you still in pause screen
+        if (scene.buildIndex == GameConstant.GameSceneBuildIndex && GameManager.Instance.InGamePause != null)
+        {
+            GameManager.Instance.InGamePause.HideAllPauseStack();
+        }
     }
 
     #endregion

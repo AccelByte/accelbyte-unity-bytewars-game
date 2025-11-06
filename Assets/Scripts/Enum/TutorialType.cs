@@ -22,7 +22,7 @@ public enum TutorialType
     MultiplayerDSEssentials = 15,
     PresenceEssentials = 16,
     PartyEssentials = 17,
-    PlayWithPartyEssentials = 18,
+    PlayingWithParty = 18,
     MatchmakingEssentials = 103,
     MatchSessionEssentials = 104,
     MatchSessionP2PEssentials = 19,
@@ -33,5 +33,6 @@ public enum TutorialType
     CrossplayPreferences = 204,
     LoginQueue = 42,
     ChallengeEssentials = 43,
-    PlayingWithFriends = 24
+    PlayingWithFriends = 24,
+    RecentPlayers = 20
 }

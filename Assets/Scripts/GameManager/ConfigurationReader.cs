@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -28,7 +28,7 @@ public class ConfigurationReader : MonoBehaviour
 
     static void ReadConfiguration()
     {
-        var tutorialModuleConfig = (TextAsset)Resources.Load(GConfig.ConfigurationPath);
-        _config = JsonUtility.FromJson<TutorialModuleConfig>(tutorialModuleConfig.text);
+        TextAsset tutorialModuleConfig = (TextAsset)Resources.Load(GConfig.ConfigurationPath);
+        _config = tutorialModuleConfig != null ? JsonUtility.FromJson<TutorialModuleConfig>(tutorialModuleConfig.text) : null;
     }
 }

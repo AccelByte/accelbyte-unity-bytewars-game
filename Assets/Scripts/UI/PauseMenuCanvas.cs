@@ -9,6 +9,7 @@ public class PauseMenuCanvas : MenuCanvas
 {
     [SerializeField] private Button resumeBtn;
     [SerializeField] private Button restartBtn;
+    [SerializeField] private Button playerListBtn;
     [SerializeField] private Button quitBtn;
     
     private bool isRestartBtnShown;
@@ -19,12 +20,22 @@ public class PauseMenuCanvas : MenuCanvas
 
         resumeBtn.onClick.AddListener(OnClickResumeBtn);
         restartBtn.onClick.AddListener(GameManager.Instance.RestartLocalGame);
+        playerListBtn.onClick.AddListener(OnPlayerListClicked);
         quitBtn.onClick.AddListener(OnQuitBtnClick);
+    }
+    private void OnPlayerListClicked()
+    {
+        GameManager.Instance.InGamePause.ShowInGamePauseMenu(AssetEnum.PlayerListMenu);
     }
 
     private void OnEnable()
     {
         restartBtn.gameObject.SetActive(isRestartBtnShown);
+
+        if (GameData.GameModeSo && GameData.GameModeSo.GameMode == GameModeEnum.OnlineMultiplayer)
+        {
+            playerListBtn.gameObject.SetActive(TutorialModuleManager.Instance.IsModuleActive(TutorialType.RecentPlayers));
+        }
     }
 
     private void OnDisable()
