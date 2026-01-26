@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,16 +9,6 @@ using UnityEngine;
 public static class ByteWarEditorUtility
 {
     private const string GameModeFolder = @"Assets\GameMode";
-
-    // static ByteWarEditorUtility()
-    // {
-    //     EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-    // }
-    //
-    // private static void OnPlayModeStateChanged(PlayModeStateChange state)
-    // {
-    //     Debug.Log($"editor play state: {state}");
-    // }
 
     [MenuItem("AssetDatabase/Force Save Game Mode")]
     static void ForceReserializeAsset()
@@ -36,7 +26,5 @@ public static class ByteWarEditorUtility
         }
         AssetDatabase.ForceReserializeAssets(gameModePaths);
     }
-
-
 }
 #endif

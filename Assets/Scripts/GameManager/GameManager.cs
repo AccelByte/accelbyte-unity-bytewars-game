@@ -12,6 +12,8 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
+using UnityEngine.Diagnostics;
+using UnityEngine.InputSystem;
 
 public class GameManager : NetworkBehaviour
 {
@@ -134,8 +136,10 @@ public class GameManager : NetworkBehaviour
     private bool isGameStarted = false;
     private bool isGameEnded = false;
 
+    private InputAction crashAction = null;
+
     #region Initialization and Lifecycle
-    
+
     [RuntimeInitializeOnLoadMethod]
     private static void CreateInstance()
     {
@@ -201,8 +205,33 @@ public class GameManager : NetworkBehaviour
         });
     }
 
+    public void OnEnable()
+    {
+        // Setup intentional crash triggerer (key: ctrl+alt+c)
+        crashAction = new InputAction(
+            name: "ForceCrash",
+            type: InputActionType.Button,
+            binding: "<Keyboard>/c"
+        );
+        crashAction.performed += _ =>
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null && keyboard.ctrlKey.isPressed && keyboard.altKey.isPressed)
+            {
+                BytewarsLogger.LogWarning($"Trigger intentional crash. Crash category: {ForcedCrashCategory.AccessViolation}");
+                Utils.ForceCrash(ForcedCrashCategory.AccessViolation);
+            }
+        };
+        crashAction.Enable();
+    }
+
     public void OnDisable()
     {
+        if (crashAction != null)
+        {
+            crashAction.Disable();
+        }
+
         Pool?.DestroyAll();
         Pool?.ClearAll();
         Players?.Clear();

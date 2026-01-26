@@ -125,8 +125,10 @@ public class AssetManager : MonoBehaviour
 
 #if UNITY_WEBGL
         // Opt out Single Platform Auth and P2P modules since they are not yet supported for WebGL build.
+        BytewarsLogger.LogWarning("Some modules are not available for WebGL platform: SinglePlatformAuth, P2P");
         tutorialGameObjects = tutorialGameObjects.Where(kvp => !kvp.Key.Contains("SinglePlatformAuth") && !kvp.Key.Contains("P2P"));
 #endif
+
         foreach (KeyValuePair<string, object> keyValuePair in tutorialGameObjects)
         {
             TutorialModuleData tmd = keyValuePair.Value as TutorialModuleData;
