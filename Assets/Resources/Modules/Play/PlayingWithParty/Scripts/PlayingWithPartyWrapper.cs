@@ -329,6 +329,19 @@ public class PlayingWithPartyWrapper : SessionEssentialsWrapper
             return;
         }
 
+        if (dsInfo == null)
+        {
+            BytewarsLogger.LogWarning(
+                $"Failed to handle dedicated server status changed event. " +
+                $"Dedicated server information not found.");
+            Lobby.SessionV2DsStatusChanged -= OnDSStatusChangedReceived;
+            MenuManager.Instance.PromptMenu.ShowPromptMenu(
+                PromptMenuCanvas.DefaultErrorPromptMessage,
+                SessionEssentialsModels.FailedToFindServerMessage,
+                PromptMenuCanvas.DefaultOkMessage, null);
+            return;
+        }
+
         // Check the dedicated server status.
         switch (dsInfo.StatusV2)
         {

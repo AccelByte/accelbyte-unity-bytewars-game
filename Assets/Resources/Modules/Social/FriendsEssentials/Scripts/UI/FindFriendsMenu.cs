@@ -63,7 +63,7 @@ public class FindFriendsMenu : MenuCanvas
 
     private void FindFriend(string query)
     {
-        if (string.IsNullOrEmpty(friendSearchBar.text) || string.IsNullOrEmpty(friendSearchBar.text))
+        if (string.IsNullOrEmpty(query))
         {
             return;
         }

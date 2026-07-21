@@ -217,7 +217,8 @@ public class AccelByteWarsOnlineSessionModels
             return InGameMode.None;
         }
 
-        bool isMatchmaking = !session.attributes.ContainsKey(MatchSessionEssentialsModels.MatchSessionAttributeKey);
+        bool isMatchmaking = session.attributes == null ||
+            !session.attributes.ContainsKey(MatchSessionEssentialsModels.MatchSessionAttributeKey);
         switch (session.configuration.name)
         {
             case EliminationDSSessionTemplateName:

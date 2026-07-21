@@ -51,7 +51,7 @@ public class MatchmakingDSWrapper : MatchmakingEssentialsWrapper
         MatchmakingV2CreateTicketRequestOptionalParams optionalParams = new() { attributes = new() };
 
         // Add local server name.
-        if (string.IsNullOrEmpty(ConnectionHandler.LocalServerName))
+        if (!string.IsNullOrEmpty(ConnectionHandler.LocalServerName))
         {
             optionalParams.attributes.Add(ServerNameAttributeKey, ConnectionHandler.LocalServerName);
         }
@@ -203,6 +203,15 @@ public class MatchmakingDSWrapper : MatchmakingEssentialsWrapper
             OnDSStatusChanged?.Invoke(
                 Result<SessionV2DsStatusUpdatedNotification>.
                 CreateError(ErrorCode.NotAcceptable, InvalidSessionTypeMessage));
+            return;
+        }
+
+        if (dsInfo == null)
+        {
+            OnDSStatusChanged -= OnDSStatusChangedReceived;
+            BytewarsLogger.LogWarning(
+                $"Failed to handle dedicated server status changed event. " +
+                $"Dedicated server information not found.");
             return;
         }
 
